@@ -1,0 +1,11 @@
+curl
+fd-find
+fzf
+git
+kitty
+lazygit
+neovim
+ripgrep
+stow
+vim
+wget
