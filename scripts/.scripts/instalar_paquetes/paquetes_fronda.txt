@@ -1,0 +1,6 @@
+python3
+python3-devel
+python3-pip
+python3-virtualenv
+mysql-connector-python3
+mysql-devel
