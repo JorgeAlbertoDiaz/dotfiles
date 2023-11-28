@@ -1,4 +1,14 @@
 return {
+  -- Agrego un fondo a notify para solucionar error, además agrego timeout de espera
+  {
+    "rcarriga/nvim-notify",
+    opts = {
+      background_colour = "#1a1b26",
+      timeout = 5000,
+    },
+  },
+
+  -- Modifico el texto del dashboard
   {
     "nvimdev/dashboard-nvim",
     event = "VimEnter",
