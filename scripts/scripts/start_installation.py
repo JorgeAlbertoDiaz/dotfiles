@@ -18,11 +18,13 @@ def check_pip_installed():
 # Instalar pip
 def install_pip():
     try:
-        command = ['apt', 'update', '&&', 'apt', 'install', '-y', 'python3-pip']
+        update = ['apt', 'update']
+        pip = ['apt', 'install', '-y', 'python3-pip']
         if not check_root():
-            command.insert(0,'sudo')
-
-        subprocess.check_call(command)
+            update.insert(0,'sudo')
+            pip.insert(0,'sudo')
+        subprocess.check_call(update)
+        subprocess.check_call(pip)
 
         print("Pip se ha instalado correctamente.")
     except subprocess.CalledProcessError:
