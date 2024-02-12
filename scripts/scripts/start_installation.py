@@ -69,21 +69,28 @@ def install_php():
 
         dependencies = ['apt', 'install', '-y', 'lsb-release', 'gnupg2', 'ca-certificates', 'apt-transport-https', 'software-properties-common']
         ppa = ['add-apt-repository', '-y', 'ppa:ondrej/php']
+        update = ['apt', 'update']
+        upgrade = ['apt', 'upgrade', '-y']
         php = [ 'apt', 'install', '-y', 'php8.2', 'php8.2-bcmath', 'php8.2-fpm', 'php8.2-xml', 'php8.2-mysql', 'php8.2-zip',
-               'php8.2-intl', 'php8.2-ldap', 'php8.2-gd', 'php8.2-cli', 'php8.2-bz2', 'php8.2-curl', 'php8.2-mbstring',
-               'php8.2-pgsql', 'php8.2-opcache', 'php8.2-soap', 'php8.2-cgi'
+               'php8.2-intl', 'php8.2-ldap',  'php8.2-cli', 'php8.2-bz2', 'php8.2-curl', 'php8.2-mbstring', 'php8.2-pgsql',
+               'php8.2-opcache', 'php8.2-soap', 'php8.2-cgi'
                ]
         move_composer_bin = ['mv', 'composer.phar', '/usr/local/bin/composer']
 
         # Agrego el elemento sudo al comienzo del comando
         if not check_root():
             dependencies.insert(0,'sudo')
+            update.insert(0,'sudo')
+            upgrade.insert(0,'sudo')
             ppa.insert(0,'sudo')
             php.insert(0,'sudo')
             move_composer_bin.insert(0,'sudo')
 
         console.print(f"[bold yellow]{dependencies}")
         subprocess.check_call(dependencies)
+
+        subprocess.check_call(update)
+        subprocess.check_call(upgrade)
 
         console.print(f"[bold yellow]{ppa}")
         subprocess.check_call(ppa)
