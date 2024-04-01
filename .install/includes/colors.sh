@@ -42,35 +42,39 @@ export COD_ESCAPE_FINAL="m"
 export RESET="\033[0m"
 
 function primary_message() {
-  echo -e "\n${COD_ESCAPE_INICIAL}${NEGRITA}${FG_GRIS}${BG_AZUL}${COD_ESCAPE_FINAL} $1 ${RESET}"
+  echo -e "\n${COD_ESCAPE_INICIAL}${NEGRITA}${FG_GRIS}${BG_AZUL}${COD_ESCAPE_FINAL} $1 ${RESET}\n"
 }
 
 function secondary_message() {
-  echo -e "\n${COD_ESCAPE_INICIAL}${CURSIVA}${FG_NEGRO}${BG_GRIS}${COD_ESCAPE_FINAL} $1 ${RESET}"
+  echo -e "\n${COD_ESCAPE_INICIAL}${CURSIVA}${FG_NEGRO}${BG_GRIS}${COD_ESCAPE_FINAL} $1 ${RESET}\n"
 }
 
 function success_message() {
-  echo -e "\n${COD_ESCAPE_INICIAL}${NEGRITA}${FG_GRIS}${BG_VERDE}${COD_ESCAPE_FINAL} $1 ${RESET}"
+  echo -e "\n${COD_ESCAPE_INICIAL}${NEGRITA}${FG_GRIS}${BG_VERDE}${COD_ESCAPE_FINAL} $1 ${RESET}\n"
 }
 
 function danger_message() {
-  echo -e "\n${COD_ESCAPE_INICIAL}${PARPADEO_INTENSO}${FG_GRIS}${BG_ROJO}${COD_ESCAPE_FINAL} $1 ${RESET}"
+  echo -e "\n${COD_ESCAPE_INICIAL}${PARPADEO_INTENSO}${FG_GRIS}${BG_ROJO}${COD_ESCAPE_FINAL} $1 ${RESET}\n"
 }
 
 function warning_message() {
-  echo -e "\n${COD_ESCAPE_INICIAL}${NEGRITA}${FG_GRIS}${BG_AMARILLO}${COD_ESCAPE_FINAL} $1 ${RESET}"
+  echo -e "\n${COD_ESCAPE_INICIAL}${NEGRITA}${FG_GRIS}${BG_AMARILLO}${COD_ESCAPE_FINAL} $1 ${RESET}\n"
 }
 
 function info_message() {
-  echo -e "\n${COD_ESCAPE_INICIAL}${NEGRITA}${FG_GRIS}${BG_CIAN}${COD_ESCAPE_FINAL} $1 ${RESET}"
+  echo -e "\n${COD_ESCAPE_INICIAL}${NEGRITA}${FG_GRIS}${BG_CIAN}${COD_ESCAPE_FINAL} $1 ${RESET}\n"
 }
 
 function dark_message() {
-  echo -e "\n${COD_ESCAPE_INICIAL}${NEGRITA}${FG_GRIS}${BG_NEGRO}${COD_ESCAPE_FINAL} $1 ${RESET}"
+  echo -e "\n${COD_ESCAPE_INICIAL}${NEGRITA}${FG_GRIS}${BG_NEGRO}${COD_ESCAPE_FINAL} $1 ${RESET}\n"
 }
 
 function light_message() {
-  echo -e "\n${COD_ESCAPE_INICIAL}${NEGRITA}${FG_NEGRO}${BG_GRIS}${COD_ESCAPE_FINAL} $1 ${RESET}"
+  echo -e "\n${COD_ESCAPE_INICIAL}${NEGRITA}${FG_NEGRO}${BG_GRIS}${COD_ESCAPE_FINAL} $1 ${RESET}\n"
+}
+
+function message(){
+  echo -e "\n${COD_ESCAPE_INICIAL}${NORMAL}${FG_VERDE}${BG_RESET}${COD_ESCAPE_FINAL} $1 ${RESET}\n"
 }
 
 # Prueba de funcionamiento...
