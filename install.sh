@@ -1,7 +1,12 @@
 #!/bin/bash
 source .install/includes/colors.sh
-info_message "Se ejecuta el script de instalación"
+source .install/includes/library.sh
 
 # ACTUALIZAR EL SISTEMA
+
+clear
+source .install/required.sh
+source .install/confirm-start.sh
 source .install/update_system.sh
+source .install/yay.sh
 
