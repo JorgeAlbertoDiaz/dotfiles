@@ -3,6 +3,7 @@
 # -----------------------------------------------------------------
 
 # Sincronización de paquetes
+info_message ":: Sincronización de paquetes..."
 sudo pacman -Sy
 echo ""
 
