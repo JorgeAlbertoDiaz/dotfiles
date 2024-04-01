@@ -24,6 +24,13 @@ else
     cd $SCRIPTPATH
     success_message ":: YAY ha sido instalado correctamente."
 fi
+
+echo ""
+info_message "Es importante que tu sistema se encuentre actualizado antes de continuar con la instalación de los dotfiles."
+if gum confirm "¿Deseas actualizar los paquetes de tu sistema con YAY ahora?" ;then
+    yay
+fi
+
 echo ""
 
 
