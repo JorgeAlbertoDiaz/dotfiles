@@ -42,39 +42,39 @@ export COD_ESCAPE_FINAL="m"
 export RESET="\033[0m"
 
 function primary_message() {
-  echo -e "\n${COD_ESCAPE_INICIAL}${NEGRITA}${FG_GRIS}${BG_AZUL}${COD_ESCAPE_FINAL} $1 ${RESET}\n"
+  echo -e "${COD_ESCAPE_INICIAL}${NEGRITA}${FG_GRIS}${BG_AZUL}${COD_ESCAPE_FINAL} $1 ${RESET}"
 }
 
 function secondary_message() {
-  echo -e "\n${COD_ESCAPE_INICIAL}${CURSIVA}${FG_NEGRO}${BG_GRIS}${COD_ESCAPE_FINAL} $1 ${RESET}\n"
+  echo -e "${COD_ESCAPE_INICIAL}${CURSIVA}${FG_NEGRO}${BG_GRIS}${COD_ESCAPE_FINAL} $1 ${RESET}"
 }
 
 function success_message() {
-  echo -e "\n${COD_ESCAPE_INICIAL}${NEGRITA}${FG_GRIS}${BG_VERDE}${COD_ESCAPE_FINAL} $1 ${RESET}\n"
+  echo -e "${COD_ESCAPE_INICIAL}${NEGRITA}${FG_GRIS}${BG_VERDE}${COD_ESCAPE_FINAL} $1 ${RESET}"
 }
 
 function danger_message() {
-  echo -e "\n${COD_ESCAPE_INICIAL}${PARPADEO_INTENSO}${FG_GRIS}${BG_ROJO}${COD_ESCAPE_FINAL} $1 ${RESET}\n"
+  echo -e "${COD_ESCAPE_INICIAL}${PARPADEO_INTENSO}${FG_GRIS}${BG_ROJO}${COD_ESCAPE_FINAL} $1 ${RESET}"
 }
 
 function warning_message() {
-  echo -e "\n${COD_ESCAPE_INICIAL}${NEGRITA}${FG_GRIS}${BG_AMARILLO}${COD_ESCAPE_FINAL} $1 ${RESET}\n"
+  echo -e "${COD_ESCAPE_INICIAL}${NEGRITA}${FG_GRIS}${BG_AMARILLO}${COD_ESCAPE_FINAL} $1 ${RESET}"
 }
 
 function info_message() {
-  echo -e "\n${COD_ESCAPE_INICIAL}${NEGRITA}${FG_GRIS}${BG_CIAN}${COD_ESCAPE_FINAL} $1 ${RESET}\n"
+  echo -e "${COD_ESCAPE_INICIAL}${NEGRITA}${FG_GRIS}${BG_CIAN}${COD_ESCAPE_FINAL} $1 ${RESET}"
 }
 
 function dark_message() {
-  echo -e "\n${COD_ESCAPE_INICIAL}${NEGRITA}${FG_GRIS}${BG_NEGRO}${COD_ESCAPE_FINAL} $1 ${RESET}\n"
+  echo -e "${COD_ESCAPE_INICIAL}${NEGRITA}${FG_GRIS}${BG_NEGRO}${COD_ESCAPE_FINAL} $1 ${RESET}"
 }
 
 function light_message() {
-  echo -e "\n${COD_ESCAPE_INICIAL}${NEGRITA}${FG_NEGRO}${BG_GRIS}${COD_ESCAPE_FINAL} $1 ${RESET}\n"
+  echo -e "${COD_ESCAPE_INICIAL}${NEGRITA}${FG_NEGRO}${BG_GRIS}${COD_ESCAPE_FINAL} $1 ${RESET}"
 }
 
 function message(){
-  echo -e "\n${COD_ESCAPE_INICIAL}${NORMAL}${FG_VERDE}${BG_RESET}${COD_ESCAPE_FINAL} $1 ${RESET}\n"
+  echo -e "${COD_ESCAPE_INICIAL}${NORMAL}${FG_VERDE}${BG_RESET}${COD_ESCAPE_FINAL} $1 ${RESET}"
 }
 
 # Prueba de funcionamiento...
