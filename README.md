@@ -1,20 +1,24 @@
-# dotfiles
+# Dotfiles (Archlinux)
 Administración de mis dotfiles con la herramienta **GNU Stow**, cual sirve para administrar dotfiles en distribuciones de Linux.
 
 ## **Instalación de Stow:**
 
-1. Abre una terminal en Fedora.
+1. Abre una terminal.
 
-2. Asegúrate de tener el gestor de paquetes `dnf` actualizado:
+2. Asegúrate de tener el gestor de paquetes actualizado:
 
    ```bash
-   sudo dnf update
+   # Actualizar con pacman
+   sudo pacman -Syu
+
+   # Actualizar con yay
+   yay
    ```
 
-3. Instala Stow utilizando `dnf`:
+3. Instala Stow utilizando `pacman`:
 
    ```bash
-   sudo dnf install stow
+   sudo pacman -S stow
    ```
 
 Con Stow instalado, ahora puedes comenzar a administrar tus dotfiles:
@@ -58,4 +62,40 @@ Por ejemplo, para instalar tu archivo `.bashrc`:
 Con Stow, puedes mantener tus dotfiles organizados y sincronizados en múltiples sistemas de manera eficiente.
 Esto facilita la gestión de la configuración de tu entorno de usuario en diferentes máquinas.
 
+## configuración Nvidia
+Para tener funcionando correctamente el sistema se debe instalar los controladores y configurarlo como lo indica [esta guía de hyperland](https://wiki.hyprland.org/Nvidia/)
 
+1. Instalar el controlador `nvidia-dkms` y el paquete `linux-headers`.
+
+```bash
+sudo pacman -S linux-headers nvidia-dkms
+```
+
+2. Agregar la siguiente línea al archivo:
+
+`/boot/loader/entries/arch.conf`
+```bash
+nvidia_drm.modeset=1
+```
+
+3. Agrega a los módulos las siguientes opciones:
+
+`/etc/mkinitcpio.conf`
+```bash
+nvidia nvidia_modeset nvidia_uvm nvidia_drm
+```
+
+4. Ejecuta el comando:
+
+```bash
+mkinitcpio --config /etc/mkinitcpio.conf --generate /boot/initramfs-custom.img
+```
+
+5. Por último agrega la siguiente línea al archivo.
+
+`/etc/modprobe.d/nvidia.conf`
+```bash
+options nvidia-drm modeset=1
+```
+
+> ¡Si el archivo no existe debes crearlo!
