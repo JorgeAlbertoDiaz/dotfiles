@@ -57,6 +57,7 @@ packagesPacman=(
     "vlc" 
     "wget"
     "xarchiver"
+    "xclip" 
     "xdg-desktop-portal"
     "xdg-user-dirs"
     "zip"
