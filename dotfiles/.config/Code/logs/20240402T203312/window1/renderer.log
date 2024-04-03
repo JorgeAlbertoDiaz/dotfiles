@@ -1,0 +1,5 @@
+2024-04-02 20:33:14.114 [info] Started local extension host with pid 1742.
+2024-04-02 20:33:16.962 [info] [perf] Render performance baseline is 56ms
+2024-04-02 20:33:19.801 [error] Cannot read properties of undefined (reading 'accessToken'): TypeError: Cannot read properties of undefined (reading 'accessToken')
+    at g.f (vscode-file://vscode-app/opt/visual-studio-code/resources/app/out/vs/workbench/workbench.desktop.main.js:1678:21613)
+    at l.value (vscode-file://vscode-app/opt/visual-studio-code/resources/app/out/vs/workbench/workbench.desktop.main.js:1678:21434)
