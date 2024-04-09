@@ -1,12 +1,12 @@
 #!/bin/bash
-figlet "Disable SDDM"
+figlet "Desactiva SDDM"
 if [ -f /etc/systemd/system/display-manager.service ]; then
-    if gum confirm "Do you want to disable the current display manager?" ;then
-        sudo rm /etc/systemd/system/display-manager.service
-        echo ":: Current display manager removed." 
-        echo ":: Please reboot your system."
-    fi
+	if gum confirm "¿Deseas desactivar SDDM como gestor de pantalla?"; then
+		sudo rm /etc/systemd/system/display-manager.service
+		echo ":: El gestor de pantalla fue quitado."
+		echo ":: Por favor reinicia tu sistema."
+	fi
 else
-    echo ":: No Display Manager enabled."
+	echo ":: No hay un gestor de pantalla habilitado."
 fi
 sleep 3

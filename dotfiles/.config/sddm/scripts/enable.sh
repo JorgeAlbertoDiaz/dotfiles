@@ -1,12 +1,12 @@
 #!/bin/bash
-figlet "Enable SDDM"
+figlet "Habilitar SDDM"
 if [ -f /etc/systemd/system/display-manager.service ]; then
-    echo ":: Display Manager is already enabled."
+	echo ":: El gestor de pantalla ya se encuentra habilitado."
 else
-    if gum confirm "Do you want to enable SDDM as your display manager?" ;then
-        sudo systemctl enable sddm.service
-        echo ":: Display manager SDDM has been enabled." 
-        echo ":: Please reboot your system!"
-    fi
+	if gum confirm "¿Deseas habilitar SDDM como tu gestor de pantalla?"; then
+		sudo systemctl enable sddm.service
+		echo ":: El gestor de pantalla SDDM ha sido activado."
+		echo ":: ¡Por favor reinicia tu sistema!"
+	fi
 fi
 sleep 3
