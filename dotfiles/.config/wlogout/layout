@@ -1,0 +1,36 @@
+{
+    "label" : "lock",
+    "action" : "sleep 1; hyprlock",
+    "text" : "Bloquear",
+    "keybind" : "l"
+}
+{
+    "label" : "hibernate",
+    "action" : "sleep 1; systemctl hibernate",
+    "text" : "Hibernar",
+    "keybind" : "h"
+}
+{
+    "label" : "logout",
+    "action" : "$HOME/.config/hypr/scripts/exit.sh",
+    "text" : "Salir",
+    "keybind" : "e"
+}
+{
+    "label" : "shutdown",
+    "action" : "sleep 1; systemctl poweroff",
+    "text" : "Apagar",
+    "keybind" : "s"
+}
+{
+    "label" : "suspend",
+    "action" : "sleep 1; systemctl suspend",
+    "text" : "Suspender",
+    "keybind" : "u"
+}
+{
+    "label" : "reboot",
+    "action" : "sleep 1; systemctl reboot",
+    "text" : "Reiniciar",
+    "keybind" : "r"
+}
