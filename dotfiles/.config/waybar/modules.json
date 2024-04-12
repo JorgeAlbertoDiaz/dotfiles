@@ -274,7 +274,6 @@
   },
 
   // Grupo de Configuración
-  // Group Settings
   "group/settings": {
     "orientation": "horizontal",
     "modules": [
@@ -288,7 +287,6 @@
   },
 
   // Grupo de Links Rápidos
-  // Group Quicklinks
   "group/quicklinks": {
     "orientation": "horizontal",
     "modules": [
