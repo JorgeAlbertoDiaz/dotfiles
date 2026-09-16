@@ -1,54 +1,61 @@
 # dotfiles
 
-Dotfiles y script de instalación para un sistema funcional sobre **openSUSE Tumbleweed** partiendo de una instalación limpia.
+Dotfiles e instalador para un sistema funcional sobre **openSUSE Tumbleweed**,
+incluyendo soporte para la **NVIDIA GTX 1060 3 GB**, desde una instalación limpia.
 
 ## Objetivo
 
-No solo guardar configuraciones, sino proveer una forma automatizada de instalar todo lo necesario para tener un entorno de trabajo completo: controladores, paquetes, fuentes, configuraciones de shell, terminal, editor, etc.
+No solo guardar configuraciones: provee un instalador interactivo para preparar
+todo el sistema — repositorios, paquetes, controladores NVIDIA, shell y dotfiles.
 
 ## Requisitos
 
-- **Sistema operativo:** openSUSE Tumbleweed (instalación limpia o reciente)
-- **GPU:** NVIDIA GeForce GTX 1060 3 GB (se instalan los controladores propietarios nvidia)
-
-## Estructura del repositorio
-
-```
-.
-├── README.md
-├── install.sh          # Script principal de instalación
-├── packages.txt        # Lista de paquetes zypper a instalar
-└── config/             # Dotfiles (copiados al $HOME)
-    ├── .bashrc
-    ├── .zshrc
-    ├── nvim/
-    └── ...
-```
-
-> La estructura es flexible; se ajustará a medida que se añadan configuraciones.
+- **Sistema:** openSUSE Tumbleweed (instalación limpia o reciente)
+- **GPU:** NVIDIA GeForce GTX 1060 3 GB (controladores propietarios G06)
+- **Conexión a internet**
 
 ## Uso
 
 ```bash
 git clone https://github.com/JorgeAlbertoDiaz/dotfiles.git ~/dotfiles
 cd ~/dotfiles
-chmod +x install.sh
+chmod +x install.sh scripts/*.sh
 ./install.sh
 ```
 
-## Qué instala `install.sh`
+El instalador verifica el sistema, instala `gum` si falta, y muestra un menú
+interactivo multi-selección para elegir los componentes a instalar:
+paquetes base, escritorio Sway, shell, herramientas dev, NVIDIA y dotfiles.
 
-| Categoría | Detalle |
-|---|---|
-| **NVIDIA** | Controladores propietarios vía repositorio oficial de NVIDIA para Tumbleweed |
-| **Paquetes base** | Herramientas esenciales de sistema y desarrollo |
-| **Shell** | Configuración de zsh / bash |
-| **Terminal** | Emulador de terminal y fuentes |
-| **Editor** | Neovim u otro editor (según preferencia) |
-| **Dotfiles** | Symlinks o copia de configuraciones al `$HOME` |
+## Estructura
+
+```text
+.
+├── install.sh               # Orquestador principal (TUI con gum)
+├── packages/                # Paquetes zypper en texto plano (1 por línea)
+│   ├── base.txt
+│   ├── desktop-sway.txt
+│   ├── nvidia.txt
+│   ├── shell.txt
+│   └── dev.txt
+├── scripts/                 # Scripts independientes
+│   ├── common.sh            # Funciones compartidas (log, sudo, confirm)
+│   ├── 00-check-system.sh   # Verifica openSUSE Tumbleweed
+│   ├── 01-install-gum.sh    # Instala gum (bash puro si falta)
+│   ├── 02-install-packages.sh  # Recorre packages/*.txt e instala con zypper
+│   ├── 03-nvidia-setup.sh   # Repo NVIDIA + controladores
+│   └── 04-setup-dotfiles.sh # Aplica dotfiles con stow + cambia a zsh
+├── config/                  # Configuraciones como paquetes GNU Stow
+└── docs/                    # Documentación y diagramas Mermaid (.mmd)
+```
+
+## Documentación
+
+Más detalles en [docs/index.md](docs/index.md).
 
 ## Notas
 
-- El script está pensado para ejecutarse en una instalación reciente de Tumbleweed.
-- Se asume conexión a internet durante la instalación.
-- Los controladores NVIDIA se configuran para la GTX 1060 3 GB; si se cambia de GPU, revisar la compatibilidad con `zypper se -i | grep nvidia`.
+- Trabaja junto a GNU Stow: cada subdirectorio de `config/` crea symlinks
+  al `$HOME`.
+- Los controladores NVIDIA se instalan desde el repositorio oficial de NVIDIA.
+- La shell por defecto se cambia a zsh (opcional durante la instalación).
