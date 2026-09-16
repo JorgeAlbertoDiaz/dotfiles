@@ -1,0 +1,5 @@
+# Shell, terminal y editor
+zsh
+bash-completion
+neovim
+alacritty

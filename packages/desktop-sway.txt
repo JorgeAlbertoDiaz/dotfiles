@@ -1,0 +1,20 @@
+# Entorno de escritorio Sway (Wayland)
+sway
+foot
+waybar
+wofi
+swaybg
+swaylock
+swayidle
+SwayNotificationCenter
+wl-clipboard
+grim
+slurp
+xwayland
+brightnessctl
+playerctl
+pavucontrol
+NetworkManager-applet
+wob
+kanshi
+feh

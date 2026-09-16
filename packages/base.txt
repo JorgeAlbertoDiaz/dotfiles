@@ -1,0 +1,16 @@
+# Paquetes base del sistema
+curl
+wget
+git-core
+tar
+unzip
+rsync
+tree
+htop
+tmux
+stow
+jq
+ripgrep
+fzf
+bc
+inotify-tools

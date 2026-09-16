@@ -1,0 +1,5 @@
+# Controladores NVIDIA propietarios para GeForce GTX 1060 3 GB
+# Se instalan tras añadir el repositorio: https://download.nvidia.com/opensuse/tumbleweed
+nvidia-driver-G06-kmp-default
+nvidia-gl-G06
+nvidia-vulkan-G06
