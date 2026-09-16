@@ -1,33 +1,22 @@
 * {
-    font-family: "Cantarell", sans-serif;
-    font-size: 13px;
-    border: none;
-    border-radius: 0;
-    min-height: 0;
+    font-family: "DejaVu Sans Mono";
+    font-size: 12px;
 }
 
-#waybar {
-    background-color: #1e1e2e;
-    color: #d0d0d0;
-    border-bottom: 1px solid #313244;
+window#waybar {
+    background: rgba(30, 30, 30, 0.95);
 }
 
 #workspaces button {
     padding: 0 8px;
-    color: #a6adc8;
-}
-
-#workspaces button.active {
-    color: #1e1e2e;
-    background-color: #8497f7;
-    border-radius: 6px;
 }
 
 #clock,
+#network,
 #cpu,
 #memory,
-#network,
 #pulseaudio,
-#battery {
+#battery,
+#tray {
     padding: 0 10px;
 }

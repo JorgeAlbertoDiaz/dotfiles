@@ -1,39 +1,194 @@
-# ~/.config/sway/config
-# Configuración básica de Sway para el escritorio con NVIDIA.
+### =========================
+### Variables
+### =========================
 
 set $mod Mod4
-font pango:monospace 10
-terminal foot
-menu wofi --show drun
+set $term foot
+set $menu wofi --show drun
 
-# NVIDIA: evitar el uso de aceleración por blitting y usar los EGL soportados.
-exec wlr-randr --output DP-1 --mode 1920x1080@60.000
+### =========================
+### Entrada
+### =========================
 
-# Barra de estado (waybar)
-bar {
-    status_command waybar
+input * {
+	xkb_layout "latam"
 }
 
-output * bg ~/.config/sway/wallpaper bg_fill
+### =========================
+### Salidas / monitores
+### =========================
 
-# Atajos de teclado
-bindsym $mod+Return exec $terminal
+output HDMI-A-2 resolution 1920x1080 position 0,0
+output HDMI-A-1 resolution 1920x1080 position 1920,0
+
+### =========================
+### Fuentes
+### =========================
+
+font pango:DejaVu Sans Mono 10
+
+### =========================
+### Terminal
+### =========================
+
+bindsym $mod+Return exec $term
+
+### =========================
+### Lanzador
+### =========================
+
 bindsym $mod+d exec $menu
-bindsym $mod+Shift+q kill
-bindsym $mod+Space focus mode_toggle
-bindsym $mod+Shift+e exec swaymsg exit
 
-# Layout del teclado (español)
-input type:keyboard {
-    xkb_layout es
+### =========================
+### Cerrar ventana
+### =========================
+
+bindsym $mod+Shift+q kill
+
+### =========================
+### Recargar Sway
+### =========================
+
+bindsym $mod+Shift+c reload
+
+### =========================
+### Reiniciar Sway
+### =========================
+
+bindsym $mod+Shift+r restart
+
+### =========================
+### Salir de Sway
+### =========================
+
+bindsym $mod+Shift+e exec swaynag \
+    -t warning \
+    -m '¿Salir de Sway?' \
+    -B 'Sí' 'swaymsg exit'
+
+### =========================
+### Movimiento
+### =========================
+
+bindsym $mod+h focus left
+bindsym $mod+j focus down
+bindsym $mod+k focus up
+bindsym $mod+l focus right
+
+### =========================
+### Movimiento con flechas
+### =========================
+
+bindsym $mod+Left focus left
+bindsym $mod+Down focus down
+bindsym $mod+Up focus up
+bindsym $mod+Right focus right
+
+### =========================
+### Mover ventanas
+### =========================
+
+bindsym $mod+Shift+h move left
+bindsym $mod+Shift+j move down
+bindsym $mod+Shift+k move up
+bindsym $mod+Shift+l move right
+
+### =========================
+### Layout
+### =========================
+
+bindsym $mod+e layout toggle split
+bindsym $mod+s layout stacking
+bindsym $mod+w layout tabbed
+
+### =========================
+### Fullscreen
+### =========================
+
+bindsym $mod+f fullscreen toggle
+
+### =========================
+### Floating
+### =========================
+
+bindsym $mod+Shift+space floating toggle
+
+### =========================
+### Focus floating
+### =========================
+
+bindsym $mod+space focus mode_toggle
+
+### =========================
+### Workspaces
+### =========================
+
+set $ws1 "1"
+set $ws2 "2"
+set $ws3 "3"
+set $ws4 "4"
+set $ws5 "5"
+set $ws6 "6"
+set $ws7 "7"
+set $ws8 "8"
+set $ws9 "9"
+
+bindsym $mod+1 workspace $ws1
+bindsym $mod+2 workspace $ws2
+bindsym $mod+3 workspace $ws3
+bindsym $mod+4 workspace $ws4
+bindsym $mod+5 workspace $ws5
+bindsym $mod+6 workspace $ws6
+bindsym $mod+7 workspace $ws7
+bindsym $mod+8 workspace $ws8
+bindsym $mod+9 workspace $ws9
+
+### =========================
+### Mover ventana a workspace
+### =========================
+
+bindsym $mod+Shift+1 move container to workspace $ws1
+bindsym $mod+Shift+2 move container to workspace $ws2
+bindsym $mod+Shift+3 move container to workspace $ws3
+bindsym $mod+Shift+4 move container to workspace $ws4
+bindsym $mod+Shift+5 move container to workspace $ws5
+bindsym $mod+Shift+6 move container to workspace $ws6
+bindsym $mod+Shift+7 move container to workspace $ws7
+bindsym $mod+Shift+8 move container to workspace $ws8
+bindsym $mod+Shift+9 move container to workspace $ws9
+
+### =========================
+### Barra
+### =========================
+
+bar {
+    swaybar_command waybar
 }
 
-# Gestión de ventanas
-default_border pixel 3
-gaps inner 8
+### =========================
+### Fondo
+### =========================
 
-# Idle
+output * bg /usr/share/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png fill
+
+### =========================
+### Waybar
+### =========================
+
+exec waybar
+
+### =========================
+### Idle / bloqueo
+### =========================
+
 exec swayidle -w \
-    timeout 600 'swaylock -f' \
-    timeout 660 'swaymsg "output * dpms off"' \
-    resume 'swaymsg "output * dpms on"'
+    timeout 600 'swaylock -f -c 000000' \
+    timeout 900 'swaymsg "output * power off"' \
+    resume 'swaymsg "output * power on"' \
+    before-sleep 'swaylock -f -c 000000'
+
+### =========================
+### Clipboard (clipman aún no instalado)
+### =========================
+
+# exec wl-paste --type text --watch clipman store

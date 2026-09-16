@@ -1,50 +1,52 @@
 {
     "layer": "top",
     "position": "top",
-    "height": 30,
-    "modules-left": ["sway/workspaces", "sway/mode"],
-    "modules-center": ["clock"],
-    "modules-right": ["pulseaudio", "network", "cpu", "memory", "battery"],
-    "sway/workspaces": {
-        "format": "{name}: {icon}",
-        "format-icons": {
-            "1": "",
-            "2": "",
-            "3": "",
-            "4": "",
-            "5": ""
-        }
-    },
-    "network": {
-        "format-wifi": "{essid} ({signalStrength}%)",
-        "format-ethernet": "{ifname}",
-        "format-disconnected": "<span color='#ff6e6e'>Disconnected</span>"
-    },
-    "pulseaudio": {
-        "format": "{volume}% {icon}",
-        "format-muted": "<span color='#ff6e6e'>Muted</span>",
-        "format-icons": {
-            "default": [""]
-        }
-    },
+
+    "modules-left": [
+        "sway/workspaces"
+    ],
+
+    "modules-center": [
+        "clock"
+    ],
+
+    "modules-right": [
+        "pulseaudio",
+        "network",
+        "cpu",
+        "memory",
+        "battery",
+        "tray"
+    ],
+
     "clock": {
-        "format": "{:%H:%M}",
-        "calendar": {
-            "mode": "month"
-        }
+        "format": "{:%d/%m/%Y %H:%M}"
     },
+
     "cpu": {
-        "format": "CPU {usage}%"
+        "format": " {usage}%"
     },
+
     "memory": {
-        "format": "RAM {}%"
+        "format": " {used:0.1f}GiB"
     },
+
+    "network": {
+        "format-wifi": " {essid}",
+        "format-ethernet": "󰈀 {ipaddr}",
+        "format-disconnected": "󰖪 desconectado"
+    },
+
+    "pulseaudio": {
+        "format": " {volume}%",
+        "format-muted": "󰝟 muted"
+    },
+
     "battery": {
-        "states": {
-            "warning": 30,
-            "critical": 15
-        },
-        "format": "{capacity}% {icon}",
-        "format-icons": ["", "", "", "", ""]
+        "format": " {capacity}%"
+    },
+
+    "tray": {
+        "spacing": 8
     }
 }
