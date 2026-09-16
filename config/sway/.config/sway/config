@@ -1,0 +1,39 @@
+# ~/.config/sway/config
+# Configuración básica de Sway para el escritorio con NVIDIA.
+
+set $mod Mod4
+font pango:monospace 10
+terminal foot
+menu wofi --show drun
+
+# NVIDIA: evitar el uso de aceleración por blitting y usar los EGL soportados.
+exec wlr-randr --output DP-1 --mode 1920x1080@60.000
+
+# Barra de estado (waybar)
+bar {
+    status_command waybar
+}
+
+output * bg ~/.config/sway/wallpaper bg_fill
+
+# Atajos de teclado
+bindsym $mod+Return exec $terminal
+bindsym $mod+d exec $menu
+bindsym $mod+Shift+q kill
+bindsym $mod+Space focus mode_toggle
+bindsym $mod+Shift+e exec swaymsg exit
+
+# Layout del teclado (español)
+input type:keyboard {
+    xkb_layout es
+}
+
+# Gestión de ventanas
+default_border pixel 3
+gaps inner 8
+
+# Idle
+exec swayidle -w \
+    timeout 600 'swaylock -f' \
+    timeout 660 'swaymsg "output * dpms off"' \
+    resume 'swaymsg "output * dpms on"'

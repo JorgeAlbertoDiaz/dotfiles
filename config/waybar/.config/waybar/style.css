@@ -1,0 +1,33 @@
+* {
+    font-family: "Cantarell", sans-serif;
+    font-size: 13px;
+    border: none;
+    border-radius: 0;
+    min-height: 0;
+}
+
+#waybar {
+    background-color: #1e1e2e;
+    color: #d0d0d0;
+    border-bottom: 1px solid #313244;
+}
+
+#workspaces button {
+    padding: 0 8px;
+    color: #a6adc8;
+}
+
+#workspaces button.active {
+    color: #1e1e2e;
+    background-color: #8497f7;
+    border-radius: 6px;
+}
+
+#clock,
+#cpu,
+#memory,
+#network,
+#pulseaudio,
+#battery {
+    padding: 0 10px;
+}
