@@ -1,0 +1,98 @@
+# Documentación
+
+Índice de documentación del proyecto de dotfiles.
+
+## Contenido
+
+- [Arquitectura del proyecto](#arquitectura-del-proyecto)
+- [Requisitos](#requisitos)
+- [Instalación](#instalación)
+- [Diagramas](#diagramas)
+- [Ruta de desarrollo](#ruta-de-desarrollo)
+
+## Arquitectura del proyecto
+
+Este repositorio no solo guarda dotfiles: incluye un instalador que prepara un sistema **openSUSE Tumbleweed** desde una instalación limpia, gestionando repositorios, paquetes (zypper), controladores NVIDIA y las configuraciones del usuario.
+
+| Ruta | Propósito |
+|---|---|
+| `install.sh` | Orquestador principal con interfaz TUI (gum) |
+| `scripts/` | Scripts individuales, ejecutables de forma independiente |
+| `packages/` | Archivos `.txt` planos con paquetes zypper (1 por línea) |
+| `config/` | Configuraciones organizadas como paquetes stow (`target/` por app) |
+| `docs/` | Documentación y diagramas (Mermaid en `.mmd`) |
+
+### `packages/`
+
+Cada archivo de texto agrupa paquetes por componente. El script
+`scripts/02-install-packages.sh` los recorre línea por línea. Las líneas que
+empiezan por `#` se ignoran.
+
+| Archivo | Componente |
+|---|---|
+| `base.txt` | Herramientas base del sistema |
+| `desktop-sway.txt` | Escritorio Sway + utilidades Wayland |
+| `nvidia.txt` | Controladores NVIDIA (GTX 1060 3 GB) |
+| `shell.txt` | Shell, terminal y editor |
+| `dev.txt` | Herramientas de desarrollo |
+
+### `config/` (stow)
+
+Cada subdirectorio de `config/` es un *package* para GNU Stow. Al ejecutar
+`stow -d config -t $HOME <package>` se crean symlinks, de modo que la fuente
+de verdad es este repositorio.
+
+```text
+config/
+├── home/                  # .bashrc, .zshrc
+├── sway/.config/sway/     # config del compositor
+├── foot/.config/foot/     # terminal foot
+├── waybar/.config/waybar/ # barra de estado
+├── wofi/.config/wofi/     # launcher
+└── nvim/.config/nvim/     # editor
+```
+
+## Requisitos
+
+- openSUSE Tumbleweed (instalación limpia o reciente)
+- Conexión a internet
+- GPU NVIDIA GeForce GTX 1060 3 GB (soportada por los controladores G06)
+
+## Instalación
+
+```bash
+git clone https://github.com/JorgeAlbertoDiaz/dotfiles.git ~/dotfiles
+cd ~/dotfiles
+chmod +x install.sh scripts/*.sh
+./install.sh
+```
+
+El instalador:
+
+1. Verifica que el sistema es openSUSE Tumbleweed.
+2. Instala `gum` (con bash puro + curl) si no está presente.
+3. Muestra un menú interactivo multi-selección de componentes.
+4. Instala paquetes, configura NVIDIA y aplica los dotfiles con stow.
+
+> 💡 Si `gum` no pudiera instalarse (p. ej. sin red), `install.sh` usa un
+> flujo de confirmación simple con bash.
+
+## Diagramas
+
+Los diagramas se definen con **Mermaid** en archivos `/docs/assets/*.mmd`
+(referenciados desde el markdown, nunca incrustados):
+
+| Diagrama | Descripción |
+|---|---|
+| [Flujo de instalación](./assets/flow.mmd) | Secuencia completa de `install.sh` |
+
+Para visualizarlos localmente: abrir el `.mmd` en Obsidian, VS Code (con la
+extensión habitual de Mermaid) o Typora.
+
+## Ruta de desarrollo
+
+- [ ] Probar `install.sh` en una instalación limpia
+- [ ] Añadir configs de subida (Hyprland, nvim/LazyVim, etc.)
+- [ ] Instaladores por fuente (npm global, AppImages, etc.)
+- [ ] Soporte de otros SIDs (Arch, Fedora) manteniendo `common.sh`
+- [ ] Tema de fondos de pantalla gestionado desde el repo
