@@ -45,7 +45,7 @@ dev, NVIDIA y dotfiles.
 │   ├── 00-xdg-dirs.sh       # Verifica/crea directorios XDG y descargas
 │   ├── 01-install-gum.sh    # Instala gum (zypper + fallback GitHub)
 │   ├── 02-install-packages.sh  # Recorre packages/*.txt e instala con zypper
-│   ├── 03-nvidia-setup.sh   # Repo NVIDIA + controladores
+│   ├── 03-nvidia-setup.sh   # Repo NVIDIA + controladores + GRUB/modprobe
 │   └── 04-setup-dotfiles.sh # Aplica dotfiles con stow + cambia a zsh
 ├── config/                  # Configuraciones como paquetes GNU Stow
 └── docs/                    # Documentación y diagramas Mermaid (.mmd)

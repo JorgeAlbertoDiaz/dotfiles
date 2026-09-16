@@ -8,7 +8,7 @@ flowchart TD
     C -- Sí --> D
     D --> E["Seleccionar componentes"]
     E -- base / desktop-sway / shell / dev --> F["02-install-packages.sh\nzypper in"]
-    E -- nvidia --> H["03-nvidia-setup.sh\nrepo NVIDIA + controladores G06"]
+    E -- nvidia --> H["03-nvidia-setup.sh\nrepo + controladores G06\n+ GRUB/modprobe nvidia_drm"]
     E -- dotfiles --> I["04-setup-dotfiles.sh\nstow + chsh zsh"]
     F --> J[Resumen final]
     H --> J

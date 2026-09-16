@@ -44,12 +44,11 @@ de verdad es este repositorio.
 
 ```text
 config/
-├── home/                  # .bashrc, .zshrc
-├── sway/.config/sway/     # config del compositor
-├── foot/.config/foot/     # terminal foot
-├── waybar/.config/waybar/ # barra de estado
-├── wofi/.config/wofi/     # launcher
-└── nvim/.config/nvim/     # editor
+├── home/                      # .bashrc, .zshrc, .gitconfig, .inputrc, .profile
+├── sway/.config/sway/         # config del compositor
+├── foot/.config/foot/         # terminal foot
+├── waybar/.config/waybar/     # barra de estado
+└── environment.d/.config/     # variables de entorno (nvidia.conf)
 ```
 
 ## Requisitos
@@ -94,7 +93,7 @@ extensión habitual de Mermaid) o Typora.
 ## Ruta de desarrollo
 
 - [ ] Probar `install.sh` en una instalación limpia
-- [ ] Añadir configs de subida (Hyprland, nvim/LazyVim, etc.)
+- [ ] Añadir configs de subida (Hyprland, nvim/LazyVim, wofi, etc.)
 - [ ] Instaladores por fuente (npm global, AppImages, etc.)
 - [ ] Soporte de otros SIDs (Arch, Fedora) manteniendo `common.sh`
 - [ ] Tema de fondos de pantalla gestionado desde el repo
