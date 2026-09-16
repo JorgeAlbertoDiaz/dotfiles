@@ -35,6 +35,7 @@ COMPONENTES=(
   shell
   dev
   nvidia
+  fonts
   dotfiles
 )
 
@@ -47,6 +48,9 @@ run_component() {
       ;;
     nvidia)
       "${SCRIPT_DIR}/scripts/03-nvidia-setup.sh"
+      ;;
+    fonts)
+      "${SCRIPT_DIR}/scripts/05-install-fonts.sh"
       ;;
     dotfiles)
       "${SCRIPT_DIR}/scripts/04-setup-dotfiles.sh"
@@ -118,6 +122,18 @@ if command -v gum &>/dev/null; then
 else
   warn "gum no está disponible; usando flujo bash simple."
   select_fallback
+fi
+
+# Si se eligieron fonts y dotfiles, se procesan fonts primero para que la
+# config enlazada por stow ya traiga la fuente seleccionada.
+if [[ " ${sel[*]} " == *" dotfiles "* && " ${sel[*]} " == *" fonts "* ]]; then
+  ordered=()
+  for item in "${sel[@]}"; do
+    [[ "${item}" == "dotfiles" ]] && continue
+    ordered+=("${item}")
+  done
+  ordered+=("dotfiles")
+  sel=("${ordered[@]}")
 fi
 
 for item in "${sel[@]}"; do
