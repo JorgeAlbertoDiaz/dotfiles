@@ -1,0 +1,10 @@
+# Logs generados por el instalador
+*.log
+
+# Archivos temporales
+*~
+*.tmp
+*.swp
+
+# Sistema
+.DS_Store
