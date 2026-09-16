@@ -1,8 +1,9 @@
 flowchart TD
     A[Inicio] --> B["00-check-system.sh\n¿openSUSE Tumbleweed?"]
     B -- No --> FAIL[Abortar instalación]
-    B -- Sí --> C["01-install-gum.sh\n¿gum instalado?"]
-    C -- No --> G["Instalar gum\nbash + curl"]
+    B -- Sí --> X["00-xdg-dirs.sh\nverificar/crear XDG y descargas"]
+    X --> C["01-install-gum.sh\n¿gum instalado?"]
+    C -- No --> G["Instalar gum\nzypper (repo-oss) o binario GitHub"]
     G --> D["Menú TUI (gum)"]
     C -- Sí --> D
     D --> E["Seleccionar componentes"]

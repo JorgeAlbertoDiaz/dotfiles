@@ -23,9 +23,10 @@ chmod +x install.sh scripts/*.sh
 ./install.sh
 ```
 
-El instalador verifica el sistema, instala `gum` si falta, y muestra un menú
-interactivo multi-selección para elegir los componentes a instalar:
-paquetes base, escritorio Sway, shell, herramientas dev, NVIDIA y dotfiles.
+El instalador verifica el sistema, garantiza los directorios XDG, instala
+`gum` si falta, y muestra un menú interactivo multi-selección para elegir los
+componentes a instalar: paquetes base, escritorio Sway, shell, herramientas
+dev, NVIDIA y dotfiles.
 
 ## Estructura
 
@@ -39,9 +40,10 @@ paquetes base, escritorio Sway, shell, herramientas dev, NVIDIA y dotfiles.
 │   ├── shell.txt
 │   └── dev.txt
 ├── scripts/                 # Scripts independientes
-│   ├── common.sh            # Funciones compartidas (log, sudo, confirm)
+│   ├── common.sh            # Funciones compartidas (log, sudo, confirm, XDG)
 │   ├── 00-check-system.sh   # Verifica openSUSE Tumbleweed
-│   ├── 01-install-gum.sh    # Instala gum (bash puro si falta)
+│   ├── 00-xdg-dirs.sh       # Verifica/crea directorios XDG y descargas
+│   ├── 01-install-gum.sh    # Instala gum (zypper + fallback GitHub)
 │   ├── 02-install-packages.sh  # Recorre packages/*.txt e instala con zypper
 │   ├── 03-nvidia-setup.sh   # Repo NVIDIA + controladores
 │   └── 04-setup-dotfiles.sh # Aplica dotfiles con stow + cambia a zsh

@@ -70,9 +70,11 @@ chmod +x install.sh scripts/*.sh
 El instalador:
 
 1. Verifica que el sistema es openSUSE Tumbleweed.
-2. Instala `gum` (con bash puro + curl) si no está presente.
-3. Muestra un menú interactivo multi-selección de componentes.
-4. Instala paquetes, configura NVIDIA y aplica los dotfiles con stow.
+2. Verifica y crea los directorios base XDG y la carpeta de descargas.
+3. Instala `gum` desde el repositorio `repo-oss` (con fallback al binario de
+   GitHub Releases) si no está presente.
+4. Muestra un menú interactivo multi-selección de componentes.
+5. Instala paquetes, configura NVIDIA y aplica los dotfiles con stow.
 
 > 💡 Si `gum` no pudiera instalarse (p. ej. sin red), `install.sh` usa un
 > flujo de confirmación simple con bash.
