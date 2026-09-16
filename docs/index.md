@@ -40,14 +40,16 @@ empiezan por `#` se ignoran.
 
 Cada subdirectorio de `config/` es un *package* para GNU Stow. Al ejecutar
 `stow -d config -t $HOME <package>` se crean symlinks, de modo que la fuente
-de verdad es este repositorio.
+de verdad es este repositorio. Los `customize.sh` que conviven con cada app
+son ignorados por stow (`--ignore='^customize\.sh$'`) y se ejecutan desde
+`05-install-fonts.sh` para personalizar la fuente (familia y tamaño).
 
 ```text
 config/
 ├── home/                      # .bashrc, .zshrc, .gitconfig, .inputrc, .profile
-├── sway/.config/sway/         # config del compositor
-├── foot/.config/foot/         # terminal foot
-├── waybar/.config/waybar/     # barra de estado
+├── sway/.config/sway/         # config del compositor (+ customize.sh)
+├── foot/.config/foot/         # terminal foot (+ customize.sh)
+├── waybar/.config/waybar/     # barra de estado (+ style.css y customize.sh)
 └── environment.d/.config/     # variables de entorno (nvidia.conf)
 ```
 
@@ -72,8 +74,23 @@ El instalador:
 2. Verifica y crea los directorios base XDG y la carpeta de descargas.
 3. Instala `gum` desde el repositorio `repo-oss` (con fallback al binario de
    GitHub Releases) si no está presente.
-4. Muestra un menú interactivo multi-selección de componentes.
-5. Instala paquetes, configura NVIDIA y aplica los dotfiles con stow.
+4. Muestra un menú interactivo multi-selección de componentes (incluye
+   `fonts`, para Nerd Fonts).
+5. Instala paquetes, configura NVIDIA, instala/configura Nerd Fonts y aplica
+   los dotfiles con stow.
+
+### Componente `fonts`
+
+`scripts/05-install-fonts.sh` verifica las Nerd Fonts instaladas (`fc-list`),
+deja elegir qué familias instalar desde un catálogo curado (JetBrainsMono,
+FiraCode, SourceCodePro, Hack, UbuntuMono, Ubuntu, RobotoMono, Monofur, más
+entrada personalizada), las descarga por familia desde `ryanoasis/nerd-fonts`
+a `~/.local/share/fonts` (sin sudo) y refresca `fc-cache`.
+
+Después permite elegir, para cada aplicación con `customize.sh` (foot, sway,
+waybar), qué fuente y tamaño aplicar; los cambios quedan en el repo y el
+symlink de stow los refleja al instante. Si una fuente configurada falta,
+fontconfig usará un fallback (p. ej. DejaVu Sans Mono).
 
 > 💡 Si `gum` no pudiera instalarse (p. ej. sin red), `install.sh` usa un
 > flujo de confirmación simple con bash.

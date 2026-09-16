@@ -46,8 +46,10 @@ dev, NVIDIA y dotfiles.
 │   ├── 01-install-gum.sh    # Instala gum (zypper + fallback GitHub)
 │   ├── 02-install-packages.sh  # Recorre packages/*.txt e instala con zypper
 │   ├── 03-nvidia-setup.sh   # Repo NVIDIA + controladores + GRUB/modprobe
-│   └── 04-setup-dotfiles.sh # Aplica dotfiles con stow + cambia a zsh
+│   ├── 04-setup-dotfiles.sh # Aplica dotfiles con stow + cambia a zsh
+│   └── 05-install-fonts.sh  # Instala y configura Nerd Fonts por app
 ├── config/                  # Configuraciones como paquetes GNU Stow
+│   └── <app>/customize.sh   # Personalizan la fuente de cada aplicación
 └── docs/                    # Documentación y diagramas Mermaid (.mmd)
 ```
 
@@ -58,6 +60,9 @@ Más detalles en [docs/index.md](docs/index.md).
 ## Notas
 
 - Trabaja junto a GNU Stow: cada subdirectorio de `config/` crea symlinks
-  al `$HOME`.
+  al `$HOME` (los `customize.sh` se ignoran con `--ignore` y solo se
+  ejecutan desde `05-install-fonts.sh` para configurar la fuente por app).
 - Los controladores NVIDIA se instalan desde el repositorio oficial de NVIDIA.
+- Las Nerd Fonts se descargan por familia desde `ryanoasis/nerd-fonts`
+  (GitHub Releases) y se instalan en `~/.local/share/fonts` sin sudo.
 - La shell por defecto se cambia a zsh (opcional durante la instalación).
