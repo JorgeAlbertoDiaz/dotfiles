@@ -28,7 +28,7 @@ if [[ ${#packages[@]} -eq 0 ]]; then
 fi
 
 info "Aplicando dotfiles con stow: ${packages[*]}"
-stow -v -d "${CONFIG_DIR}" -t "${HOME_DIR}" "${packages[@]}"
+stow -v -d "${CONFIG_DIR}" -t "${HOME_DIR}" --ignore='^customize\.sh$' "${packages[@]}"
 ok "Dotfiles aplicados con symlinks"
 
 if command -v zsh &>/dev/null; then
