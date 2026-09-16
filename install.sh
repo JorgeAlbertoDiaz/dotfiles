@@ -4,9 +4,10 @@
 #
 # Flujo:
 #   1. Verifica que el sistema es openSUSE Tumbleweed.
-#   2. Verifica (e instala si falta) gum para la interfaz TUI.
-#   3. Muestra un menú interactivo para elegir componentes.
-#   4. Ejecuta los scripts correspondientes.
+#   2. Verifica y crea los directorios base XDG y de descargas.
+#   3. Verifica (e instala si falta) gum para la interfaz TUI.
+#   4. Muestra un menú interactivo para elegir componentes.
+#   5. Ejecuta los scripts correspondientes.
 #
 # Si gum no puede instalarse, usa un flujo bash simple como fallback.
 set -euo pipefail
@@ -17,9 +18,10 @@ source "${SCRIPT_DIR}/scripts/common.sh"
 REPO_DIR="${SCRIPT_DIR}"
 
 # ---------------------------------------------------------------------------
-# 1) Verificación de sistema
+# 1) Verificación de sistema y directorios base
 # ---------------------------------------------------------------------------
 "${SCRIPT_DIR}/scripts/00-check-system.sh"
+"${SCRIPT_DIR}/scripts/00-xdg-dirs.sh"
 
 # ---------------------------------------------------------------------------
 # 2) Verificar/instalar gum
