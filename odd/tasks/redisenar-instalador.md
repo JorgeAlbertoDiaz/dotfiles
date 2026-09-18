@@ -86,3 +86,17 @@ El usuario reporta que "Aplicar dotfiles al sistema" aparentemente no hace nada 
 ## Autorización
 
 Solo esta feature. No tocar configuraciones de sway ni otros componentes.
+## Ronda 4 — "Ninguna opción seleccionada" al aplicar dotfiles (2026-09-18)
+
+El usuario reporta que al correr `./install.sh` y elegir "Aplicar dotfiles al sistema", sin importar la opción del submenú, sale `[WARN] Ninguna opción seleccionada.`
+
+Causa raíz: el submenú de 04 usaba `gum choose --no-limit` (multi-select). En gum 0.16, con multi-select **Enter no selecciona la opción resaltada** — Enter solo confirma las opciones ya marcadas con espacio/x (footer de la TUI: `x toggle • enter submit`). El usuario (acostumbrado al menú principal single-select donde flechas+Enter seleccionan directo) navega y da Enter → gum devuelve vacío → WARN + exit 1. Por eso pasaba "sin importar la opción".
+
+## Tareas ronda 4
+
+- [x] T15: Selección iterativa single-select — reemplazado `gum choose --no-limit` por un bucle `gum choose` (single-select, mismo comportamiento que el menú principal) con opciones "Todos", cada app, "home" y "(terminar)". Cada Enter agrega la opción resaltada directo; "(terminar)" finaliza; "Todos" corta aplicando todo; dedupe manteniendo orden de elección. El fallback bash ahora muestra "(terminar)" como opción numerada y la ignora como selección.
+- [x] T16: Verificación — bash -n OK; smoke tests con stubs gum (secuencia simulando Enter de la TUI single-select): sway→(terminar) aplica solo sway; "Todos" aplica las 5 apps + home; "(terminar)" directo → WARN Ninguna opción; multi-selección foot+waybar aplica ambos; flujo completo install.sh → "Aplicar dotfiles al sistema" → environment.d → vuelve al menú → "Salir". Fallback bash sin gum: "2 4 6" → environment.d+sway+home (índices del menú de 7 opciones).
+
+## Autorización
+
+Solo esta feature. No tocar configuraciones de sway ni otros componentes.

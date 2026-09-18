@@ -106,36 +106,43 @@ aplicar_app() {
 }
 
 # ---------------------------------------------------------------------------
-# Selección interactiva de componentes (gum multi-select o fallback bash).
-# Guarda el resultado en la variable global SELECCION (no usa stdout, porque
-# el fallback bash imprime el menú por pantalla).
+# Selección interactiva de componentes.
+# Con gum usa un menú iterativo single-select (como el menú principal, donde
+# flechas + Enter seleccionan directo) hasta elegir "(terminar)" o "Todos".
+# Sin gum usa el menú bash numerado. Guarda el resultado en la variable
+# global SELECCION (no usa stdout, porque el fallback bash imprime el menú).
 # ---------------------------------------------------------------------------
 SELECCION=()
 
 seleccionar_apps() {
-  local opciones=("Todos" "${apps[@]}" "home")
-  local elegidos=() filtrados=() item sel
+  local opciones=("Todos" "${apps[@]}" "home" "(terminar)")
+  local elegidos=() sel final=false
 
   if command -v gum &>/dev/null; then
-    if ! sel="$(gum choose --no-limit --height 9 "${opciones[@]}")"; then
-      warn "Ninguna opción seleccionada."
-      exit 1
-    fi
-    mapfile -t elegidos <<< "${sel}"
-    # mapfile + here-string genera un elemento vacío cuando gum devuelve "".
-    filtrados=()
-    for item in "${elegidos[@]}"; do
-      [[ -n "${item}" ]] && filtrados+=("${item}")
+    while true; do
+      sel="$(gum choose --header "¿Qué querés aplicar? Elegí '(terminar)' para finalizar." "${opciones[@]}")" \
+        || { warn "Operación cancelada."; exit 1; }
+      case "${sel}" in
+        "(terminar)")
+          final=true
+          ;;
+        "Todos")
+          elegidos=("Todos")
+          final=true
+          ;;
+        "")
+          warn "Ninguna opción seleccionada."
+          exit 1
+          ;;
+        *)
+          # Evita duplicados manteniendo el orden de elección.
+          if [[ " ${elegidos[*]} " != *" ${sel} "* ]]; then
+            elegidos+=("${sel}")
+          fi
+          ;;
+      esac
+      [[ "${final}" == "true" ]] && break
     done
-    elegidos=("${filtrados[@]}")
-    if [[ ${#elegidos[@]} -eq 0 ]]; then
-      warn "Ninguna opción seleccionada."
-      exit 1
-    fi
-    # "Todos" implica todo el resto.
-    if [[ " ${elegidos[*]} " == *" Todos "* ]]; then
-      elegidos=("Todos")
-    fi
   else
     echo "¿Qué querés aplicar? (t = todos, números separados por espacios, vacío = cancelar)"
     for i in "${!opciones[@]}"; do
@@ -148,13 +155,20 @@ seleccionar_apps() {
     else
       for n in ${sel}; do
         index=$((n - 1))
-        [[ ${index} -ge 0 && ${index} -lt ${#opciones[@]} ]] && elegidos+=("${opciones[$index]}")
+        [[ ${index} -ge 0 && ${index} -lt ${#opciones[@]} ]] || continue
+        [[ "${opciones[$index]}" == "(terminar)" ]] && continue
+        elegidos+=("${opciones[$index]}")
       done
       if [[ ${#elegidos[@]} -eq 0 ]]; then
         error "Selección inválida."
         exit 1
       fi
     fi
+  fi
+
+  if [[ ${#elegidos[@]} -eq 0 ]]; then
+    warn "Ninguna opción seleccionada."
+    exit 1
   fi
   SELECCION=("${elegidos[@]}")
 }
