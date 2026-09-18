@@ -2,6 +2,8 @@
 # 06-network-wifi: conecta a una red WiFi con NetworkManager (nmcli).
 #
 #   - Verifica que nmcli esté disponible.
+#   - Detecta si ya hay una conexión WiFi activa; si es así, pregunta si
+#     se desea cambiar de red (sin volver a pedir la contraseña si no).
 #   - Activa la radio WiFi y rescannea las redes (con sudo: modifica estado).
 #   - Muestra las redes ordenadas por señal (gum choose o select bash).
 #   - Pide la contraseña (gum input --password o read -s) y conecta;
@@ -16,6 +18,32 @@ if ! command -v nmcli &>/dev/null; then
   error "NetworkManager no está instalado (paquete 'NetworkManager' en openSUSE)."
   warn "Instálalo con: sudo zypper -n in NetworkManager"
   exit 1
+fi
+
+# ---------------------------------------------------------------------------
+# 0) Detectar si ya hay una conexión WiFi activa
+#    IN-USE == '*' indica la red actualmente conectada.
+# ---------------------------------------------------------------------------
+current_ssid="$(nmcli -t -f IN-USE,SSID device wifi list 2>/dev/null \
+  | awk -F: '$1 == "*" {print $2; exit}')"
+
+if [[ -n "${current_ssid}" ]]; then
+  ok "Ya estás conectado a la red: ${current_ssid}"
+  cambiar=0
+  if command -v gum &>/dev/null; then
+    if gum confirm --default=false "¿Querés conectarte a otra red WiFi?"; then
+      cambiar=1
+    fi
+  else
+    if confirm "¿Querés conectarte a otra red WiFi?"; then
+      cambiar=1
+    fi
+  fi
+  if [[ ${cambiar} -eq 0 ]]; then
+    ok "Saliendo sin cambiar de red."
+    exit 0
+  fi
+  info "Continuando con el escaneo de redes..."
 fi
 
 # ---------------------------------------------------------------------------

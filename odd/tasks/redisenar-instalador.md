@@ -44,6 +44,7 @@ El usuario quiere una instalación reproducible y granular: obligatorio (base + 
 - Fix NVIDIA (03-nvidia-setup.sh): se eliminó `--auto-agree-with-licenses` (EULA interactiva en pantalla, no auto-aceptada) y se filtra con `rpm -q` los paquetes ya instalados → instala solo pendientes u omite.
 - Fix permisos NetworkManager (06-network-wifi.sh): `radio wifi on`, `rescan` y `connect` ahora van con `as_root` (settings.modify.system = auten; listar redes sigue sin sudo).
 - Fix permisos de ejecución: 06 y 07 estaban en 644 → chmod +x (755).
+- Fix detección de conexión activa (06-network-wifi.sh): si hay una red WiFi en uso (`IN-USE == '*'`), avisa y pregunta si se quiere cambiar; si no, sale sin escanear ni pedir contraseña.
 
 ## Autorización
 
