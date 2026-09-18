@@ -31,16 +31,39 @@ opcion_main=""
 # ---------------------------------------------------------------------------
 "${SCRIPT_DIR}/scripts/01-install-gum.sh"
 
-# Componentes disponibles (grupo -> archivo/script)
-COMPONENTES=(
-  base
-  desktop-sway
-  shell
-  dev
-  nvidia
-  fonts
-  dotfiles
-)
+# ---------------------------------------------------------------------------
+# 3) Menú principal: elegir tipo de instalación
+# ---------------------------------------------------------------------------
+if ! command -v gum &>/dev/null; then
+  warn "gum no está disponible; usando flujo bash simple."
+  GUM_AVAILABLE=false
+  # Modo sin gum: mostramos menú con select y establecemos la opción
+  PS3="> "
+  select opcion_main in "Instalar todo (todos los componentes)" \
+    "Configurar distribución de teclado" \
+    "Configurar red (estática/dhcp)" \
+    "Seleccionar componentes personalizados" \
+    "Salir"; do
+    if [[ -n "${opcion_main}" ]]; then
+      break
+    fi
+    warn "Opción inválida, intente de nuevo."
+  done
+else
+  GUM_AVAILABLE=true
+  # Modo gum: elegimos con gum y guardamos la opción
+  OPCIONES_INSTALL=(
+    "Instalar todo (todos los componentes)"
+    "Configurar distribución de teclado"
+    "Configurar red (estática/dhcp)"
+    "Seleccionar componentes personalizados"
+    "Salir"
+  )
+  if ! opcion_main="$(gum choose --height 5 "${OPCIONES_INSTALL[@]}")"; then
+    warn "Ninguna opción seleccionada."
+    exit 1
+  fi
+fi
 
 run_component() {
   local item="$1"
