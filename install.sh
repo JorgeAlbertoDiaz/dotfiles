@@ -17,6 +17,9 @@ source "${SCRIPT_DIR}/scripts/common.sh"
 
 REPO_DIR="${SCRIPT_DIR}"
 
+# Variable para el menú principal - inicializada con valor por defecto
+opcion_main=""
+
 # ---------------------------------------------------------------------------
 # 1) Verificación de sistema y directorios base
 # ---------------------------------------------------------------------------
