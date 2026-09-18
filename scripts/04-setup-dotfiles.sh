@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
-# 04-setup-dotfiles: copia los dotfiles a ~/.config/<app> (y home/ a $HOME)
-# y cambia la shell por defecto a zsh.
+# 04-setup-dotfiles: aplica dotfiles a ~/.config/<app> (y home/ a $HOME),
+# con selección de componentes y recarga de sway si corresponde.
+#
+# Uso:
+#   ./scripts/04-setup-dotfiles.sh            # menú interactivo de selección
+#   ./scripts/04-setup-dotfiles.sh todos      # aplica todo sin preguntar
+#   ./scripts/04-setup-dotfiles.sh sway waybar home
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -16,13 +21,21 @@ if [[ ! -d "${CONFIG_DIR}" ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# Dependencias de la config referenciada (comando → paquete openSUSE).
-# La config del repo usa binds/comandos que pueden no estar instalados
-# (p.ej. wl-copy con un sway del sistema); se ofrecen antes de copiar.
+# Apps disponibles = subdirectorios de config/ (home/ se maneja aparte).
+# ---------------------------------------------------------------------------
+apps=()
+for app_dir in "${CONFIG_DIR}"/*/; do
+  app="$(basename "${app_dir}")"
+  [[ "${app}" == "home" ]] && continue
+  apps+=("${app}")
+done
+
+# ---------------------------------------------------------------------------
+# Dependencias de la config por app (comando → paquete openSUSE).
 # ---------------------------------------------------------------------------
 DEPENDENCIAS_CONFIG=(
-  "wofi|wofi"
   "wl-copy|wl-clipboard"
+  "wofi|wofi"
   "grim|grim"
   "slurp|slurp"
   "jq|jq"
@@ -34,51 +47,172 @@ DEPENDENCIAS_CONFIG=(
   "bc|bc"
 )
 
-faltantes=()
-for dep in "${DEPENDENCIAS_CONFIG[@]}"; do
-  cmd="${dep%%|*}"
-  pkg="${dep#*|}"
-  if ! command -v "${cmd}" &>/dev/null; then
-    warn "Falta '${cmd}' (paquete '${pkg}') usado por la config del repo."
-    faltantes+=("${pkg}")
-  fi
-done
+# Deps que aplican según qué se copie (todo = lista completa).
+deps_para() {
+  local app="$1"
+  case "${app}" in
+    sway|todos) printf '%s\n' "${DEPENDENCIAS_CONFIG[@]}" ;;
+    *)          return 0 ;;
+  esac
+}
 
-if [[ ${#faltantes[@]} -gt 0 ]]; then
-  if confirm "¿Instalar los paquetes faltantes con zypper (${faltantes[*]})?"; then
-    as_root zypper -n in "${faltantes[@]}"
-    ok "Paquetes instalados: ${faltantes[*]}"
-  else
-    warn "Omitiendo paquetes faltantes; algunos accesos de la config pueden fallar."
-  fi
-fi
+verificar_dependencias() {
+  local app="$1" cmd pkg
+  local faltantes=()
+  while IFS='|' read -r cmd pkg; do
+    [[ -z "${cmd}" ]] && continue
+    if ! command -v "${cmd}" &>/dev/null; then
+      warn "Falta '${cmd}' (paquete '${pkg}') usado por la config del repo."
+      faltantes+=("${pkg}")
+    fi
+  done <<< "$(deps_para "${app}")"
 
-# Copia el contenido de cada app a ~/.config/<app> (excepto home/).
-# customize.sh es una herramienta del repo y no se copia.
-shopt -s nullglob
-for app_dir in "${CONFIG_DIR}"/*/; do
-  app="$(basename "${app_dir}")"
-  [[ "${app}" == "home" ]] && continue
+  if [[ ${#faltantes[@]} -gt 0 ]]; then
+    if confirm "¿Instalar los paquetes faltantes con zypper (${faltantes[*]})?"; then
+      as_root zypper -n in "${faltantes[@]}"
+      ok "Paquetes instalados: ${faltantes[*]}"
+    else
+      warn "Omitiendo paquetes faltantes; algunos accesos de la config pueden fallar."
+    fi
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# Copia una app de config/ a ~/.config/<app> (excepto home/, que va a $HOME).
+# ---------------------------------------------------------------------------
+aplicar_app() {
+  local app="$1"
+  local app_dir dest
+  app_dir="${CONFIG_DIR}/${app}"
+  if [[ "${app}" == "home" ]]; then
+    dest="${HOME_DIR}"
+    if [[ -d "${app_dir}" ]]; then
+      info "Aplicando home → ${HOME_DIR}"
+      for file in "${app_dir}"/* "${app_dir}"/.*; do
+        [[ -f "${file}" ]] || continue
+        cp -a "${file}" "${HOME_DIR}/"
+      done
+      ok "Aplicado home"
+    fi
+    return 0
+  fi
+
   dest="${HOME_DIR}/.config/${app}"
   info "Aplicando ${app} → ~/.config/${app}"
   mkdir -p "${dest}"
-  cp -r "${app_dir}." "${dest}/"
+  cp -r "${app_dir}/." "${dest}/"
   find "${dest}" -name 'customize.sh' -type f -delete
   ok "Aplicado ${app}"
-done
+}
 
-# Los dotfiles de home/ se copian directo a $HOME.
-home_dir="${CONFIG_DIR}/home"
-if [[ -d "${home_dir}" ]]; then
-  info "Aplicando home → ${HOME_DIR}"
-  for file in "${home_dir}"/* "${home_dir}"/.*; do
-    [[ -f "${file}" ]] || continue
-    cp -a "${file}" "${HOME_DIR}/"
+# ---------------------------------------------------------------------------
+# Selección interactiva de componentes (gum multi-select o fallback bash).
+# Guarda el resultado en la variable global SELECCION (no usa stdout, porque
+# el fallback bash imprime el menú por pantalla).
+# ---------------------------------------------------------------------------
+SELECCION=()
+
+seleccionar_apps() {
+  local opciones=("Todos" "${apps[@]}" "home")
+  local elegidos=() filtrados=() item sel
+
+  if command -v gum &>/dev/null; then
+    if ! sel="$(gum choose --no-limit --height 9 "${opciones[@]}")"; then
+      warn "Ninguna opción seleccionada."
+      exit 1
+    fi
+    mapfile -t elegidos <<< "${sel}"
+    # mapfile + here-string genera un elemento vacío cuando gum devuelve "".
+    filtrados=()
+    for item in "${elegidos[@]}"; do
+      [[ -n "${item}" ]] && filtrados+=("${item}")
+    done
+    elegidos=("${filtrados[@]}")
+    if [[ ${#elegidos[@]} -eq 0 ]]; then
+      warn "Ninguna opción seleccionada."
+      exit 1
+    fi
+    # "Todos" implica todo el resto.
+    if [[ " ${elegidos[*]} " == *" Todos "* ]]; then
+      elegidos=("Todos")
+    fi
+  else
+    echo "¿Qué querés aplicar? (t = todos, números separados por espacios, vacío = cancelar)"
+    for i in "${!opciones[@]}"; do
+      printf '  %d) %s\n' "$((i + 1))" "${opciones[$i]}"
+    done
+    read -r -p "Opción(es): " sel
+    [[ -z "${sel}" ]] && { warn "Operación cancelada."; exit 1; }
+    if [[ "${sel}" == "t" || "${sel}" == "todos" ]]; then
+      elegidos=("Todos")
+    else
+      for n in ${sel}; do
+        index=$((n - 1))
+        [[ ${index} -ge 0 && ${index} -lt ${#opciones[@]} ]] && elegidos+=("${opciones[$index]}")
+      done
+      if [[ ${#elegidos[@]} -eq 0 ]]; then
+        error "Selección inválida."
+        exit 1
+      fi
+    fi
+  fi
+  SELECCION=("${elegidos[@]}")
+}
+
+# ---------------------------------------------------------------------------
+# Recarga la config de sway si hay una sesión activa.
+# ---------------------------------------------------------------------------
+recargar_sway() {
+  if ! command -v swaymsg &>/dev/null || ! pgrep -x sway &>/dev/null || [[ -z "${WAYLAND_DISPLAY:-}" ]]; then
+    warn "No hay sesión sway activa; la config de sway se aplicará al reiniciar la sesión."
+    return 0
+  fi
+  if confirm "¿Recargar la configuración de sway ahora?"; then
+    if swaymsg reload; then
+      ok "Configuración de sway recargada."
+    else
+      warn "swaymsg reload falló; revisá la config con: swaymsg -t get_config"
+    fi
+  else
+    info "Recordá recargar después con \$mod+Shift+c o reiniciando la sesión."
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# Resolución de objetivo (argumentos CLI o menú interactivo).
+# ---------------------------------------------------------------------------
+if [[ $# -gt 0 ]]; then
+  elegidos=()
+  for arg in "$@"; do
+    case "${arg}" in
+      todos|all) elegidos=("Todos") ;;
+      home|sway|waybar|foot|environment.d) elegidos+=("${arg}") ;;
+      *) warn "Componente desconocido, ignorado: ${arg}" ;;
+    esac
   done
-  ok "Aplicado home"
+  [[ ${#elegidos[@]} -eq 0 ]] && { error "Sin componentes válidos."; exit 1; }
+else
+  seleccionar_apps
+  elegidos=("${SELECCION[@]}")
 fi
 
-if command -v zsh &>/dev/null; then
+aplicados=()
+if [[ " ${elegidos[*]} " == *" Todos "* ]]; then
+  verificar_dependencias "todos"
+  for app in "${apps[@]}" "home"; do
+    aplicar_app "${app}"
+    aplicados+=("${app}")
+  done
+else
+  for app in "${elegidos[@]}"; do
+    verificar_dependencias "${app}"
+    aplicar_app "${app}"
+    aplicados+=("${app}")
+  done
+fi
+
+# zsh como shell por defecto solo en la instalación completa (todos).
+if [[ " ${elegidos[*]} " == *" Todos "* ]] && command -v zsh &>/dev/null; then
   zsh_path="$(command -v zsh)"
   if [[ "${SHELL}" != *"/zsh" ]]; then
     if confirm "¿Cambiar la shell por defecto a zsh?"; then
@@ -90,8 +224,10 @@ if command -v zsh &>/dev/null; then
   else
     ok "La shell por defecto ya es zsh"
   fi
-else
-  warn "zsh no está instalado; no se cambia la shell (instálalo con shell.txt)"
 fi
+
+for app in "${aplicados[@]}"; do
+  [[ "${app}" == "sway" ]] && recargar_sway
+done
 
 ok "Dotfiles aplicados"

@@ -70,6 +70,19 @@ Problemas reportados probando el instalador en la máquina real:
 
 - **05-install-fonts.sh tenía 9 rutas rotas del layout viejo** (`${CONFIG_DIR}/foot/.config/foot/foot.ini`, etc.) mientras las configs viven en `config/<app>/...` plano → sed exit 2 → el script SIEMPRE terminaba con error al leer `warn_configured_missing`/`current_family`/`current_size`. Corregido a rutas planas; grep confirmó que no quedan rutas anidadas.
 
+## Ronda 3 — aplicar dotfiles con selección y recarga (2026-09-18)
+
+El usuario reporta que "Aplicar dotfiles al sistema" aparentemente no hace nada y no cambia la config de sway. Diagnóstico del orquestador:
+
+- Los archivos SÍ se copiaban (diff idéntico repo ↔ ~/.config/sway/), pero **sway ya estaba corriendo** y el script nunca lo recarga → la config en memoria no cambia. Falta `swaymsg reload` (o reinicio de sesión).
+- El loop copia TODO `config/*/` sin opción de elegir componentes.
+
+## Tareas ronda 3
+
+- [x] T12: Selección de componentes — 04-setup-dotfiles.sh lista las apps disponibles (subdirs de config/ + home) y permite elegir: "Todos" o un subconjunto (sway, waybar, foot, environment.d, home). gum: `choose --no-limit` multi-selección; fallback bash: menú numerado (t = todos, números separados por espacios, vacío = cancelar). Soporta CLI: `04-setup-dotfiles.sh [todos|app...]`. La selección se guarda en la variable global `SELECCION` (no stdout — el fallback imprime el menú por pantalla y mapfile capturaría el menú como opciones).
+- [x] T13: Recarga de sway — tras copiar sway (o todos), detectar sesión sway activa (`command -v swaymsg` + `pgrep -x sway` + `$WAYLAND_DISPLAY`) y ofrecer `swaymsg reload` con confirmación; si no hay sesión, warn de que aplica al reiniciar. El reload es informativo, no reinicia sway.
+- [x] T14: Verificación — bash -n OK; smoke tests con stubs (PATH sin gum real): gum multi-select → solo sway+waybar; fallback "2 3" → environment.d+foot; "4 5" → sway+waybar con confirm de recarga; "t" → todos + confirm de recarga; CLI `home` → solo home; sesión sway ausente → warn sin fallar. Bug encontrado y corregido: `cp -r "${app_dir}."` requiere el glob con barra final (`${app_dir}/.`).
+
 ## Autorización
 
 Solo esta feature. No tocar configuraciones de sway ni otros componentes.
