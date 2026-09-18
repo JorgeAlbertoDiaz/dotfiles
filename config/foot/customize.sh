@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Customiza la fuente de foot en este paquete stow.
+# Customiza la fuente de foot en este directorio.
 # Uso: customize.sh <familia> [tamaño]
 #
 # Reescribe la línea "font=" de foot.ini conservando el resto de opciones.
-# Se ejecuta sobre el archivo del repo; el symlink de stow se actualiza solo.
+# Se ejecuta sobre el archivo del repo; luego copia el archivo al sistema con scripts/04-setup-dotfiles.sh.
 set -euo pipefail
 
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIG_FILE="${APP_DIR}/.config/foot/foot.ini"
+CONFIG_FILE="${APP_DIR}/foot.ini"
 
 family="${1:-}"
 size="${2:-}"

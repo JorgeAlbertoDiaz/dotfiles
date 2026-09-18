@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 04-setup-dotfiles: aplica los dotfiles con GNU Stow (symlinks)
+# 04-setup-dotfiles: copia los dotfiles a ~/.config/<app> (y home/ a $HOME)
 # y cambia la shell por defecto a zsh.
 set -euo pipefail
 
@@ -15,21 +15,30 @@ if [[ ! -d "${CONFIG_DIR}" ]]; then
   exit 1
 fi
 
-if ! command -v stow &>/dev/null; then
-  info "GNU Stow no está instalado. Instalando..."
-  as_root zypper -n in stow
+# Copia el contenido de cada app a ~/.config/<app> (excepto home/).
+# customize.sh es una herramienta del repo y no se copia.
+shopt -s nullglob
+for app_dir in "${CONFIG_DIR}"/*/; do
+  app="$(basename "${app_dir}")"
+  [[ "${app}" == "home" ]] && continue
+  dest="${HOME_DIR}/.config/${app}"
+  info "Aplicando ${app} → ~/.config/${app}"
+  mkdir -p "${dest}"
+  cp -r "${app_dir}." "${dest}/"
+  find "${dest}" -name 'customize.sh' -type f -delete
+  ok "Aplicado ${app}"
+done
+
+# Los dotfiles de home/ se copian directo a $HOME.
+home_dir="${CONFIG_DIR}/home"
+if [[ -d "${home_dir}" ]]; then
+  info "Aplicando home → ${HOME_DIR}"
+  for file in "${home_dir}"/* "${home_dir}"/.*; do
+    [[ -f "${file}" ]] || continue
+    cp -a "${file}" "${HOME_DIR}/"
+  done
+  ok "Aplicado home"
 fi
-
-mapfile -t packages < <(find "${CONFIG_DIR}" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort)
-
-if [[ ${#packages[@]} -eq 0 ]]; then
-  warn "No hay paquetes de configuración en ${CONFIG_DIR}"
-  exit 1
-fi
-
-info "Aplicando dotfiles con stow: ${packages[*]}"
-stow -v -d "${CONFIG_DIR}" -t "${HOME_DIR}" --ignore='^customize\.sh$' "${packages[@]}"
-ok "Dotfiles aplicados con symlinks"
 
 if command -v zsh &>/dev/null; then
   zsh_path="$(command -v zsh)"
@@ -47,4 +56,4 @@ else
   warn "zsh no está instalado; no se cambia la shell (instálalo con shell.txt)"
 fi
 
-ok "Configuración de dotfiles completada"
+ok "Dotfiles aplicados"

@@ -19,7 +19,7 @@ Este repositorio no solo guarda dotfiles: incluye un instalador que prepara un s
 | `install.sh` | Orquestador principal con interfaz TUI (gum) |
 | `scripts/` | Scripts individuales, ejecutables de forma independiente |
 | `packages/` | Archivos `.txt` planos con paquetes zypper (1 por línea) |
-| `config/` | Configuraciones organizadas como paquetes stow (`target/` por app) |
+| `config/` | Configuraciones de copia directa (cada app a `~/.config/<app>`) |
 | `docs/` | Documentación y diagramas (Mermaid en `.mmd`) |
 
 ### `packages/`
@@ -36,21 +36,22 @@ empiezan por `#` se ignoran.
 | `shell.txt` | Shell, terminal y editor |
 | `dev.txt` | Herramientas de desarrollo |
 
-### `config/` (stow)
+### `config/` (copia directa)
 
-Cada subdirectorio de `config/` es un *package* para GNU Stow. Al ejecutar
-`stow -d config -t $HOME <package>` se crean symlinks, de modo que la fuente
-de verdad es este repositorio. Los `customize.sh` que conviven con cada app
-son ignorados por stow (`--ignore='^customize\.sh$'`) y se ejecutan desde
-`05-install-fonts.sh` para personalizar la fuente (familia y tamaño).
+`config/` no usa GNU Stow. Cada subdirectorio de `config/` (excepto
+`home/`) se copia tal cual a `~/.config/<app>/`; `home/` se copia a
+`$HOME`. La fuente de verdad es el repo y `04-setup-dotfiles.sh` la
+aplica al sistema. Los `customize.sh` que conviven con cada app no se
+copian: se ejecutan desde `05-install-fonts.sh` para personalizar la
+fuente (familia y tamaño) sobre los archivos del repo.
 
 ```text
 config/
-├── home/                      # .bashrc, .zshrc, .gitconfig, .inputrc, .profile
-├── sway/.config/sway/         # config del compositor (+ customize.sh)
-├── foot/.config/foot/         # terminal foot (+ customize.sh)
-├── waybar/.config/waybar/     # barra de estado (+ style.css y customize.sh)
-└── environment.d/.config/     # variables de entorno (nvidia.conf)
+├── home/                      # .bashrc, .zshrc, .gitconfig, .inputrc, .profile → $HOME
+├── sway/                      # config + config.d/ (+ customize.sh) → ~/.config/sway
+├── foot/                      # foot.ini (+ customize.sh) → ~/.config/foot
+├── waybar/                    # config, style.css (+ customize.sh) → ~/.config/waybar
+└── environment.d/             # nvidia.conf → ~/.config/environment.d
 ```
 
 ## Requisitos
@@ -77,7 +78,7 @@ El instalador:
 4. Muestra un menú interactivo multi-selección de componentes (incluye
    `fonts`, para Nerd Fonts).
 5. Instala paquetes, configura NVIDIA, instala/configura Nerd Fonts y aplica
-   los dotfiles con stow.
+   los dotfiles (copia directa a `~/.config/<app>`).
 
 ### Componente `fonts`
 
@@ -88,9 +89,9 @@ entrada personalizada), las descarga por familia desde `ryanoasis/nerd-fonts`
 a `~/.local/share/fonts` (sin sudo) y refresca `fc-cache`.
 
 Después permite elegir, para cada aplicación con `customize.sh` (foot, sway,
-waybar), qué fuente y tamaño aplicar; los cambios quedan en el repo y el
-symlink de stow los refleja al instante. Si una fuente configurada falta,
-fontconfig usará un fallback (p. ej. DejaVu Sans Mono).
+waybar), qué fuente y tamaño aplicar; los cambios quedan en el repo y
+`04-setup-dotfiles.sh` los copia al aplicarlos. Si una fuente configurada
+falta, fontconfig usará un fallback (p. ej. DejaVu Sans Mono).
 
 > 💡 Si `gum` no pudiera instalarse (p. ej. sin red), `install.sh` usa un
 > flujo de confirmación simple con bash.
