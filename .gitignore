@@ -8,3 +8,6 @@
 
 # Sistema
 .DS_Store
+
+# Directorio ATL (configuración interna del agente)
+.atl/
