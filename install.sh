@@ -41,19 +41,25 @@ COMPONENTES=(
 
 run_component() {
   local item="$1"
-  info "Ejecutando componente: ${item}"
+  info "Procesando componente: ${item}"
+  
   case "${item}" in
     base|desktop-sway|shell|dev)
       "${SCRIPT_DIR}/scripts/02-install-packages.sh" "${item}.txt"
+      # Mostrar resumen después de instalar paquetes
+      info "Finalizado: ${item}"
       ;;
     nvidia)
       "${SCRIPT_DIR}/scripts/03-nvidia-setup.sh"
+      info "Finalizado: configuración NVIDIA"
       ;;
     fonts)
       "${SCRIPT_DIR}/scripts/05-install-fonts.sh"
+      info "Finalizado: configuración de fuentes"
       ;;
     dotfiles)
       "${SCRIPT_DIR}/scripts/04-setup-dotfiles.sh"
+      info "Finalizado: aplicación de dotfiles"
       ;;
     *)
       warn "Componente desconocido: ${item}"
