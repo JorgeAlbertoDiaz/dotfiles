@@ -119,31 +119,43 @@ select_fallback() {
 }
 
 # ---------------------------------------------------------------------------
-# 4) Ejecución
+# 4) Ejecución: según la opción del menú principal
 # ---------------------------------------------------------------------------
-if command -v gum &>/dev/null; then
-  if ! select_gum; then
-    exit 1
+
+# Si el usuario eligió "Seleccionar componentes personalizados", usar el
+# menú interactivo existente. Caso contrario, sel queda vacío y se saltea la
+# fase de selección de componentes.
+if [[ "${opcion_main}" == "Seleccionar componentes personalizados" || "${opcion_main}" == "Instalar todo (todos los componentes)" ]]; then
+  if command -v gum &>/dev/null; then
+    if ! select_gum; then
+      exit 1
+    fi
+  else
+    warn "gum no está disponible; usando flujo bash simple."
+    select_fallback
   fi
-else
-  warn "gum no está disponible; usando flujo bash simple."
-  select_fallback
+
+  # Si se eligieron fonts y dotfiles, se procesan fonts primero para que la
+  # config enlazada por stow ya traiga la fuente seleccionada.
+  if [[ " ${sel[*]} " == *" dotfiles "* && " ${sel[*]} " == *" fonts "* ]]; then
+    ordered=()
+    for item in "${sel[@]}"; do
+      [[ "${item}" == "dotfiles" ]] && continue
+      ordered+=("${item}")
+    done
+    ordered+=("dotfiles")
+    sel=("${ordered[@]}")
+  fi
 fi
 
-# Si se eligieron fonts y dotfiles, se procesan fonts primero para que la
-# config enlazada por stow ya traiga la fuente seleccionada.
-if [[ " ${sel[*]} " == *" dotfiles "* && " ${sel[*]} " == *" fonts "* ]]; then
-  ordered=()
-  for item in "${sel[@]}"; do
-    [[ "${item}" == "dotfiles" ]] && continue
-    ordered+=("${item}")
-  done
-  ordered+=("dotfiles")
-  sel=("${ordered[@]}")
-fi
-
+# Ejecutar los componentes seleccionados
 for item in "${sel[@]}"; do
   run_component "${item}"
 done
 
-ok "¡Instalación completada! Reinicia la sesión o el sistema según sea necesario."
+# Mensaje de conclusión
+if [[ ${#sel[@]} -eq 0 ]]; then
+  ok "No se seleccionaron componentes. Instalación finalizada."
+else
+  ok "¡Instalación completada! Reinicia la sesión o el sistema según sea necesario."
+fi
