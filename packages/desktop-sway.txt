@@ -15,6 +15,7 @@ brightnessctl
 playerctl
 pavucontrol
 NetworkManager-applet
+thunar
 wob
 kanshi
 feh
