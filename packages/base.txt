@@ -14,3 +14,6 @@ ripgrep
 fzf
 bc
 inotify-tools
+figlet
+openssh
+speedtest-cli
