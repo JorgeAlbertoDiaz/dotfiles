@@ -108,9 +108,24 @@ fi
 [[ "${elegida}" == "Cancelar" ]] && { warn "Operación cancelada."; exit 0; }
 
 idx=""
-for i in "${!nombres[@]}"; do
-  [[ "${nombres[$i]}" == "${elegida}" ]] && idx="${i}"
-done
+if command -v gum &>/dev/null; then
+  # Con gum la opción elegida es la cadena formateada ("Nombre  (tipo)"), no el
+  # nombre crudo; buscarla en opciones (mismos índices que nombres; "Cancelar"
+  # es un argumento literal del menú y se descartó antes).
+  for i in "${!opciones[@]}"; do
+    if [[ "${opciones[$i]}" == "${elegida}" ]]; then
+      idx="${i}"
+      break
+    fi
+  done
+else
+  for i in "${!nombres[@]}"; do
+    if [[ "${nombres[$i]}" == "${elegida}" ]]; then
+      idx="${i}"
+      break
+    fi
+  done
+fi
 if [[ -z "${idx}" ]]; then
   error "No se pudo identificar la conexión elegida."
   exit 1

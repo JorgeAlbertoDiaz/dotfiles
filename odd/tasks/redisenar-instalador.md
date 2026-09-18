@@ -46,6 +46,30 @@ El usuario quiere una instalación reproducible y granular: obligatorio (base + 
 - Fix permisos de ejecución: 06 y 07 estaban en 644 → chmod +x (755).
 - Fix detección de conexión activa (06-network-wifi.sh): si hay una red WiFi en uso (`IN-USE == '*'`), avisa y pregunta si se quiere cambiar; si no, sale sin escanear ni pedir contraseña.
 
+## Ronda 2 — reportes del usuario (2026-09-18)
+
+Problemas reportados probando el instalador en la máquina real:
+
+- **wl-clipboard**: esta máquina tiene sway del sistema (openSUSEway), no vino del instalador → al aplicar dotfiles, los binds que usan `wl-copy` fallan porque el paquete no está. `wl-clipboard` ya está en `packages/desktop-sway.txt`, pero nadie verifica dependencias al aplicar la config.
+- **Nerd Fonts**: la URL de descarga salió `.../v3.5.1/.zip` (asset vacío) → curl 404 → el flujo muestra "Fallo al descargar" y WARN "No se encontró ''". Causa raíz: `mapfile -t chosen <<< "${selected}"` con selección gum vacía crea un array con UN elemento vacío, y el guard `[[ ${#chosen[@]} -eq 0 ]]` no lo detecta → `asset ""` → URL rota.
+- **Elegir fuentes interactivamente**: no hay opción en el menú principal para instalar fuentes elegidas; solo existe como componente de "todo"/selección.
+- **Aplicar dotfiles al sistema**: no hay opción directa en el menú; "Dotfiles" solo es componente de la instalación.
+- **Red estática/DHCP**: con gum, `elegida` es la cadena formateada `"Nombre  (tipo)"` pero el lookup compara contra `nombres[$i]` crudo → "No se pudo identificar la conexión elegida." siempre que hay conexiones listadas.
+- **Verbosidad**: los 00-check-system, 00-xdg-dirs y 01-install-gum imprimen [OK]/[INFO] en cada arranque del menú; el usuario quiere solo feedback cuando hay algo que HACER (instalar gum, crear directorios), no en el happy path.
+
+## Tareas ronda 2
+
+- [x] T6: Fix fuentes — filtrar elementos vacíos de la selección gum en `select_families_install()`; validar assets no vacíos en `install_assets()` antes de armar la URL; `installed_asset ""` → false. (Plus: `<mapfile + here-string>` produce un elemento vacío con selección vacía; filtrado con array auxiliar.)
+- [x] T7: Fix red — en 07-network-config.sh, lookup por índice contra `opciones` (formateadas) cuando hay gum y contra `nombres` (crudos) en el flujo bash; `break` al primer match. Desviación del writer respecto al plan (`elegida%%  (*`): equivalente y más simple.
+- [x] T8: Dependencias al aplicar dotfiles — 04-setup-dotfiles.sh verifica 11 comandos de la config (wl-copy, wofi, grim, slurp, jq, swaylock, swaync, playerctl, pamixer, brightnessctl, bc) con `command -v` y ofrece `as_root zypper -n in` con confirmación; decline no aborta.
+- [x] T9: Menú install.sh — opciones directas con `continue` para "Instalar fuentes Nerd Fonts" (05) y "Aplicar dotfiles al sistema" (04); caso bash select actualizado; `--height 7`.
+- [x] T10: Verbosidad — common.sh `QUIET=${QUIET:-0}` gatea info/ok; `ensure_xdg_dirs` crea dirs con `QUIET=0` override (visible incluso silenciado, porque crear es "algo que hacer"); 00s y 01 aceptan `--quiet`; install.sh los invoca con `--quiet`.
+- [x] T11: Verificación — bash -n OK en los 8 scripts tocados; smoke tests del orquestador con stubs: selección vacía de fuentes → WARN sin descargar; 07 lookup con gum y sin gum → identifica conexión, flujo DHCP llega a sudo; menú con --quiet silencioso, crear-dirs visible; `00-xdg-dirs --quiet` segunda corrida silenciosa.
+
+## Fix extra del writer (validado en T11)
+
+- **05-install-fonts.sh tenía 9 rutas rotas del layout viejo** (`${CONFIG_DIR}/foot/.config/foot/foot.ini`, etc.) mientras las configs viven en `config/<app>/...` plano → sed exit 2 → el script SIEMPRE terminaba con error al leer `warn_configured_missing`/`current_family`/`current_size`. Corregido a rutas planas; grep confirmó que no quedan rutas anidadas.
+
 ## Autorización
 
 Solo esta feature. No tocar configuraciones de sway ni otros componentes.

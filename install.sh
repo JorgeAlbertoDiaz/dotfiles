@@ -11,6 +11,8 @@
 #      - Seleccionar componentes (multi-selección)
 #      - Conectar a red WiFi (scripts/06-network-wifi.sh)
 #      - Configurar red — estática/DHCP (scripts/07-network-config.sh)
+#      - Instalar fuentes Nerd Fonts (scripts/05-install-fonts.sh)
+#      - Aplicar dotfiles al sistema (scripts/04-setup-dotfiles.sh)
 #      - Salir
 #   5. Instala los componentes obligatorios (base, shell) y los opcionales
 #      elegidos, ejecutando los scripts correspondientes en el orden correcto.
@@ -39,13 +41,13 @@ COMPONENTES=(
 # ---------------------------------------------------------------------------
 # 1) Verificación de sistema y directorios base
 # ---------------------------------------------------------------------------
-"${SCRIPT_DIR}/scripts/00-check-system.sh"
-"${SCRIPT_DIR}/scripts/00-xdg-dirs.sh"
+"${SCRIPT_DIR}/scripts/00-check-system.sh" --quiet
+"${SCRIPT_DIR}/scripts/00-xdg-dirs.sh" --quiet
 
 # ---------------------------------------------------------------------------
 # 2) Verificar/instalar gum
 # ---------------------------------------------------------------------------
-"${SCRIPT_DIR}/scripts/01-install-gum.sh"
+"${SCRIPT_DIR}/scripts/01-install-gum.sh" --quiet
 
 # ---------------------------------------------------------------------------
 # Ejecuta un componente dado su nombre legible.
@@ -109,7 +111,8 @@ run_component() {
 
 # ---------------------------------------------------------------------------
 # 3) Menú principal en bucle
-#     Las opciones 3 y 4 ejecutan su script y vuelven al menú.
+#     Las opciones de red y los accesos directos (fuentes/dotfiles) ejecutan
+#     su script y vuelven al menú.
 # ---------------------------------------------------------------------------
 while true; do
   if command -v gum &>/dev/null; then
@@ -118,9 +121,11 @@ while true; do
       "Seleccionar componentes"
       "Conectar a red WiFi"
       "Configurar red (estática/DHCP)"
+      "Instalar fuentes Nerd Fonts"
+      "Aplicar dotfiles al sistema"
       "Salir"
     )
-    if ! opcion_main="$(gum choose --height 6 "${OPCIONES_MENU[@]}")"; then
+    if ! opcion_main="$(gum choose --height 7 "${OPCIONES_MENU[@]}")"; then
       warn "Ninguna opción seleccionada."
       exit 1
     fi
@@ -132,6 +137,8 @@ while true; do
       "Seleccionar componentes" \
       "Conectar a red WiFi" \
       "Configurar red (estática/DHCP)" \
+      "Instalar fuentes Nerd Fonts" \
+      "Aplicar dotfiles al sistema" \
       "Salir"; do
       [[ -n "${opcion_main}" ]] && break
       warn "Opción inválida, intente de nuevo."
@@ -153,6 +160,14 @@ while true; do
       ;;
     "Configurar red (estática/DHCP)")
       "${SCRIPT_DIR}/scripts/07-network-config.sh"
+      continue
+      ;;
+    "Instalar fuentes Nerd Fonts")
+      "${SCRIPT_DIR}/scripts/05-install-fonts.sh"
+      continue
+      ;;
+    "Aplicar dotfiles al sistema")
+      "${SCRIPT_DIR}/scripts/04-setup-dotfiles.sh"
       continue
       ;;
     "Salir")

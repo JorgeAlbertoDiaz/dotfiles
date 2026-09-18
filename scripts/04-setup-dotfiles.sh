@@ -15,6 +15,44 @@ if [[ ! -d "${CONFIG_DIR}" ]]; then
   exit 1
 fi
 
+# ---------------------------------------------------------------------------
+# Dependencias de la config referenciada (comando → paquete openSUSE).
+# La config del repo usa binds/comandos que pueden no estar instalados
+# (p.ej. wl-copy con un sway del sistema); se ofrecen antes de copiar.
+# ---------------------------------------------------------------------------
+DEPENDENCIAS_CONFIG=(
+  "wofi|wofi"
+  "wl-copy|wl-clipboard"
+  "grim|grim"
+  "slurp|slurp"
+  "jq|jq"
+  "swaylock|swaylock"
+  "swaync|swaync"
+  "playerctl|playerctl"
+  "pamixer|pamixer"
+  "brightnessctl|brightnessctl"
+  "bc|bc"
+)
+
+faltantes=()
+for dep in "${DEPENDENCIAS_CONFIG[@]}"; do
+  cmd="${dep%%|*}"
+  pkg="${dep#*|}"
+  if ! command -v "${cmd}" &>/dev/null; then
+    warn "Falta '${cmd}' (paquete '${pkg}') usado por la config del repo."
+    faltantes+=("${pkg}")
+  fi
+done
+
+if [[ ${#faltantes[@]} -gt 0 ]]; then
+  if confirm "¿Instalar los paquetes faltantes con zypper (${faltantes[*]})?"; then
+    as_root zypper -n in "${faltantes[@]}"
+    ok "Paquetes instalados: ${faltantes[*]}"
+  else
+    warn "Omitiendo paquetes faltantes; algunos accesos de la config pueden fallar."
+  fi
+fi
+
 # Copia el contenido de cada app a ~/.config/<app> (excepto home/).
 # customize.sh es una herramienta del repo y no se copia.
 shopt -s nullglob

@@ -12,10 +12,13 @@ readonly YELLOW='\033[0;33m'
 readonly BLUE='\033[0;34m'
 readonly CYAN='\033[0;36m'
 
-info()  { printf "${CYAN}[INFO]${RESET} %s\n" "$*"; }
+# QUIET=1 suprime info/ok (warn/error siempre visibles).
+QUIET=${QUIET:-0}
+
+info()  { [[ ${QUIET} -eq 1 ]] || printf "${CYAN}[INFO]${RESET} %s\n" "$*"; }
 warn()  { printf "${YELLOW}[WARN]${RESET} %s\n" "$*"; }
 error() { printf "${RED}[ERROR]${RESET} %s\n" "$*" >&2; }
-ok()    { printf "${GREEN}[OK]${RESET} %s\n" "$*"; }
+ok()    { [[ ${QUIET} -eq 1 ]] || printf "${GREEN}[OK]${RESET} %s\n" "$*"; }
 
 # Ejecuta un comando como root (directo si ya es root, con sudo si no).
 as_root() {
@@ -84,9 +87,10 @@ ensure_xdg_dirs() {
     if [[ -d "${dir}" ]]; then
       ok "${dir} (${name}) existe"
     else
-      info "${dir} (${name}) no existe; creando..."
+      # Crear un directorio es "algo que hacer": visible incluso con QUIET=1.
+      QUIET=0 info "${dir} (${name}) no existe; creando..."
       mkdir -p "${dir}"
-      ok "${dir} (${name}) creado"
+      QUIET=0 ok "${dir} (${name}) creado"
     fi
   done <<< "$(xdg_dirs)"
 

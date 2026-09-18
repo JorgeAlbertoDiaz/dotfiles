@@ -165,7 +165,7 @@ ask_size() {
 # ---------------------------------------------------------------------------
 
 select_families_install() {
-  local labels=() chosen=() entry label asset line custom
+  local labels=() chosen=() entry label asset line custom filtered
   for entry in "${CANDIDATAS[@]}"; do
     labels+=("${entry%%|*}")
   done
@@ -178,6 +178,13 @@ select_families_install() {
       return 1
     fi
     mapfile -t chosen <<< "${selected}"
+    # mapfile + here-string genera UN elemento vacío cuando gum devuelve ""
+    # (Enter sin seleccionar); filtrarlo para que el check de vacío sea real.
+    filtered=()
+    for item in "${chosen[@]}"; do
+      [[ -n "${item}" ]] && filtered+=("${item}")
+    done
+    chosen=("${filtered[@]}")
     if command -v gum &>/dev/null && confirm "¿Instalar también otra familia personalizada?"; then
       if custom="$(gum input --prompt "Asset de nerd-fonts (ej. Iosevka): " 2>/dev/null)"; then
         [[ -n "${custom}" ]] && chosen+=("${custom}")
@@ -235,6 +242,7 @@ install_assets() {
   download_dir="$(downloads_dir)"
 
   for asset in "$@"; do
+    [[ -z "${asset}" ]] && continue
     target="${fonts}/${asset}"
     if installed_asset "${asset}"; then
       ok "Ya instalada: ${asset}"
@@ -261,6 +269,7 @@ install_assets() {
 
 installed_asset() {
   local asset="$1"
+  [[ -z "${asset}" ]] && return 1
   fc-list 2>/dev/null | cut -d: -f2 | rg -qi "${asset}" && return 0
   return 1
 }
@@ -281,9 +290,9 @@ warn_configured_missing() {
   fams="$(fc-list 2>/dev/null | cut -d: -f2 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sort -u)"
   local cfg missing=0
 
-  cfg="$(sed -nE 's/^font=([^:]+).*/\1/p' "${CONFIG_DIR}/foot/.config/foot/foot.ini" 2>/dev/null)"
-  cfg="${cfg}"$'\n'"$(sed -nE '/^font pango:/{s/^font pango:(.+)/\1/;s/ [0-9]+$//;p}' "${CONFIG_DIR}/sway/.config/sway/config" 2>/dev/null | head -n1)"
-  cfg="${cfg}"$'\n'"$(sed -nE 's/^[[:space:]]*font-family: "([^"]+)";/\1/p' "${CONFIG_DIR}/waybar/.config/waybar/style.css" 2>/dev/null | head -n1)"
+  cfg="$(sed -nE 's/^font=([^:]+).*/\1/p' "${CONFIG_DIR}/foot/foot.ini" 2>/dev/null)"
+  cfg="${cfg}"$'\n'"$(sed -nE '/^font pango:/{s/^font pango:(.+)/\1/;s/ [0-9]+$//;p}' "${CONFIG_DIR}/sway/config" 2>/dev/null | head -n1)"
+  cfg="${cfg}"$'\n'"$(sed -nE 's/^[[:space:]]*font-family: "([^"]+)";/\1/p' "${CONFIG_DIR}/waybar/style.css" 2>/dev/null | head -n1)"
 
   declare -A warned=()
   local fam
@@ -306,9 +315,9 @@ warn_configured_missing() {
 current_family() {
   local app="$1"
   case "${app}" in
-    foot)   sed -nE 's/^font=([^:]+).*/\1/p' "${CONFIG_DIR}/foot/.config/foot/foot.ini" | head -n1 ;;
-    sway)   sed -nE '/^font pango:/{s/^font pango:(.+)/\1/;s/ [0-9]+$//;p}' "${CONFIG_DIR}/sway/.config/sway/config" | head -n1 ;;
-    waybar) sed -nE 's/^[[:space:]]*font-family: "([^"]+)";/\1/p' "${CONFIG_DIR}/waybar/.config/waybar/style.css" | head -n1 ;;
+    foot)   sed -nE 's/^font=([^:]+).*/\1/p' "${CONFIG_DIR}/foot/foot.ini" | head -n1 ;;
+    sway)   sed -nE '/^font pango:/{s/^font pango:(.+)/\1/;s/ [0-9]+$//;p}' "${CONFIG_DIR}/sway/config" | head -n1 ;;
+    waybar) sed -nE 's/^[[:space:]]*font-family: "([^"]+)";/\1/p' "${CONFIG_DIR}/waybar/style.css" | head -n1 ;;
     *)      printf '' ;;
   esac
 }
@@ -316,9 +325,9 @@ current_family() {
 current_size() {
   local app="$1"
   case "${app}" in
-    foot)   sed -nE 's/^font=.*:size=([0-9]+)$/\1/p' "${CONFIG_DIR}/foot/.config/foot/foot.ini" | head -n1 ;;
-    sway)   sed -nE 's/^font pango:.* ([0-9]+)$/\1/p' "${CONFIG_DIR}/sway/.config/sway/config" | head -n1 ;;
-    waybar) sed -nE 's/font-size: ([0-9]+)px;/\1/p' "${CONFIG_DIR}/waybar/.config/waybar/style.css" | head -n1 ;;
+    foot)   sed -nE 's/^font=.*:size=([0-9]+)$/\1/p' "${CONFIG_DIR}/foot/foot.ini" | head -n1 ;;
+    sway)   sed -nE 's/^font pango:.* ([0-9]+)$/\1/p' "${CONFIG_DIR}/sway/config" | head -n1 ;;
+    waybar) sed -nE 's/font-size: ([0-9]+)px;/\1/p' "${CONFIG_DIR}/waybar/style.css" | head -n1 ;;
     *)      printf '' ;;
   esac
 }

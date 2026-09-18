@@ -6,6 +6,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/common.sh"
 
+# --quiet suprime los mensajes de happy path (info/ok); warn/error siempre salen.
+for arg in "$@"; do
+  [[ "${arg}" == "--quiet" ]] && QUIET=1
+done
+
 if command -v gum &>/dev/null; then
   ok "gum ya está instalado: $(gum --version)"
   exit 0
