@@ -6,8 +6,14 @@
 #   1. Verifica que el sistema es openSUSE Tumbleweed.
 #   2. Verifica y crea los directorios base XDG y de descargas.
 #   3. Verifica (e instala si falta) gum para la interfaz TUI.
-#   4. Muestra un menú interactivo para elegir componentes.
-#   5. Ejecuta los scripts correspondientes.
+#   4. Muestra un menú principal en bucle:
+#      - Instalación completa (todos los componentes)
+#      - Seleccionar componentes (multi-selección)
+#      - Conectar a red WiFi (scripts/06-network-wifi.sh)
+#      - Configurar red — estática/DHCP (scripts/07-network-config.sh)
+#      - Salir
+#   5. Instala los componentes obligatorios (base, shell) y los opcionales
+#      elegidos, ejecutando los scripts correspondientes en el orden correcto.
 #
 # Si gum no puede instalarse, usa un flujo bash simple como fallback.
 set -euo pipefail
@@ -17,8 +23,18 @@ source "${SCRIPT_DIR}/scripts/common.sh"
 
 REPO_DIR="${SCRIPT_DIR}"
 
-# Variable para el menú principal - inicializada con valor por defecto
-opcion_main=""
+# Componentes opcionales (las obligatorios: base, shell — siempre se instalan).
+COMPONENTES=(
+  "Escritorio Sway"
+  "Nerd Fonts"
+  "NVIDIA"
+  "Dev Core"
+  "Dev PHP"
+  "Dev Rust"
+  "Dev Python"
+  "Dev Angular/Node"
+  "Dotfiles"
+)
 
 # ---------------------------------------------------------------------------
 # 1) Verificación de sistema y directorios base
@@ -32,58 +48,56 @@ opcion_main=""
 "${SCRIPT_DIR}/scripts/01-install-gum.sh"
 
 # ---------------------------------------------------------------------------
-# 3) Menú principal: elegir tipo de instalación
+# Ejecuta un componente dado su nombre legible.
 # ---------------------------------------------------------------------------
-if ! command -v gum &>/dev/null; then
-  warn "gum no está disponible; usando flujo bash simple."
-  GUM_AVAILABLE=false
-  # Modo sin gum: mostramos menú con select y establecemos la opción
-  PS3="> "
-  select opcion_main in "Instalar todo (todos los componentes)" \
-    "Configurar distribución de teclado" \
-    "Configurar red (estática/dhcp)" \
-    "Seleccionar componentes personalizados" \
-    "Salir"; do
-    if [[ -n "${opcion_main}" ]]; then
-      break
-    fi
-    warn "Opción inválida, intente de nuevo."
-  done
-else
-  GUM_AVAILABLE=true
-  # Modo gum: elegimos con gum y guardamos la opción
-  OPCIONES_INSTALL=(
-    "Instalar todo (todos los componentes)"
-    "Configurar distribución de teclado"
-    "Configurar red (estática/dhcp)"
-    "Seleccionar componentes personalizados"
-    "Salir"
-  )
-  if ! opcion_main="$(gum choose --height 5 "${OPCIONES_INSTALL[@]}")"; then
-    warn "Ninguna opción seleccionada."
-    exit 1
-  fi
-fi
-
 run_component() {
   local item="$1"
   info "Procesando componente: ${item}"
-  
+
   case "${item}" in
-    base|desktop-sway|shell|dev)
+    base|shell)
       "${SCRIPT_DIR}/scripts/02-install-packages.sh" "${item}.txt"
-      # Mostrar resumen después de instalar paquetes
       info "Finalizado: ${item}"
       ;;
-    nvidia)
+    "Escritorio Sway")
+      "${SCRIPT_DIR}/scripts/02-install-packages.sh" desktop-sway.txt
+      info "Finalizado: Escritorio Sway"
+      ;;
+    "NVIDIA")
       "${SCRIPT_DIR}/scripts/03-nvidia-setup.sh"
       info "Finalizado: configuración NVIDIA"
       ;;
-    fonts)
-      "${SCRIPT_DIR}/scripts/05-install-fonts.sh"
-      info "Finalizado: configuración de fuentes"
+    "Nerd Fonts")
+      "${SCRIPT_DIR}/scripts/05-install-fonts.sh" --install-only
+      info "Finalizado: instalación de fuentes"
       ;;
-    dotfiles)
+    "Dev Core")
+      "${SCRIPT_DIR}/scripts/02-install-packages.sh" dev-core.txt
+      info "Finalizado: Dev Core"
+      ;;
+    "Dev PHP")
+      "${SCRIPT_DIR}/scripts/02-install-packages.sh" dev-php.txt
+      info "Finalizado: Dev PHP"
+      ;;
+    "Dev Rust")
+      "${SCRIPT_DIR}/scripts/02-install-packages.sh" dev-rust.txt
+      info "Finalizado: Dev Rust"
+      ;;
+    "Dev Python")
+      "${SCRIPT_DIR}/scripts/02-install-packages.sh" dev-python.txt
+      info "Finalizado: Dev Python"
+      ;;
+    "Dev Angular/Node")
+      "${SCRIPT_DIR}/scripts/02-install-packages.sh" dev-angular.txt
+      if confirm "¿Instalar también el CLI de Angular globalmente (npm install -g @angular/cli)?"; then
+        as_root npm install -g @angular/cli
+        ok "Angular CLI instalado globalmente"
+      else
+        warn "Omitiendo la instalación del Angular CLI"
+      fi
+      info "Finalizado: Dev Angular/Node"
+      ;;
+    "Dotfiles")
       "${SCRIPT_DIR}/scripts/04-setup-dotfiles.sh"
       info "Finalizado: aplicación de dotfiles"
       ;;
@@ -94,94 +108,175 @@ run_component() {
 }
 
 # ---------------------------------------------------------------------------
-# 3) Menú interactivo (gum)
+# 3) Menú principal en bucle
+#     Las opciones 3 y 4 ejecutan su script y vuelven al menú.
 # ---------------------------------------------------------------------------
-select_gum() {
-  local selected
-  if ! selected="$(gum choose --no-limit --height 12 \
-      --header "Selecciona los componentes a instalar (Espacio=seleccionar, Enter=continuar):" \
-      "${COMPONENTES[@]}")"; then
-    warn "No se seleccionó ningún componente."
-    return 1
+while true; do
+  if command -v gum &>/dev/null; then
+    OPCIONES_MENU=(
+      "Instalación completa (todo)"
+      "Seleccionar componentes"
+      "Conectar a red WiFi"
+      "Configurar red (estática/DHCP)"
+      "Salir"
+    )
+    if ! opcion_main="$(gum choose --height 6 "${OPCIONES_MENU[@]}")"; then
+      warn "Ninguna opción seleccionada."
+      exit 1
+    fi
+  else
+    info "gum no está disponible; usando flujo bash simple."
+    PS3="> "
+    select opcion_main in \
+      "Instalación completa (todo)" \
+      "Seleccionar componentes" \
+      "Conectar a red WiFi" \
+      "Configurar red (estática/DHCP)" \
+      "Salir"; do
+      [[ -n "${opcion_main}" ]] && break
+      warn "Opción inválida, intente de nuevo."
+    done
   fi
 
-  mapfile -t sel <<< "${selected}"
+  case "${opcion_main}" in
+    "Instalación completa (todo)")
+      info "Instalación completa seleccionada."
+      break
+      ;;
+    "Seleccionar componentes")
+      info "Selección de componentes."
+      break
+      ;;
+    "Conectar a red WiFi")
+      "${SCRIPT_DIR}/scripts/06-network-wifi.sh"
+      continue
+      ;;
+    "Configurar red (estática/DHCP)")
+      "${SCRIPT_DIR}/scripts/07-network-config.sh"
+      continue
+      ;;
+    "Salir")
+      ok "Instalación cancelada."
+      exit 0
+      ;;
+    *)
+      warn "Opción no reconocida."
+      ;;
+  esac
+done
 
-  if [[ ${#sel[@]} -eq 0 ]]; then
-    warn "No se seleccionó ningún componente."
-    return 1
+# ---------------------------------------------------------------------------
+# 4) Selección de componentes opcionales
+# ---------------------------------------------------------------------------
+sel=()
+if [[ "${opcion_main}" == "Instalación completa (todo)" ]]; then
+  sel=("${COMPONENTES[@]}")
+  info "Componentes seleccionados: ${sel[*]}"
+else
+  if command -v gum &>/dev/null; then
+    if ! seleccion="$(gum choose --no-limit --height 12 \
+        --header "Selecciona los componentes a instalar (Espacio=seleccionar, Enter=continuar):" \
+        "${COMPONENTES[@]}")"; then
+      warn "No se seleccionó ningún componente."
+      exit 1
+    fi
+    mapfile -t sel <<< "${seleccion}"
+    if [[ ${#sel[@]} -eq 0 ]]; then
+      warn "No se seleccionó ningún componente."
+      exit 1
+    fi
+    if ! gum confirm --default=true "¿Confirmas la instalación de estos componentes?"; then
+      warn "Instalación cancelada por el usuario."
+      exit 1
+    fi
+  else
+    info "Modo sin gum: selecciona componentes con s/N."
+    for c in "${COMPONENTES[@]}"; do
+      if confirm "¿Instalar ${c}?"; then
+        sel+=("${c}")
+      fi
+    done
+    if [[ ${#sel[@]} -eq 0 ]]; then
+      warn "No se seleccionó ningún componente."
+      exit 1
+    fi
+    if ! confirm "¿Confirmas la instalación de estos componentes?"; then
+      warn "Instalación cancelada por el usuario."
+      exit 1
+    fi
   fi
 
   info "Componentes seleccionados:"
   for s in "${sel[@]}"; do printf '  - %s\n' "${s}"; done
-
-  if ! gum confirm --default=true "¿Confirmas la instalación de estos componentes?"; then
-    warn "Instalación cancelada por el usuario."
-    return 1
-  fi
-  return 0
-}
-
-# ---------------------------------------------------------------------------
-# 3b) Fallback sin gum
-# ---------------------------------------------------------------------------
-select_fallback() {
-  sel=()
-  info "Modo sin gum: selecciona componentes con s/N."
-  for c in "${COMPONENTES[@]}"; do
-    if confirm "¿Instalar ${c}?"; then
-      sel+=("${c}")
-    fi
-  done
-  if [[ ${#sel[@]} -eq 0 ]]; then
-    warn "No se seleccionó ningún componente."
-    exit 1
-  fi
-  info "Componentes seleccionados: ${sel[*]}"
-  if ! confirm "¿Confirmas la instalación de estos componentes?"; then
-    warn "Instalación cancelada por el usuario."
-    exit 1
-  fi
-}
-
-# ---------------------------------------------------------------------------
-# 4) Ejecución: según la opción del menú principal
-# ---------------------------------------------------------------------------
-
-# Si el usuario eligió "Seleccionar componentes personalizados", usar el
-# menú interactivo existente. Caso contrario, sel queda vacío y se saltea la
-# fase de selección de componentes.
-if [[ "${opcion_main}" == "Seleccionar componentes personalizados" || "${opcion_main}" == "Instalar todo (todos los componentes)" ]]; then
-  if command -v gum &>/dev/null; then
-    if ! select_gum; then
-      exit 1
-    fi
-  else
-    warn "gum no está disponible; usando flujo bash simple."
-    select_fallback
-  fi
-
-  # Si se eligieron fonts y dotfiles, se procesan fonts primero para que la
-  # config enlazada por stow ya traiga la fuente seleccionada.
-  if [[ " ${sel[*]} " == *" dotfiles "* && " ${sel[*]} " == *" fonts "* ]]; then
-    ordered=()
-    for item in "${sel[@]}"; do
-      [[ "${item}" == "dotfiles" ]] && continue
-      ordered+=("${item}")
-    done
-    ordered+=("dotfiles")
-    sel=("${ordered[@]}")
-  fi
 fi
 
-# Ejecutar los componentes seleccionados
+# ---------------------------------------------------------------------------
+# 5) Dependencia automática de Nerd Fonts
+#     Si se eligió "Escritorio Sway" o "Dev Core" (neovim) pero NO
+#     "Nerd Fonts" explícitamente, se instala JetBrainsMono automáticamente.
+#     Se ejecuta ANTES de "Dotfiles" para que stow enlace la config con
+#     la fuente ya instalada.
+# ---------------------------------------------------------------------------
+FONT_EXPLICITA=0
+FONT_AUTO=0
+if [[ " ${sel[*]} " == *" Nerd Fonts "* ]]; then
+  FONT_EXPLICITA=1
+elif [[ " ${sel[*]} " == *" Escritorio Sway "* || " ${sel[*]} " == *" Dev Core "* ]]; then
+  FONT_AUTO=1
+fi
+
+# Reordenar: las fuentes antes de dotfiles, dotfiles al final
+if [[ " ${sel[*]} " == *" Dotfiles "* ]]; then
+  ordered=()
+  for item in "${sel[@]}"; do
+    [[ "${item}" == "Dotfiles" ]] && continue
+    ordered+=("${item}")
+  done
+  ordered+=("Dotfiles")
+  sel=("${ordered[@]}")
+fi
+
+# ---------------------------------------------------------------------------
+# 6) Instalación
+# ---------------------------------------------------------------------------
+
+# Obligatorios
+info "Instalando componentes obligatorios (base, shell)..."
+run_component base
+run_component shell
+
+# Fuentes automáticas: se ejecutan cuando no se eligieron explícitamente
+FONT_AUTO_DONE=0
+run_fonts_auto() {
+  if [[ ${FONT_AUTO_DONE} -eq 1 ]]; then
+    return
+  fi
+  info "Instalando automáticamente JetBrainsMono Nerd Font (dependencia de Sway/Dev Core)..."
+  "${SCRIPT_DIR}/scripts/05-install-fonts.sh" --install-only --family JetBrainsMono
+  FONT_AUTO_DONE=1
+}
+
+# Opcionales en orden
 for item in "${sel[@]}"; do
+  # Inyectar fuentes automáticas justo antes de dotfiles
+  if [[ "${item}" == "Dotfiles" && ${FONT_AUTO} -eq 1 && ${FONT_AUTO_DONE} -eq 0 ]]; then
+    run_fonts_auto
+  fi
   run_component "${item}"
 done
 
-# Mensaje de conclusión
-if [[ ${#sel[@]} -eq 0 ]]; then
-  ok "No se seleccionaron componentes. Instalación finalizada."
-else
-  ok "¡Instalación completada! Reinicia la sesión o el sistema según sea necesario."
+# Si dotfiles no estaba en la lista pero hay fuentes automáticas pendientes
+if [[ ${FONT_AUTO} -eq 1 && ${FONT_AUTO_DONE} -eq 0 ]]; then
+  run_fonts_auto
 fi
+
+# ---------------------------------------------------------------------------
+# 7) Conclusión
+# ---------------------------------------------------------------------------
+ok "¡Instalación completada! Resumen:"
+printf '  - Obligatorios: base, shell\n'
+for item in "${sel[@]}"; do printf '  - %s\n' "${item}"; done
+if [[ ${FONT_AUTO} -eq 1 && ${FONT_EXPLICITA} -eq 0 ]]; then
+  printf '  - Nerd Fonts automáticas (JetBrainsMono)\n'
+fi
+ok "Reinicia la sesión o el sistema según sea necesario."

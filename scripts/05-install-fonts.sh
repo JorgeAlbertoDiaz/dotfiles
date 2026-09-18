@@ -11,6 +11,9 @@
 # Flags opcionales:
 #   --install-only   Solo instalar fuentes, sin configurar aplicaciones.
 #   --config-only    Solo configurar aplicaciones, sin instalar fuentes.
+#   --family <label> Instalar una familia concreta sin menú interactivo
+#                    (repetible). El label puede ser una etiqueta del
+#                    catálogo (ej. JetBrainsMono) o un asset de nerd-fonts.
 #   NERD_TAG=vX.Y.Z  Fijar una versión de nerd-fonts (por defecto: latest).
 set -euo pipefail
 
@@ -39,11 +42,20 @@ CANDIDATAS=(
 
 INSTALL_ONLY=0
 CONFIG_ONLY=0
-for arg in "$@"; do
-  case "${arg}" in
-    --install-only) INSTALL_ONLY=1 ;;
-    --config-only)  CONFIG_ONLY=1 ;;
-    *) warn "Argumento desconocido ignorado: ${arg}" ;;
+FAMILIAS_AUTO=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --install-only) INSTALL_ONLY=1; shift ;;
+    --config-only)  CONFIG_ONLY=1; shift ;;
+    --family)
+      if [[ $# -lt 2 ]]; then
+        error "--family requiere una etiqueta de familia (ej: --family JetBrainsMono)"
+        exit 1
+      fi
+      FAMILIAS_AUTO+=("$2")
+      shift 2
+      ;;
+    *) warn "Argumento desconocido ignorado: $1"; shift ;;
   esac
 done
 
@@ -355,7 +367,21 @@ fi
 
 assets=()
 if [[ ${CONFIG_ONLY} -eq 0 ]]; then
-  if select_families_install; then
+  if [[ ${#FAMILIAS_AUTO[@]} -gt 0 ]]; then
+    # Modo no interactivo: instalar directamente las familias de --family,
+    # mapeando la etiqueta al asset del catálogo (o usándola tal cual).
+    info "Familias solicitadas con --family: ${FAMILIAS_AUTO[*]}"
+    for item in "${FAMILIAS_AUTO[@]}"; do
+      if asset="$(asset_from_label "${item}")"; then
+        assets+=("${asset}")
+      else
+        warn "Familia no reconocida; se usará el asset tal cual: ${item}"
+        assets+=("${item}")
+      fi
+    done
+    install_assets "${assets[@]}"
+    verify_installs "${assets[@]}"
+  elif select_families_install; then
     install_assets "${assets[@]}"
     verify_installs "${assets[@]}"
   else

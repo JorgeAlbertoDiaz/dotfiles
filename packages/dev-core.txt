@@ -1,0 +1,4 @@
+# Herramientas de desarrollo comunes
+gcc
+make
+neovim

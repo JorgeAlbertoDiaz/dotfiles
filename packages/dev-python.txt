@@ -1,0 +1,4 @@
+# Desarrollo Python
+python313
+python313-pip
+python313-devel

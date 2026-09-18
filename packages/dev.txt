@@ -1,7 +1,0 @@
-# Herramientas de desarrollo
-nodejs26
-npm26
-python313
-python313-pip
-gcc
-make
