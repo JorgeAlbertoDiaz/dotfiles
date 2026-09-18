@@ -2,7 +2,7 @@
 # 06-network-wifi: conecta a una red WiFi con NetworkManager (nmcli).
 #
 #   - Verifica que nmcli esté disponible.
-#   - Activa la radio WiFi y rescannea las redes.
+#   - Activa la radio WiFi y rescannea las redes (con sudo: modifica estado).
 #   - Muestra las redes ordenadas por señal (gum choose o select bash).
 #   - Pide la contraseña (gum input --password o read -s) y conecta;
 #     las redes abiertas se conectan sin contraseña.
@@ -22,12 +22,12 @@ fi
 # 1) Radio WiFi y rescan
 # ---------------------------------------------------------------------------
 info "Activando la radio WiFi..."
-if ! nmcli radio wifi on 2>/dev/null; then
+if ! as_root nmcli radio wifi on 2>/dev/null; then
   warn "No se pudo activar la radio WiFi (¿hardware bloqueado?)."
 fi
 
 info "Buscando redes disponibles..."
-nmcli device wifi rescan 2>/dev/null || {
+as_root nmcli device wifi rescan 2>/dev/null || {
   warn "No se pudo forzar el rescan; usando la lista actual de redes."
 }
 sleep 2
@@ -116,14 +116,14 @@ if [[ -n "${seguridad}" && "${seguridad}" != "--" ]]; then
     exit 1
   fi
   info "Conectando a ${ssid} (red protegida)..."
-  if ! nmcli device wifi connect "${ssid}" password "${pass}"; then
+  if ! as_root nmcli device wifi connect "${ssid}" password "${pass}"; then
     error "No se pudo conectar a ${ssid}."
     warn "Verifica la contraseña o que la red esté al alcance."
     exit 1
   fi
 else
   info "Red abierta: conectando a ${ssid} sin contraseña..."
-  if ! nmcli device wifi connect "${ssid}"; then
+  if ! as_root nmcli device wifi connect "${ssid}"; then
     error "No se pudo conectar a ${ssid}."
     warn "Verifica que la red esté al alcance."
     exit 1

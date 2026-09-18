@@ -25,11 +25,38 @@ as_root zypper refresh
 ok "Repositorios actualizados"
 
 # ---------------------------------------------------------------------------
-# 2) Controladores propietarios
+# 2) Controladores propietarios NVIDIA
+#    La EULA de NVIDIA no se acepta automáticamente: zypper se ejecuta en
+#    modo interactivo (sin -n ni --auto-agree-with-licenses) para que el
+#    usuario acepte la licencia en pantalla. Si los paquetes ya están
+#    instalados, se omite la instalación.
 # ---------------------------------------------------------------------------
 
-export ZYPPER_OPTS="-n --auto-agree-with-licenses"
-"${SCRIPT_DIR}/02-install-packages.sh" nvidia.txt
+PACKAGES_DIR="$(dirname "${SCRIPT_DIR}")/packages"
+NVIDIA_PKGS_FILE="${PACKAGES_DIR}/nvidia.txt"
+missing_pkgs=()
+
+while IFS= read -r line || [[ -n "${line}" ]]; do
+  # Quitar comentarios (#) y espacios sobrantes.
+  pkg="${line%%#*}"
+  pkg="${pkg//[[:space:]]/}"
+  [[ -z "${pkg}" ]] && continue
+  if rpm -q "${pkg}" &>/dev/null; then
+    ok "${pkg} ya instalado"
+  else
+    missing_pkgs+=("${pkg}")
+  fi
+done < "${NVIDIA_PKGS_FILE}"
+
+if [[ ${#missing_pkgs[@]} -eq 0 ]]; then
+  ok "Controladores NVIDIA ya instalados; omitiendo instalación"
+else
+  info "Instalando controladores NVIDIA pendientes: ${missing_pkgs[*]}"
+  info "La licencia de NVIDIA requiere aceptación interactiva (EULA) en pantalla."
+  # Sin -n ni --auto-agree-with-licenses: zypper muestra la EULA y pregunta.
+  as_root zypper in "${missing_pkgs[@]}"
+  ok "Controladores NVIDIA instalados"
+fi
 
 # ---------------------------------------------------------------------------
 # 3) Parámetro del kernel nvidia_drm.modeset=1

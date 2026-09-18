@@ -41,6 +41,9 @@ El usuario quiere una instalación reproducible y granular: obligatorio (base + 
 
 - T1-T4 implementados por writer delegado; T5 verificado por el orquestador (bash -n OK, spot-check de parsing --family, stage limpio).
 - Comentario de desviación del writer: `--family` se agregó a 05-install-fonts.sh; Git rm de dev.txt rechazado por WIP local → rm + add -A. Pendientes: actualizar README.md y docs/index.md (referencias a dev.txt).
+- Fix NVIDIA (03-nvidia-setup.sh): se eliminó `--auto-agree-with-licenses` (EULA interactiva en pantalla, no auto-aceptada) y se filtra con `rpm -q` los paquetes ya instalados → instala solo pendientes u omite.
+- Fix permisos NetworkManager (06-network-wifi.sh): `radio wifi on`, `rescan` y `connect` ahora van con `as_root` (settings.modify.system = auten; listar redes sigue sin sudo).
+- Fix permisos de ejecución: 06 y 07 estaban en 644 → chmod +x (755).
 
 ## Autorización
 
