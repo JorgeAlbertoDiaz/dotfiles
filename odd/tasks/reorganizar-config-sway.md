@@ -29,7 +29,7 @@ El usuario quiere "hacer mía" la configuración: autocontenida, portable (sin r
 ## Constraints
 
 - openSUSE Tumbleweed, sway, waybar, wofi, foot, swaync, wob, swaylock, swayidle, grim/slurp, pamixer, playerctl, brightnessctl.
-- Config autocontenida: SIN `include /etc/sway/config.d/*.conf`.
+- Config autocontenida: SIN `include /etc/sway/config.d/*.conf`. Sway carga UN solo archivo (`~/.config/sway/config`); no soporta split del archivo por features vía `include` de un `config.d/`, por eso la división por features es **por secciones dentro del único config** (output / input / keybindings / gaps / bar / client / idle) más scripts por feature en `config/sway/scripts/`, tal como prescribe este doc y el RFC (adapters/sway → keymaps + templates → genera `~/.config/sway/config`).
 - Scripts en español (lenguaje del proyecto), sin rutas hardcodeadas del clon → binds a `~/.config/sway/scripts/...`.
 - Entrega: excepción directa autorizada (>400 líneas, sin PRs encadenados). Un commit por unidad de trabajo, convención español, sin push.
 - No tocar `scripts/` (excepto mover wm-keybinds.sh) ni configs ajenas (waybar, swaync, foot, environment.d).
@@ -46,7 +46,22 @@ El usuario quiere "hacer mía" la configuración: autocontenida, portable (sin r
 
 ## Progreso
 
-- (vacío — ronda inicial)
+> Cómo se aplicó el "split por features" de la config de sway en HEAD (per `git log 03137c7`, `a5d3a16`, `38ff26c` y `git status --porcelain` = limpio):
+
+### Bitácora entregada (HEAD — ronda 7, work unit, excepción directa autorizada)
+
+- **T1 ✅ (03137c7 + a5d3a16)** — `config/sway/config` reescrita autocontenida en español, 340 líneas, SIN `include /etc/sway/config.d/*.conf` ni ninguna config externa (verificado: `wc -l config/sway/config` = 340; `grep -n include` solo muestra el comentario que declara la exclusión, ningún include activo). El árbol del RFC (`docs/opendesk-arquitectua-RFC.md` L88-90) prescribe `adapters/sway/{generator.sh, keymaps/, templates/}` y que el adaptador **genera** `~/.config/sway/config` — sway carga UN solo archivo, por eso la división por features es **por secciones** dentro del único config (output/input/keybindings/gaps/bar/for_window/exec) + scripts por feature en `config/sway/scripts/`, no por archivos `config.d/` (sway no los soporta).
+- **T3 ✅ (03137c7 + a5d3a16)** — `config/sway/scripts/` creado con 5 scripts ejecutables: `dashboard.sh` (dashboard wofi → menú principal), `menu-sway.sh` (submenú sway: personalización/keybindings), `sway-font.sh` (reescribe `font pango:` en `~/.config/sway/config` + `swaymsg reload`), `sway-gaps.sh` (reescribe `gaps inner` + reload), `wm-keybinds.sh` (**movido vía `git mv` desde `scripts/wm-keybinds.sh` — preserva cambios sin commitear del working tree del usuario**). Binds estables a `~/.config/sway/scripts/...` como prescribe el odd.
+- **T2 ✅ (a5d3a16)** — `config/sway/config.d/10-usuario.conf` y `config/sway/customize.sh` eliminados (integrados en T1/T3; sin `config.d/` ni `customize.sh` en HEAD).
+- **T5 ✅ (38ff26c)** — `scripts/04-setup-dotfiles.sh` adaptado: quitado `find ... -delete` de customize.sh, garantizado exec bits (`chmod +x` en `~/.config/sway/scripts/*.sh`), DEPENDENCIAS_CONFIG con wofi/sed/fc-list (core), dashboard corredizo como entry point. Sin mover `scripts/wm-keybinds.sh` del árbol del usuario (movimiento solo de la nueva ruta, como autoriza el odd).
+
+### Verificación pendiente para la PR de cierre
+
+- [ ] T4 — harness final con stub wofi y stub `gum` (reutilizar `/tmp/opencode/t50` o clonar): dashboard → menú → Sway → personalización/keybindings; `sway-font.sh` cambia la línea en destino y llama reload; `sway-gaps.sh` idem; `wm-keybinds.sh --list` lee la config NUEVA de `~/.config/sway/config` (no `/etc`). No entregado en HEAD — pendiente para la verificación previa al archive.
+
+### Decisiones tomadas
+
+- Sway no soporta dividir el config en múltiples archivos vía `include` de un `config.d/` — por eso el "split por features" **prescrito por el RFC se materializa a nivel de ADAPTER** (`adapters/sway/` → keymaps + templates → genera `~/.config/sway/config`), y a nivel de ARCHIVO secciones + scripts, NO archivos separados. Confirmado en el RFC (L84-90: `adapters/sway/{generator.sh, keymaps/, templates/}`; L170: destino generado `~/.config/sway/config`).
 
 ## Autorización
 
