@@ -14,3 +14,10 @@
 
 # Índice generado por CodeGraph
 .codegraph/
+
+# Archivos temporales del proyecto
+temps/
+
+# Carpeta para archivos internos NO versionados
+# Archivos generados durante la ejecución, cachés locales y WIP sin commitear.
+temp/
