@@ -120,7 +120,7 @@ seleccionar_apps() {
 
   if command -v gum &>/dev/null; then
     while true; do
-      sel="$(gum choose --header "¿Qué querés aplicar? Elegí '(terminar)' para finalizar." "${opciones[@]}")" \
+      sel="$(gum choose --header "Elegí qué aplicar (Enter confirma cada opción)." "${opciones[@]}")" \
         || { warn "Operación cancelada."; exit 1; }
       case "${sel}" in
         "(terminar)")
@@ -148,6 +148,13 @@ seleccionar_apps() {
           ;;
       esac
       [[ "${final}" == "true" ]] && break
+      ok "Agregado: ${sel}"
+      # Una sola opción + Enter debe bastar: el confirm cierra el bucle con
+      # respuesta "no" (Enter en el default) sin exigir elegir "(terminar)".
+      if ! gum confirm --default=false "¿Aplicar algo más?"; then
+        final=true
+        break
+      fi
     done
   else
     echo "¿Qué querés aplicar? (t = todos, números separados por espacios, vacío = cancelar)"

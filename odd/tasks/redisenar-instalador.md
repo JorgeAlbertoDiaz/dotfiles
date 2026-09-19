@@ -111,3 +111,16 @@ El usuario confirmó que la ronda 4 resolvió el "Ninguna opción seleccionada".
 
 - [x] T17: zsh explícito — 04: opción "Cambiar shell a zsh" en submenú (valor interno `zsh`), CLI acepta `zsh`, loop de aplicación salta `zsh` (no es app de config), bloque zsh corre si `elegidos` contiene "Todos" O "zsh", chequeo contra `getent passwd`. install.sh: "Instalación completa (todo)" pasa `todos` a 04 (`DOTFILES_TODOS=1`).
 - [x] T18: fuentes — 05: en `select_families_install`, las candidatas ya instaladas se etiquetan "(instalada)" en el menú gum (y fallback bash); al mapear selección→asset se limpia el sufijo; `installed_asset`/`install_assets` siguen saltando instaladas.
+
+## Ronda 5b — feedback al elegir y cierre con confirm (2026-09-18)
+
+El usuario reportó que seleccionar UNA sola opción (waybar, zsh, etc.) "no hace nada
+sin errores". Causa raíz: el submenú de 04 es iterativo y exige elegir "(terminar)"
+después de cada opción; sin ese paso el bucle sigue abriendo el menú y si el usuario
+cancela (ESC/Ctrl+C) se pierde todo en silencio. "Todos" sí funcionaba porque finaliza
+el bucle solo. Fix: tras cada opción elegida se muestra `[OK] Agregado: X` y un
+`gum confirm --default=false "¿Aplicar algo más?"` cierra el bucle con Enter sin
+necesitar "(terminar)" (que sigue aceptado por compatibilidad). Verificado con stubs:
+waybar solo → aplica; waybar→sí→foot→no → aplica ambos; "Cambiar shell a zsh" → bloque
+zsh ("La shell por defecto ya es zsh"); flujo completo install.sh → "Seleccionar
+componentes" → Dotfiles → waybar → aplica; "Instalación completa" → 04 todos. bash -n OK.
