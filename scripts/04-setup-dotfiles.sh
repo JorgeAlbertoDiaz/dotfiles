@@ -81,7 +81,7 @@ verificar_dependencias() {
 # Copia una app de config/ a ~/.config/<app> (excepto home/, que va a $HOME).
 # ---------------------------------------------------------------------------
 aplicar_app() {
-  local app="$1"
+  local app="$1" reset="$2"
   local app_dir dest
   app_dir="${CONFIG_DIR}/${app}"
   if [[ "${app}" == "home" ]]; then
@@ -98,6 +98,10 @@ aplicar_app() {
   fi
 
   dest="${HOME_DIR}/.config/${app}"
+  if [[ "${reset}" == "1" && -d "${dest}" ]]; then
+    info "Reset de fábrica: borrando ${dest} y recreándolo desde el repo"
+    rm -rf "${dest}"
+  fi
   info "Aplicando ${app} → ~/.config/${app}"
   mkdir -p "${dest}"
   cp -r "${app_dir}/." "${dest}/"
@@ -120,8 +124,16 @@ seleccionar_apps() {
 
   if command -v gum &>/dev/null; then
     while true; do
-      sel="$(gum choose --header "Elegí qué aplicar (Enter confirma cada opción)." "${opciones[@]}")" \
-        || { warn "Operación cancelada."; exit 1; }
+      if ! sel="$(gum choose --header "Elegí qué aplicar (Enter confirma cada opción)." "${opciones[@]}")"; then
+        # ESC/Ctrl+C: si ya hay elecciones, terminá y aplicá; si no, cancelá.
+        if [[ ${#elegidos[@]} -eq 0 ]]; then
+          warn "No elegiste nada; para salir elegí \"(terminar)\" o ESC."
+          exit 1
+        fi
+        info "Selección finalizada con ESC."
+        final=true
+        break
+      fi
       case "${sel}" in
         "(terminar)")
           final=true
@@ -227,18 +239,43 @@ else
 fi
 
 aplicados=()
+RESET_FABRICA=0
+
+# Lista concreta de apps a aplicar (sin "zsh", que es una acción interna).
+apps_a_aplicar=()
 if [[ " ${elegidos[*]} " == *" Todos "* ]]; then
-  verificar_dependencias "todos"
-  for app in "${apps[@]}" "home"; do
-    aplicar_app "${app}"
-    aplicados+=("${app}")
-  done
+  apps_a_aplicar=("${apps[@]}" "home")
 else
   for app in "${elegidos[@]}"; do
-    # "zsh" es una acción interna, no una app de config/: saltar.
     [[ "${app}" == "zsh" ]] && continue
+    apps_a_aplicar+=("${app}")
+  done
+fi
+
+# Reset de fábrica: una sola confirmación que borra y recrea los destinos.
+# Solo aplica a .config/<app>; home/ siempre se copia de forma aditiva.
+if [[ ${#apps_a_aplicar[@]} -gt 0 ]]; then
+  if confirm "¿Reset de fábrica? Se borran y recrean desde el repo: ${apps_a_aplicar[*]} (s=reset, n=solo copiar)"; then
+    RESET_FABRICA=1
+    info "Reset de fábrica activado para: ${apps_a_aplicar[*]}"
+  fi
+fi
+
+aplicar_apps() {
+  local app
+  for app in "$@"; do
+    aplicar_app "${app}" "${RESET_FABRICA}"
+    aplicados+=("${app}")
+  done
+}
+
+if [[ " ${elegidos[*]} " == *" Todos "* ]]; then
+  verificar_dependencias "todos"
+  aplicar_apps "${apps_a_aplicar[@]}"
+else
+  for app in "${apps_a_aplicar[@]}"; do
     verificar_dependencias "${app}"
-    aplicar_app "${app}"
+    aplicar_app "${app}" "${RESET_FABRICA}"
     aplicados+=("${app}")
   done
 fi

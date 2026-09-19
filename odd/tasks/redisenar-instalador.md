@@ -124,3 +124,31 @@ necesitar "(terminar)" (que sigue aceptado por compatibilidad). Verificado con s
 waybar solo → aplica; waybar→sí→foot→no → aplica ambos; "Cambiar shell a zsh" → bloque
 zsh ("La shell por defecto ya es zsh"); flujo completo install.sh → "Seleccionar
 componentes" → Dotfiles → waybar → aplica; "Instalación completa" → 04 todos. bash -n OK.
+
+## Ronda 6 — reset de fábrica y ESC que termina la selección (2026-09-18)
+
+El usuario borró el contenido de `~/.config/sway/*`, ejecutó install.sh y seleccionó
+solo "sway": el menú no mostró error pero no se copiaron los archivos. Pide que aplicar
+no sea solo sobreescribir: borrar todo el contenido del destino y copiarlo de nuevo
+("reset de fábrica") con ventana de confirmación.
+
+Causa raíz del no-copiado (además del 5b, ya resuelto): si el usuario responde "sí" a
+"¿Aplicar algo más?" y luego pulsa ESC/CTRL+C en el `gum choose` siguiente, el `||` de
+la asignación hacía `exit 1` descartando TODO lo elegido hasta ese momento, con solo un
+WARN "Operación cancelada." que no parece error. "Todos" no pasaba por ese camino.
+
+## Tareas ronda 6
+
+- [x] T19: ESC con selecciones = terminar — en `seleccionar_apps` (gum), si `gum choose`
+  falla (ESC/Ctrl+C) y ya hay opciones acumuladas, se muestra "Selección finalizada con
+  ESC." y se termina aplicando lo elegido; `exit 1` solo si no se eligió nada.
+- [x] T20: Reset de fábrica — al aplicar, una sola confirmación `¿Reset de fábrica?`
+  (s=borrar y recrear desde el repo, n=solo copiar) borra con `rm -rf` cada
+  `~/.config/<app>` antes de copiar. `home/` queda siempre aditivo (nunca se borra
+  `$HOME`). El flag se calcula una vez para todas las apps elegidas.
+- [x] T21: Verificación — bash -n OK; stubs con secuencia gum + stdin para `confirm()`:
+  sway→sí→ESC aplica y copia (bug real); reset sí borra basura y recrea; reset no
+  conserva archivos propios; "Todos" + reset sí recrea environment.d/foot/sway/waybar
+  y home queda aditivo; flujo install.sh completo (Seleccionar componentes→Dotfiles→
+  sway→reset) y (Aplicar dotfiles al sistema→sway→ESC→Salir) — ambos exit 0 con archivos
+  copiados. Ojo: `RESET` colisiona con readonly de common.sh → se usa `RESET_FABRICA`.
