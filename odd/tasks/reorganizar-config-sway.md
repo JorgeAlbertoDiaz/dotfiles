@@ -66,3 +66,15 @@ El usuario quiere "hacer mía" la configuración: autocontenida, portable (sin r
 ## Autorización
 
 Solo esta feature: reorganizar config/sway + scripts de personalización + dashboard wofi. No tocar configuraciones de waybar, swaync, foot, environment.d ni otros componentes. No tocar scripts/wm-keybinds.sh del working tree (movimiento preserva cambios del usuario: git mv y commit solo de la nueva ruta).
+### 🔄 DECISIÓN REVERTIDA (registro de reversión — verificado contra man 5 sway, 2026-09-19)
+
+La bitácora previa de este odd resolvía la reorganización como **config autocontenida en UN solo archivo** con la prescripción "sway no soporta dividir el config por features". **Esa decisión queda REVERTIDA**: el doc nuevo `docs/organizacion-sway.md` (para el usuario, fuente de la verdad) prescriba el **split físico por features** — `features/`, `keybindings/`, `hosts/`, `modes/` — con el config principal únicamente importando módulos.
+
+Evidencia de viabilidad (reverificada AHORA, no de memoria, en `man 5 sway`, directiva `include`):
+
+> Include files from paths. paths can include either a full path or a path relative to the **parent config**, and expands shell syntax (wordexp(3)). The same include file can only be included once.
+
+Por tanto:
+- Sway **SÍ** soporta `include` con rutas relativas al config padre → el split por átores es físicamente viable (revierte la afirmación anterior "no soporta").
+- La división prescrita por el doc nuevo se implementa por **secciones dentro del config principal** + **archivos por feature** (`features/`, `keybindings/`, `hosts/`, `modes/`) + `include features/*.conf` etc. desde `config/sway/config`.
+- Recarga en caliente: editar el `.conf` de la feature → `swaymsg reload` (sin generación, sin compilación, sin paso intermedio).
