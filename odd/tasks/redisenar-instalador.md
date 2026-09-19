@@ -100,3 +100,14 @@ Causa raíz: el submenú de 04 usaba `gum choose --no-limit` (multi-select). En 
 ## Autorización
 
 Solo esta feature. No tocar configuraciones de sway ni otros componentes.
+
+## Ronda 5 — zsh explícito y fuentes instaladas en el menú (2026-09-18)
+
+El usuario confirmó que la ronda 4 resolvió el "Ninguna opción seleccionada". Reporta:
+1. El cambio bash→zsh "nunca se aplicó aunque lo seleccione en el menú". Diagnóstico: el bloque zsh vive en 04-setup-dotfiles.sh y solo corre si `elegidos` contiene literalmente "Todos"; además install.sh llama a 04 SIN argumentos en "Instalación completa (todo)" y en el componente "Dotfiles", así que 04 vuelve a preguntar su propio submenú. Fix acordado: (a) la "Instalación completa (todo)" de install.sh pasa `todos` a 04; (b) el submenú de 04 ofrece "Cambiar shell a zsh" como opción explícita (no solo efecto oculto de "Todos"). El chequeo de shell actual usa `${SHELL}` (variable de la sesión, hereda bash aunque la cuenta ya tenga zsh) — debe usar `getent passwd` para el shell real de la cuenta.
+2. Fuentes: no se muestra qué ya está instalado. `installed_asset()` ya salta la re-descarga (verificado en vivo: detecta JetBrainsMono/Monofur/Ubuntu/UbuntuMono, FiraCode no), pero el menú gum no lo indica. Fix: etiquetar "(instalada)" en el menú de selección.
+
+## Tareas ronda 5
+
+- [x] T17: zsh explícito — 04: opción "Cambiar shell a zsh" en submenú (valor interno `zsh`), CLI acepta `zsh`, loop de aplicación salta `zsh` (no es app de config), bloque zsh corre si `elegidos` contiene "Todos" O "zsh", chequeo contra `getent passwd`. install.sh: "Instalación completa (todo)" pasa `todos` a 04 (`DOTFILES_TODOS=1`).
+- [x] T18: fuentes — 05: en `select_families_install`, las candidatas ya instaladas se etiquetan "(instalada)" en el menú gum (y fallback bash); al mapear selección→asset se limpia el sufijo; `installed_asset`/`install_assets` siguen saltando instaladas.

@@ -115,7 +115,7 @@ aplicar_app() {
 SELECCION=()
 
 seleccionar_apps() {
-  local opciones=("Todos" "${apps[@]}" "home" "(terminar)")
+  local opciones=("Todos" "${apps[@]}" "home" "Cambiar shell a zsh" "(terminar)")
   local elegidos=() sel final=false
 
   if command -v gum &>/dev/null; then
@@ -129,6 +129,12 @@ seleccionar_apps() {
         "Todos")
           elegidos=("Todos")
           final=true
+          ;;
+        "Cambiar shell a zsh")
+          # Valor interno "zsh": la shell no es una app de config/.
+          if [[ " ${elegidos[*]} " != *" zsh "* ]]; then
+            elegidos+=("zsh")
+          fi
           ;;
         "")
           warn "Ninguna opción seleccionada."
@@ -157,7 +163,10 @@ seleccionar_apps() {
         index=$((n - 1))
         [[ ${index} -ge 0 && ${index} -lt ${#opciones[@]} ]] || continue
         [[ "${opciones[$index]}" == "(terminar)" ]] && continue
-        elegidos+=("${opciones[$index]}")
+        item="${opciones[$index]}"
+        # "Cambiar shell a zsh" se guarda como valor interno "zsh".
+        [[ "${item}" == "Cambiar shell a zsh" ]] && item="zsh"
+        elegidos+=("${item}")
       done
       if [[ ${#elegidos[@]} -eq 0 ]]; then
         error "Selección inválida."
@@ -200,7 +209,7 @@ if [[ $# -gt 0 ]]; then
   for arg in "$@"; do
     case "${arg}" in
       todos|all) elegidos=("Todos") ;;
-      home|sway|waybar|foot|environment.d) elegidos+=("${arg}") ;;
+      home|sway|waybar|foot|environment.d|zsh) elegidos+=("${arg}") ;;
       *) warn "Componente desconocido, ignorado: ${arg}" ;;
     esac
   done
@@ -219,16 +228,21 @@ if [[ " ${elegidos[*]} " == *" Todos "* ]]; then
   done
 else
   for app in "${elegidos[@]}"; do
+    # "zsh" es una acción interna, no una app de config/: saltar.
+    [[ "${app}" == "zsh" ]] && continue
     verificar_dependencias "${app}"
     aplicar_app "${app}"
     aplicados+=("${app}")
   done
 fi
 
-# zsh como shell por defecto solo en la instalación completa (todos).
-if [[ " ${elegidos[*]} " == *" Todos "* ]] && command -v zsh &>/dev/null; then
+# zsh como shell por defecto si se eligió "Todos" o la opción "zsh".
+if command -v zsh &>/dev/null &&
+   { [[ " ${elegidos[*]} " == *" Todos "* ]] || [[ " ${elegidos[*]} " == *" zsh "* ]]; }; then
   zsh_path="$(command -v zsh)"
-  if [[ "${SHELL}" != *"/zsh" ]]; then
+  # Shell real de la cuenta (getent passwd), no ${SHELL} de la sesión.
+  shell_actual="$(getent passwd "$(id -un)" | cut -d: -f7)"
+  if [[ "${shell_actual}" != *"/zsh" ]]; then
     if confirm "¿Cambiar la shell por defecto a zsh?"; then
       chsh -s "${zsh_path}"
       ok "Shell por defecto cambiada a ${zsh_path} (se aplicará al reabrir sesión)"

@@ -165,16 +165,23 @@ ask_size() {
 # ---------------------------------------------------------------------------
 
 select_families_install() {
-  local labels=() chosen=() entry label asset line custom filtered
+  local labels=() menu_labels=() chosen=() entry label asset line custom filtered
   for entry in "${CANDIDATAS[@]}"; do
-    labels+=("${entry%%|*}")
+    label="${entry%%|*}"
+    asset="${entry#*|}"
+    labels+=("${label}")
+    if installed_asset "${asset}"; then
+      menu_labels+=("${label} (instalada)")
+    else
+      menu_labels+=("${label}")
+    fi
   done
 
   if command -v gum &>/dev/null; then
     local selected
     if ! selected="$(gum choose --no-limit --height 12 \
         --header "Nerd Fonts a instalar (Espacio=seleccionar, Enter=continuar):" \
-        "${labels[@]}")"; then
+        "${menu_labels[@]}")"; then
       return 1
     fi
     mapfile -t chosen <<< "${selected}"
@@ -192,9 +199,9 @@ select_families_install() {
     fi
   else
     info "Selecciona las Nerd Fonts a instalar:"
-    for label in "${labels[@]}"; do
-      if confirm "¿Instalar ${label}?"; then
-        chosen+=("${label}")
+    for i in "${!menu_labels[@]}"; do
+      if confirm "¿Instalar ${menu_labels[$i]}?"; then
+        chosen+=("${labels[$i]}")
       fi
     done
   fi
@@ -203,6 +210,8 @@ select_families_install() {
 
   assets=()
   for item in "${chosen[@]}"; do
+    # Quitar el sufijo "(instalada)" que agrega el menú.
+    item="${item% (instalada)}"
     if asset="$(asset_from_label "${item}")"; then
       assets+=("${asset}")
     else
@@ -268,9 +277,13 @@ install_assets() {
 }
 
 installed_asset() {
-  local asset="$1"
+  local asset="$1" familias
   [[ -z "${asset}" ]] && return 1
-  fc-list 2>/dev/null | cut -d: -f2 | rg -qi "${asset}" && return 0
+  # Capturar la salida ANTES del rg: "rg -q" corta el pipe al primer match y
+  # el productor recibe SIGPIPE; con set -o pipefail la pipeline devuelve 141
+  # (como si no hubiera match) aunque la fuente esté instalada.
+  familias="$(fc-list 2>/dev/null | cut -d: -f2 || true)"
+  rg -qi "${asset}" <<< "${familias}" && return 0
   return 1
 }
 
@@ -283,6 +296,20 @@ verify_installs() {
       warn "No se encontró '${asset}' en fontconfig tras la instalación."
     fi
   done
+}
+
+# Instala + verifica + resumen (cuántas ya estaban instaladas).
+install_batch() {
+  local total=$# ya=0 nuevas a
+  for a in "$@"; do
+    if installed_asset "${a}"; then
+      ya=$((ya + 1))
+    fi
+  done
+  install_assets "$@"
+  verify_installs "$@"
+  nuevas=$((total - ya))
+  ok "Resumen: ${nuevas} instaladas, ${ya} ya estaban instaladas"
 }
 
 warn_configured_missing() {
@@ -388,11 +415,9 @@ if [[ ${CONFIG_ONLY} -eq 0 ]]; then
         assets+=("${item}")
       fi
     done
-    install_assets "${assets[@]}"
-    verify_installs "${assets[@]}"
+    install_batch "${assets[@]}"
   elif select_families_install; then
-    install_assets "${assets[@]}"
-    verify_installs "${assets[@]}"
+    install_batch "${assets[@]}"
   else
     warn "No se seleccionó ninguna fuente para instalar."
   fi

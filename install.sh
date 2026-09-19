@@ -100,7 +100,12 @@ run_component() {
       info "Finalizado: Dev Angular/Node"
       ;;
     "Dotfiles")
-      "${SCRIPT_DIR}/scripts/04-setup-dotfiles.sh"
+      # En instalación completa, 04 aplica todo sin preguntar su submenú.
+      if [[ ${DOTFILES_TODOS} -eq 1 ]]; then
+        "${SCRIPT_DIR}/scripts/04-setup-dotfiles.sh" todos
+      else
+        "${SCRIPT_DIR}/scripts/04-setup-dotfiles.sh"
+      fi
       info "Finalizado: aplicación de dotfiles"
       ;;
     *)
@@ -184,7 +189,9 @@ done
 # 4) Selección de componentes opcionales
 # ---------------------------------------------------------------------------
 sel=()
+DOTFILES_TODOS=0
 if [[ "${opcion_main}" == "Instalación completa (todo)" ]]; then
+  DOTFILES_TODOS=1
   sel=("${COMPONENTES[@]}")
   info "Componentes seleccionados: ${sel[*]}"
 else
