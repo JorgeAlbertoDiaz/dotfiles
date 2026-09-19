@@ -1,117 +1,125 @@
-# Default config for sway
+# ============================================================================
+#  Configuración de Sway — autocontenida (OpenDesk)
+# ============================================================================
+# Reemplaza al default de openSUSE + los includes de /etc/sway/config.d/*:
+# todo lo que traían 50-openSUSE.conf y 55-openSUSE-windows.conf está
+# integrado acá. No se incluyen configs externas.
 #
-# Copy this to ~/.config/sway/config and edit it to your liking.
-#
-# Read `man 5 sway` for a complete reference.
+# Referencia completa: man 5 sway
+# Nombre de outputs/inputs: swaymsg -t get_outputs / swaymsg -t get_inputs
 
-### Variables
-#
-# Logo key. Use Mod1 for Alt.
+# ----------------------------------------------------------------------------
+# Variables
+# ----------------------------------------------------------------------------
 set $mod Mod4
-# Home row direction keys, like vim
+# Direcciones tipo vim (fila central)
 set $left h
 set $down j
 set $up k
 set $right l
-# Your preferred terminal emulator
-set $term alacritty --config-file /etc/alacritty/alacritty.toml
-# Your preferred application launcher
-# Note: pass the final command to swaymsg so that the resulting window can be opened
-# on the original workspace that the command was run on.
-#set $menu dmenu_path | dmenu | xargs swaymsg exec --
-# it is set in config.d/50-openSUSE.conf
+# Terminal
+set $term foot
+# Lanzador de aplicaciones
+set $menu wofi --conf=/etc/wofi/config --style=/etc/wofi/style.css
+# Bloqueo de pantalla (config de openSUSEway)
+set $screenlock 'swaylock --config /etc/swaylock/openSUSEway.conf'
+# OSD de volumen/brillo
+set $wob wob --config /etc/sway/wob/wob.ini
 
-### Output configuration
-#
-# Default wallpaper (more resolutions are available in /usr/share/backgrounds/sway/)
-output * bg /usr/share/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png fill
-#
-# Example configuration:
-#
-#   output HDMI-A-1 resolution 1920x1080 position 1920,0
-#
-# You can get the names of your outputs by running: swaymsg -t get_outputs
+# ----------------------------------------------------------------------------
+# Salida: wallpaper y monitores
+# ----------------------------------------------------------------------------
+output * bg /usr/share/wallpapers/openSUSEdefault/contents/images/default-dark.png fill
+# Monitores físicos (verificados con swaymsg -t get_outputs)
+output HDMI-A-2 resolution 1920x1080 position 0,0
+output HDMI-A-1 resolution 1920x1080 position 1920,0
 
-### Idle configuration
-#
-# Example configuration:
-#
-# exec swayidle -w \
-#          timeout 300 'swaylock -f -c 000000' \
-#          timeout 600 'swaymsg "output * power off"' resume 'swaymsg "output * power on"' \
-#          before-sleep 'swaylock -f -c 000000'
-#
-# This will lock your screen after 300 seconds of inactivity, then turn off
-# your displays after another 300 seconds, and turn your screens back on when
-# resumed. It will also lock your screen before your computer goes to sleep.
+# ----------------------------------------------------------------------------
+# Entrada: teclado y touchpad
+# ----------------------------------------------------------------------------
+# Layout latinoamericano (teclado físico)
+input "type:keyboard" {
+    xkb_layout "latam"
+}
+# Opciones comunes para touchpads genéricos
+input "type:touchpad" {
+    tap enabled
+    natural_scroll enabled
+    middle_emulation enabled
+}
 
-### Input configuration
-#
-# Example configuration:
-#
-#   input "2:14:SynPS/2_Synaptics_TouchPad" {
-#       dwt enabled
-#       tap enabled
-#       natural_scroll enabled
-#       middle_emulation enabled
-#   }
-#
-# You can get the names of your inputs by running: swaymsg -t get_inputs
-# Read `man 5 sway-input` for more information about this section.
+# ----------------------------------------------------------------------------
+# Apariencia general
+# ----------------------------------------------------------------------------
+# Fuente (la personaliza config/sway/scripts/sway-font.sh sobre ~/.config/sway/config)
+font pango:JetBrainsMono Nerd Font 10
+# Bordes finos y espaciado (gaps los personaliza config/sway/scripts/sway-gaps.sh)
+default_border pixel 2
+gaps inner 10
+# Colores de ventana (paleta openSUSE)
+client.focused #6da741 #173f4f #73ba25 #6da741 #00a489
+client.unfocused #00a489 #173f4f #35b9ab
+client.focused_inactive #6da741 #00a489 #173f4f
 
-### Key bindings
-#
-# Basics:
-#
-    # Start a terminal
-    bindsym $mod+Return exec $$term
+# ----------------------------------------------------------------------------
+# Inactividad: bloqueo y apagado de pantalla
+# ----------------------------------------------------------------------------
+exec swayidle -w \
+         timeout 900 $screenlock \
+         timeout 960 'swaymsg "output * power off"' \
+              resume 'swaymsg "output * power on"' \
+         before-sleep $screenlock
 
-    # Kill focused window
+# ----------------------------------------------------------------------------
+# Barra de estado
+# ----------------------------------------------------------------------------
+bar {
+    swaybar_command waybar
+}
+
+# ============================================================================
+# Atajos básicos
+# ============================================================================
+
+    # Terminal
+    bindsym $mod+Return exec $term
+
+    # Cerrar la ventana enfocada
     bindsym $mod+Shift+q kill
 
-    # Start your launcher
+    # Lanzador de aplicaciones
     bindsym $mod+d exec $menu
 
-    # Drag floating windows by holding down $mod and left mouse button.
-    # Resize them with right mouse button + $mod.
-    # Despite the name, also works for non-floating windows.
-    # Change normal to inverse to use left mouse button for resizing and right
-    # mouse button for dragging.
+    # Mover/redimensionar flotantes: arrastrar con $mod+botón izq,
+    # redimensionar con $mod+botón der.
     floating_modifier $mod normal
 
-    # Reload the configuration file
+    # Recargar la configuración de sway
     bindsym $mod+Shift+c reload
 
-    # Exit sway (logs you out of your Wayland session)
-    bindsym $mod+Shift+e exec swaynag -t warning -m 'You pressed the exit shortcut. Do you really want to exit sway? This will end your Wayland session.' -b 'Yes, exit sway' 'swaymsg exit'
-#
-# Moving around:
-#
-    # Move your focus around
+    # $mod+Shift+e abre el menú de sistema (bloquear/salir/reiniciar/...);
+    # reemplaza al "exit con confirmación" clásico de swaynag.
+
+# --- Moverse y mover ventanas (hjkl + flechas) ---
     bindsym $mod+$left focus left
     bindsym $mod+$down focus down
     bindsym $mod+$up focus up
     bindsym $mod+$right focus right
-    # Or use $mod+[up|down|left|right]
     bindsym $mod+Left focus left
     bindsym $mod+Down focus down
     bindsym $mod+Up focus up
     bindsym $mod+Right focus right
 
-    # Move the focused window with the same, but add Shift
     bindsym $mod+Shift+$left move left
     bindsym $mod+Shift+$down move down
     bindsym $mod+Shift+$up move up
     bindsym $mod+Shift+$right move right
-    # Ditto, with arrow keys
     bindsym $mod+Shift+Left move left
     bindsym $mod+Shift+Down move down
     bindsym $mod+Shift+Up move up
     bindsym $mod+Shift+Right move right
-#
-# Workspaces:
-#
-    # Switch to workspace
+
+# --- Espacios de trabajo (1-10) ---
     bindsym $mod+1 workspace number 1
     bindsym $mod+2 workspace number 2
     bindsym $mod+3 workspace number 3
@@ -122,7 +130,7 @@ output * bg /usr/share/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png fill
     bindsym $mod+8 workspace number 8
     bindsym $mod+9 workspace number 9
     bindsym $mod+0 workspace number 10
-    # Move focused container to workspace
+
     bindsym $mod+Shift+1 move container to workspace number 1
     bindsym $mod+Shift+2 move container to workspace number 2
     bindsym $mod+Shift+3 move container to workspace number 3
@@ -133,88 +141,201 @@ output * bg /usr/share/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png fill
     bindsym $mod+Shift+8 move container to workspace number 8
     bindsym $mod+Shift+9 move container to workspace number 9
     bindsym $mod+Shift+0 move container to workspace number 10
-    # Note: workspaces can have any name you want, not just numbers.
-    # We just use 1-10 as the default.
-#
-# Layout stuff:
-#
-    # You can "split" the current object of your focus with
-    # $mod+b or $mod+v, for horizontal and vertical splits
-    # respectively.
-    bindsym $mod+b splith
-    bindsym $mod+v splitv
 
-    # Switch the current container between different layout styles
+    # Ciclar entre espacios de trabajo
+    bindsym $mod+tab workspace next_on_output
+    bindsym $mod+Shift+tab workspace prev_on_output
+
+# --- Layout ---
+    # Dividir horizontal/vertical. --to-code: ata el bind a la tecla física
+    # (no al símbolo), así no se rompe al cambiar de layout de teclado.
+    bindsym --to-code {
+        $mod+b splith
+        $mod+v splitv
+    }
+
+    # Cambiar el layout del contenedor actual
     bindsym $mod+s layout stacking
     bindsym $mod+w layout tabbed
     bindsym $mod+e layout toggle split
 
-    # Make the current focus fullscreen
+    # Pantalla completa
     bindsym $mod+f fullscreen
 
-    # Toggle the current focus between tiling and floating mode
+    # Alternar la ventana enfocada entre empilado y flotante
     bindsym $mod+Shift+space floating toggle
 
-    # Swap focus between the tiling area and the floating area
+    # Alternar el foco entre la zona flotante y la empilada
     bindsym $mod+space focus mode_toggle
 
-    # Move focus to the parent container
+    # Enfocar el contenedor padre
     bindsym $mod+a focus parent
-#
-# Scratchpad:
-#
-    # Sway has a "scratchpad", which is a bag of holding for windows.
-    # You can send windows there and get them back later.
 
-    # Move the currently focused window to the scratchpad
+# --- Scratchpad ---
+    # Mover la ventana enfocada al scratchpad
     bindsym $mod+Shift+minus move scratchpad
-
-    # Show the next scratchpad window or hide the focused scratchpad window.
-    # If there are multiple scratchpad windows, this command cycles through them.
+    # Mostrar la siguiente ventana del scratchpad (o esconder la enfocada)
     bindsym $mod+minus scratchpad show
-#
-# Resizing containers:
-#
+
+# --- Redimensionar (modo) ---
 mode "resize" {
-    # left will shrink the containers width
-    # right will grow the containers width
-    # up will shrink the containers height
-    # down will grow the containers height
+    # hjkl encogen/agrandan el ancho o alto
     bindsym $left resize shrink width 10px
     bindsym $down resize grow height 10px
     bindsym $up resize shrink height 10px
     bindsym $right resize grow width 10px
-
-    # Ditto, with arrow keys
+    # Igual con las flechas
     bindsym Left resize shrink width 10px
     bindsym Down resize grow height 10px
     bindsym Up resize shrink height 10px
     bindsym Right resize grow width 10px
-
-    # Return to default mode
+    # Volver al modo normal
     bindsym Return mode "default"
     bindsym Escape mode "default"
 }
 bindsym $mod+r mode "resize"
 
-#
-# Status Bar:
-#
-# Read `man 5 sway-bar` for more information about this section.
-# it is set in config.d/50-openSUSE.conf
-#bar {
-#    position top
-#
-#    # When the status_command prints a new line to stdout, swaybar updates.
-#    # The default just shows the current date and time.
-#    status_command while date +'%Y-%m-%d %l:%M:%S %p'; do sleep 1; done
-#
-#    colors {
-#        statusline #ffffff
-#        background #323232
-#        inactive_workspace #32323200 #32323200 #5c5c5c
-#    }
-#}
+# ============================================================================
+# Teclas multimedia (XF86)
+# ============================================================================
 
-include /etc/sway/config.d/*.conf
-include ~/.config/sway/config.d/*
+    # Silenciar el micrófono
+    bindsym XF86AudioMicMute exec pactl set-source-mute @DEFAULT_SOURCE@ toggle
+
+    # Brillo: ajustar + aviso visual con wob
+    bindsym XF86MonBrightnessDown exec brightnessctl -q set 5%- && ( echo $((`brightnessctl get` * 100 / `brightnessctl m`)) > $SWAYSOCK.wob )
+    bindsym XF86MonBrightnessUp exec brightnessctl -q set +5% && ( echo $((`brightnessctl get` * 100 / `brightnessctl m`)) > $SWAYSOCK.wob )
+
+    # Volumen: pamixer + aviso con wob (cap al 100%)
+    bindsym XF86AudioRaiseVolume exec pamixer --allow-boost -ui 2 && dc -e "[`pamixer --get-volume`]sM 100d `pamixer --get-volume`<Mp" > $SWAYSOCK.wob
+    bindsym XF86AudioLowerVolume exec pamixer --allow-boost -ud 2 && dc -e "[`pamixer --get-volume`]sM 100d `pamixer --get-volume`<Mp" > $SWAYSOCK.wob
+    bindsym XF86AudioMute exec pamixer --toggle-mute && ( pamixer --get-mute && echo 0 > $SWAYSOCK.wob )
+
+    # Controles de reproducción
+    bindsym --no-warn XF86AudioPlay exec playerctl play-pause
+    bindsym --no-warn XF86AudioNext exec playerctl next
+    bindsym --no-warn XF86AudioPrev exec playerctl previous
+
+# ============================================================================
+# Capturas de pantalla ($mod+Print)
+# ============================================================================
+
+    # Áreas de interés
+    set $selected_window swaymsg -t get_tree | jq -r '.. | select(.pid? and .visible?) | .rect | "\(.x),\(.y) \(.width)x\(.height)"' | slurp
+    set $focused_window swaymsg -t get_tree | jq -j '.. | select(.type?) | select(.focused).rect | "\(.x),\(.y) \(.width)x\(.height)"'
+    set $focused_output swaymsg -t get_outputs | jq -r '.[] | select(.focused) | .name'
+
+    # Capturas (archivo o portapapeles con Ctrl)
+    set $screenshot_full grim
+    set $screenshot_full_clipboard grim - | wl-copy
+    set $screenshot_selected_window $selected_window | grim -g-
+    set $screenshot_selected_window_clipboard $selected_window | grim -g- - | wl-copy
+    set $screenshot_selected_area slurp | grim -g-
+    set $screenshot_selected_area_clipboard slurp | grim -g- - | wl-copy
+    set $screenshot_focused_window $focused_window | grim -g-
+    set $screenshot_focused_window_clipboard $focused_window | grim -g- - | wl-copy
+    set $screenshot_focused_output grim -o $($focused_output)
+    set $screenshot_focused_output_clipboard grim -o $($focused_output) - | wl-copy
+
+    # Menú de captura: (f) completa, (s) ventana, (a) área, (w) ventana
+    # enfocada, (o) salida enfocada. Ctrl+<tecla> guarda en portapapeles.
+    set $screenshot "Screenshot: (f) full, (s) select window, (a) select area, (w) focused window, (o) focused output [Ctrl+ saves to clipboard]"
+    mode $screenshot {
+        bindsym f exec $screenshot_full; mode "default"
+        bindsym Ctrl+f exec $screenshot_full_clipboard; mode "default"
+        bindsym s exec $screenshot_selected_window; mode "default"
+        bindsym Ctrl+s exec $screenshot_selected_window_clipboard; mode "default"
+        bindsym a exec $screenshot_selected_area; mode "default"
+        bindsym Ctrl+a exec $screenshot_selected_area_clipboard; mode "default"
+        bindsym w exec $screenshot_focused_window; mode "default"
+        bindsym Ctrl+w exec $screenshot_focused_window_clipboard; mode "default"
+        bindsym o exec $screenshot_focused_output; mode "default"
+        bindsym Ctrl+o exec $screenshot_focused_output_clipboard; mode "default"
+
+        bindsym Return mode "default"
+        bindsym Escape mode "default"
+        bindsym $mod+Print mode "default"
+    }
+    bindsym $mod+Print mode $screenshot
+
+# ============================================================================
+# Menú de sistema ($mod+Shift+e)
+# ============================================================================
+    set $mode_system "What to do? (l) lock, (e) logout, (r) reboot, (s) suspend, (Shift+s) shutdown"
+    mode $mode_system {
+        bindsym l exec $screenlock; mode "default"
+        bindsym e exec swaymsg exit; mode "default"
+        bindsym r exec systemctl reboot; mode "default"
+        bindsym s exec systemctl suspend; mode "default"
+        bindsym Shift+s exec systemctl poweroff; mode "default"
+
+        bindsym Return mode "default"
+        bindsym Escape mode "default"
+    }
+    bindsym $mod+Shift+e mode $mode_system
+
+# ============================================================================
+# Notificaciones (swaync)
+# ============================================================================
+    # Mostrar/ocultar el centro de notificaciones
+    set $toggle_notification "swaync-client -t -sw"
+    bindsym $mod+Shift+n exec $toggle_notification
+
+# ============================================================================
+# Dashboard OpenDesk ($mod+Slash)
+# ============================================================================
+# Puerta de entrada a los submenús (Sway/Waybar/Sistema). Reemplaza al bind
+# anterior que llamaba a wm-keybinds.sh directo: ahora el dashboard agrupa
+# los keybindings y los scripts de personalización (config/sway/scripts/).
+    bindsym $mod+Slash exec ~/.config/sway/scripts/dashboard.sh
+
+# ============================================================================
+# Ventanas flotantes (adaptado de 55-openSUSE-windows.conf)
+# ============================================================================
+
+    # Utilidades y diálogos de red
+    for_window [app_id="nm-connection-editor"] floating enable
+    # Mixer de audio y monitoreo
+    for_window [app_id="(pavucontrol|psensor)"] floating enable
+    # Reproductor de video
+    for_window [app_id="mpv"] floating enable
+    for_window [app_id="mpv"] resize set 960 540
+    for_window [app_id="mpv"] border pixel 0
+    # Picture-in-Picture y ventanas de Firefox
+    for_window [app_id="firefox" title="Pushbullet"] floating enable
+    for_window [app_id="firefox" title="Firefox — Sharing Indicator"] floating enable
+    for_window [app_id="firefox" title="Picture-in-Picture"] floating enable
+    for_window [app_id="firefox" title="Pushbullet – Mozilla Firefox"] floating enable
+    for_window [app_id="firefox" title="About Mozilla Firefox"] floating enable
+    # Brave, Chrome, Chromium (PiP genérico)
+    for_window [title="Picture-in-picture"] floating enable
+
+    # Reglas para apps GNOME/evolution/nemo (no instaladas en este sistema)
+    # for_window [app_id="(Calendar|Calculator|Power-statistics|Control-center)"] floating enable
+    # for_window [app_id="org.gnome.(Nautilus|Weather)"] floating enable
+    # for_window [app_id="evolution-alarm-notify"] floating enable
+    # for_window [app_id="nemo"] floating enable
+    # for_window [app_id="evolution" title="Compose Message"] floating enable
+    # for_window [app_id="evolution" title="Re(.*)"] floating enable
+    # for_window [app_id="evolution" title="Fwd(.*)"] floating enable
+
+# ============================================================================
+# Autostart (se ejecuta en cada inicio de sesión)
+# ============================================================================
+exec_always {
+    # Pasar el entorno del sistema a los servicios de usuario
+    systemctl --user import-environment
+    # Tema oscuro para apps GTK
+    gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark'
+    gsettings set org.gnome.desktop.interface icon-theme 'Adwaita'
+    gsettings set org.gnome.desktop.interface cursor-theme 'Adwaita'
+    gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
+    # FIFO para los avisos de volumen/brillo (wob)
+    test -e $SWAYSOCK.wob || mkfifo $SWAYSOCK.wob
+    tail -f $SWAYSOCK.wob | $wob
+    # Centro de notificaciones (config del sistema openSUSE)
+    swaync --style /etc/sway/swaync/style.css --config /etc/sway/swaync/config.json
+}
+
+# Agente de autenticación polkit (paquete polkit-gnome)
+exec /usr/libexec/polkit-gnome-authentication-agent-1

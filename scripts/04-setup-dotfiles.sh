@@ -41,6 +41,7 @@ DEPENDENCIAS_CONFIG=(
   "jq|jq"
   "swaylock|swaylock"
   "swaync|swaync"
+  "wob|wob"
   "playerctl|playerctl"
   "pamixer|pamixer"
   "brightnessctl|brightnessctl"
@@ -105,7 +106,11 @@ aplicar_app() {
   info "Aplicando ${app} → ~/.config/${app}"
   mkdir -p "${dest}"
   cp -r "${app_dir}/." "${dest}/"
-  find "${dest}" -name 'customize.sh' -type f -delete
+  # Garantiza que los scripts se copien ejecutables: cp conserva los modos al
+  # crear archivos, pero un destino preexistente mantendría los suyos.
+  if [[ -d "${dest}/scripts" ]]; then
+    find "${dest}/scripts" -type f -name '*.sh' -exec chmod +x {} +
+  fi
   ok "Aplicado ${app}"
 }
 
