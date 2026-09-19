@@ -1,26 +1,25 @@
 #!/usr/bin/env bash
-# wm-keybinds: lista los keybindings activos del WM en una ventana tipo
-# launcher (wofi), filtrable al teclear. Agnóstico de WM: soporta sway
-# (y i3 con --wm=i3, la sintaxis bindsym es compartida).
+# wm-keybinds: lista los keybindings activos del WM de forma hermosa usando gum y fzf.
+# Agnóstico de WM: soporta sway (y i3 con --wm=i3).
 #
 # Uso:
-#   wm-keybinds.sh                Abre wofi con los keybindings (sway auto).
-#   wm-keybinds.sh --wm=i3        Lee ~/.config/i3/config.
-#   wm-keybinds.sh --list         Imprime la lista por stdout (sin wofi).
+#   wm-keybinds.sh                Abre una TUI en terminal con fzf y gum.
+#   wm-keybinds.sh --gui          Fuerza el uso de Wofi (estilo ventana gráfica).
+#   wm-keybinds.sh --list         Imprime la lista por stdout (sin TUI).
 #   wm-keybinds.sh --exec         Al elegir un binding "exec ...", lo ejecuta.
-#
-# Fuentes (sway), en orden de precedencia (el último gana):
-#   ~/.config/sway/config           (base del usuario)
-#   /etc/sway/config.d/*.conf       (sistema, ej. openSUSEway)
-#   ~/.config/sway/config.d/*.conf  (drop-ins del usuario)
+
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "${SCRIPT_DIR}/common.sh"
+# Si tienes tu archivo common.sh, descomenta la siguiente línea:
+# source "${SCRIPT_DIR}/common.sh"
 
 WM="auto"
 LIST_ONLY="false"
 EXEC_ONLY="false"
+USE_GUI="false"
+
+# --- Estilos Wofi (si se usa --gui) ---
 WOFI_STYLE="/etc/wofi/style.css"
 WOFI_WIDTH="900"
 WOFI_HEIGHT="600"
@@ -30,12 +29,13 @@ for arg in "$@"; do
     --wm=*)       WM="${arg#*=}" ;;
     --list)       LIST_ONLY="true" ;;
     --exec)       EXEC_ONLY="true" ;;
+    --gui)        USE_GUI="true" ;;
     --style=*)    WOFI_STYLE="${arg#*=}" ;;
-    *)            error "Argumento desconocido: ${arg}"; exit 1 ;;
+    *)            echo "Argumento desconocido: ${arg}"; exit 1 ;;
   esac
 done
 
-# --- Detectar WM ---
+# --- 1. Detectar WM (Lógica Original Intacta) ---
 if [[ "${WM}" == "auto" ]]; then
   if [[ "${XDG_CURRENT_DESKTOP:-}" == *i3* || "${DESKTOP_SESSION:-}" == *i3* ]]; then
     WM="i3"
@@ -43,7 +43,6 @@ if [[ "${WM}" == "auto" ]]; then
     WM="sway"
   else
     WM="sway"
-    warn "No se detectó el WM; asumo sway (usá --wm=i3 si es i3)"
   fi
 fi
 
@@ -51,22 +50,21 @@ CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 
 case "${WM}" in
   sway)
+    # Config autocontenida: ya no se incluye /etc/sway/config.d/*.conf.
+    # Se lee la config aplicada + drop-ins opcionales si el usuario los crea.
     FILES=("${CONFIG_HOME}/sway/config")
-    FILES+=(/etc/sway/config.d/*.conf)
     FILES+=("${CONFIG_HOME}/sway/config.d/"*.conf)
     ;;
   i3)
     FILES=("${CONFIG_HOME}/i3/config")
     ;;
   *)
-    error "WM no soportado: ${WM} (sway|i3)"
+    echo "WM no soportado: ${WM} (sway|i3)"
     exit 1
     ;;
 esac
 
-# --- Recolectar variables y bindsym ---
-# Estructuras paralelas: bind_keys[i] / bind_actions[i] / bind_modes[i].
-# idx[<mode>|<binding>] -> índice. El último archivo con precedencia gana.
+# --- 2. Recolectar variables y bindsym (Lógica Original Intacta) ---
 declare -A VARS=()
 declare -A idx=()
 bind_keys=()
@@ -99,7 +97,6 @@ while IFS= read -r file; do
     fi
 
     if [[ "${raw}" == "mode "* ]]; then
-      # mode "resize" {  o  mode $screenshot {  o  mode $mode_system {
       body="${raw#mode }"
       body="${body% *}"
       if [[ "${body}" =~ ^\$\{?([A-Za-z_][A-Za-z0-9_]*) ]]; then
@@ -121,8 +118,6 @@ while IFS= read -r file; do
     key=""
     action=""
     if [[ "${raw}" == "unbindsym "* ]]; then
-      # Quitar un binding previamente definido (ej. openSUSE quita $mod+Shift+e
-      # y lo redefine como mode $mode_system).
       ub_rest="${raw#unbindsym }"
       read -ra ub_token <<< "${ub_rest}"
       ub_key="${ub_token[0]}"
@@ -139,7 +134,6 @@ while IFS= read -r file; do
 
     if [[ "${raw}" == "bindsym "* ]]; then
       read -ra tokens <<< "${raw#bindsym }"
-      # Saltar flags (--to-code, --no-warn, --release, --locked, ...)
       while [[ ${#tokens[@]} -gt 0 && "${tokens[0]}" == --* ]]; do
         tokens=("${tokens[@]:1}")
       done
@@ -148,7 +142,6 @@ while IFS= read -r file; do
         action="${tokens[*]:1}"
       fi
     elif [[ -n "${block}" ]]; then
-      # Línea interna de un bloque mode { ... } o bindsym --to-code { ... }
       read -ra tokens <<< "${raw}"
       if [[ ${#tokens[@]} -ge 2 ]]; then
         key="${tokens[0]}"
@@ -161,8 +154,6 @@ while IFS= read -r file; do
       if [[ "${block}" == "mode" && -n "${block_mode}" ]]; then
         mode_prefix="[${block_mode}] "
       fi
-      # Clave interna: placeholder para $ (evita el re-expand de bash en
-      # subíndices de arrays asociativos cuando la clave contiene $mod).
       norm="${key//\$/@}"
       mapkey="${mode_prefix}${norm}"
       if [[ -n "${idx[${mapkey}]-}" ]]; then
@@ -178,12 +169,7 @@ while IFS= read -r file; do
   done < "${file}"
 done <<< "$(printf '%s\n' "${FILES[@]}")"
 
-# --- unbindsym: eliminar del mapa (mismo paso de dedupe posterior) ---
-# (Se procesó arriba como binds? No: unbindsym se ignora por no ser bindsym.
-#  Para honrar unbindsym, lo procesamos en una pasada adicional aquí.)
-
-# --- Expandir variables y armar líneas presentables ---
-# Arrays para el display final.
+# --- 3. Expandir variables ---
 display_keys=()
 display_actions=()
 display_modes=()
@@ -194,9 +180,6 @@ for i in "${!bind_keys[@]}"; do
   action="${bind_actions[i]}"
   mode_prefix="${bind_modes[i]}"
 
-  # Expandir variables en binding y acción. En sway, $$ es un escape de $
-  # literal ($$term se expande en dos pasadas), así que primero protegemos
-  # los $$ y luego restauramos el $ literal tras la expansión.
   protected="${binding}§${action}"
   protected="${protected//\$\$/§}"
   for name in $(printf '%s\n' "${!VARS[@]}" | awk '{ print length, $0 }' | sort -rn | cut -d' ' -f2); do
@@ -207,12 +190,10 @@ for i in "${!bind_keys[@]}"; do
   binding="${protected%%§*}"
   action="${protected#*§}"
 
-  # Dedupe: la última definición (config del usuario) gana sobre la anterior.
   display_keys+=("${mode_prefix}${binding}")
   display_actions+=("${action}")
 done
 
-# --- Describir la acción en lenguaje natural ---
 describe() {
   local a="${1,,}"
   case "${a}" in
@@ -243,7 +224,7 @@ describe() {
     *'resize shrink'*|*'resize grow'*) echo "Redimensionar ventana" ;;
     *brightnessctl*)                  echo "Brillo de pantalla" ;;
     *pactl*|*pamixer*|*volume*|*audio*) echo "Control de audio" ;;
-    *playerctl*)                      echo "Multimedia (reproducir/siguiente/anterior)" ;;
+    *playerctl*)                      echo "Multimedia (reproducir/siguiente)" ;;
     *grim*|*slurp*|*'screenshot'*)    echo "Captura de pantalla" ;;
     *'systemctl reboot'*)             echo "Reiniciar el sistema" ;;
     *'systemctl suspend'*)            echo "Suspender el sistema" ;;
@@ -256,42 +237,89 @@ describe() {
   esac
 }
 
-# --- Presentar con wofi o imprimir ---
+# --- 4. Formateo y Presentación Visual ---
+
+# Preparamos la salida tabular usando un Array para conservar los saltos de línea
 display=()
 for i in "${!display_keys[@]}"; do
   [[ -z "${display_keys[i]}" ]] && continue
   desc="$(describe "${display_actions[i]}")"
-  display+=("${display_keys[i]}  →  ${desc}  (${display_actions[i]})")
+  # Guardamos cada fila como un elemento del array, separados por tabulaciones
+  display+=("$(printf "%s\t%s\t%s" "${display_keys[i]}" "${desc}" "${display_actions[i]}")")
 done
 
+# Opción 1: Solo imprimir lista
 if [[ "${LIST_ONLY}" == "true" ]]; then
-  printf '%s\n' "${display[@]}"
+  printf '%s\n' "${display[@]}" | awk -F'\t' '{printf "%-25s | %-40s | %s\n", $1, $2, $3}'
   exit 0
 fi
 
-if ! command -v wofi &>/dev/null; then
-  warn "wofi no está instalado; listado por stdout:"
-  printf '%s\n' "${display[@]}"
-  exit 0
+selection=""
+
+# Opción 2: Usar Wofi (Modo Gráfico Original)
+if [[ "${USE_GUI}" == "true" ]]; then
+  if command -v wofi &>/dev/null; then
+    selection=$(printf '%s\n' "${display[@]}" | awk -F'\t' '{printf "%-25s | %s\n", $1, $2}' | wofi --dmenu --insensitive --width "${WOFI_WIDTH}" --height "${WOFI_HEIGHT}" --style "${WOFI_STYLE}" --prompt 'Keybindings > ' || true)
+  else
+    echo "Wofi no instalado."
+    exit 1
+  fi
+
+# Opción 3: Usar Terminal TUI con Gum y FZF (Nueva y hermosa)
+else
+  # Verifica dependencias
+  if ! command -v fzf &>/dev/null || ! command -v gum &>/dev/null; then
+      echo "Para la TUI necesitas instalar 'fzf' y 'gum'."
+      exit 1
+  fi
+
+  # Encabezado bonito con Gum
+  gum style --border normal --margin "1" --padding "1 2" --border-foreground 212 "⌨️  Keybindings del Window Manager (${WM})"
+
+  # Usamos printf para volcar el array línea por línea hacia fzf
+  selection=$(printf '%s\n' "${display[@]}" | awk -F'\t' '{printf "%-25s\033[90m|\033[0m%-28s\033[8m%s\033[0m\n", $1, $2, $3}' | \
+      fzf --ansi \
+          --prompt="🔍 Buscar: " \
+          --pointer="▶" \
+          --color="prompt:#ff79c6,pointer:#50fa7b,hl+:#8be9fd" \
+          --layout=reverse \
+          --border=rounded)
 fi
 
-selection="$(printf '%s\n' "${display[@]}" | wofi --dmenu --insensitive \
-  --width "${WOFI_WIDTH}" --height "${WOFI_HEIGHT}" --style "${WOFI_STYLE}" \
-  --prompt 'Keybindings > ' || true)"
 
 [[ -z "${selection}" ]] && exit 0
 
 echo "${selection}"
 
+# --- 5. Ejecutar Acción Seleccionada ---
 if [[ "${EXEC_ONLY}" == "true" ]]; then
-  action="${selection##*  (}"
-  action="${action%)}"
+  # Extraemos el comando real que estaba oculto en la cadena (o al final en Wofi)
+  
+  if [[ "${USE_GUI}" == "true" ]]; then
+     # Para wofi, necesitamos re-mapear la selección a su comando original 
+     key_selected=$(echo "$selection" | awk -F' \\| ' '{print $1}')
+     # Buscamos el key_selected exacto en el arreglo
+     for i in "${!display_keys[@]}"; do
+        if [[ "${display_keys[i]}" == "${key_selected}" ]]; then
+           action="${display_actions[i]}"
+           break
+        fi
+     done
+  else
+     # En fzf está oculto al final gracias a los códigos ANSI, lo extraemos
+     action=$(echo "$selection" | sed -E 's/.*\x1b\[8m(.*)\x1b\[0m.*/\1/')
+  fi
+  
   if [[ "${action}" == exec\ * ]]; then
     cmd="${action#exec }"
+    # Pequeño feedback con gum si se ejecuta en terminal
+    [[ "${USE_GUI}" != "true" ]] && gum spin --spinner dot --title "Ejecutando: $cmd" -- sleep 0.5
+    
     if command -v swaymsg &>/dev/null; then
       swaymsg exec -- "${cmd}" >/dev/null 2>&1 || true
     else
-      warn "swaymsg no disponible; no se ejecuta: ${cmd}"
+      echo "swaymsg no disponible; no se ejecuta: ${cmd}"
     fi
   fi
 fi
+
