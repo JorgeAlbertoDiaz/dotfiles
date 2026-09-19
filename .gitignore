@@ -11,3 +11,6 @@
 
 # Directorio ATL (configuración interna del agente)
 .atl/
+
+# Índice generado por CodeGraph
+.codegraph/
