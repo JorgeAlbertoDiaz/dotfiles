@@ -1,301 +1,389 @@
-# Organización Modular de la Configuración Sway para OpenDesk
+# Sway - Arquitectura Personal de Workstation
 
-## 1. Propósito
+## Filosofía
 
-Este documento define la arquitectura modular para la configuración de Sway dentro del proyecto OpenDesk. El objetivo es garantizar mantenibilidad a largo plazo mediante una estructura de archivos basada en features, perfiles y hosts, tratando la configuración del compositor como código fuente que debe ser versionado, probado y generado de forma declarativa.
+SwayDesk NO busca ser una plataforma multiusuario ni un sistema declarativo complejo.
 
-La propuesta se basa en los siguientes principios:
+El usuario siempre será una sola persona y el objetivo principal es:
 
-- **Separación por dominio**: cada aspecto de la configuración (hardware, atajos, reglas de ventana, etc.) reside en un archivo independiente.
-- **Extensibilidad**: la adición de nuevos dispositivos, perfiles o funcionalidades no requiere modificar archivos existentes.
-- **Generación declarativa**: la configuración final se genera desde una fuente de verdad única (profiles/, themes/, widgets/ y settings.yml), eliminando la edición manual directa.
-- **Reproducibilidad**: el mismo conjunto de archivos produce siempre el mismo estado del compositor.
+- Mantener los dotfiles organizados.
+- Facilitar el mantenimiento a largo plazo.
+- Tener una experiencia moderna en Sway.
+- Evitar complejidad innecesaria.
+- Utilizar archivos reales en lugar de configuraciones generadas.
 
----
+Principio fundamental:
 
-## 2. Estructura del Repositorio
-
-La estructura propuesta para `config/sway/.config/sway/` es la siguiente:
-
-```
-config/sway/
-└── .config/sway/
-    ├── config
-    │
-    ├── features/
-    │   ├── monitors.conf
-    │   ├── inputs.conf
-    │   ├── variables.conf
-    │   ├── autostart.conf
-    │   ├── keybindings.conf
-    │   ├── workspaces.conf
-    │   ├── window-rules.conf
-    │   ├── appearance.conf
-    │   ├── screenshots.conf
-    │   ├── clipboard.conf
-    │   ├── notifications.conf
-    │   └── power.conf
-    │
-    ├── modes/
-    │   ├── resize.conf
-    │   ├── launcher.conf
-    │   └── presentation.conf
-    │
-    ├── hosts/
-    │   ├── desktop.conf
-    │   ├── laptop.conf
-    │   └── vm.conf
-    │
-    └── profiles/
-        ├── developer.conf
-        ├── devops.conf
-        ├── llm.conf
-        └── gaming.conf
-```
+> Tratar la configuración como código bien organizado, no como artefactos generados.
 
 ---
 
-## 3. Configuración Principal
+# Objetivos
 
-El archivo `config` funciona como bootstrap. Su único propósito es cargar los módulos en el orden correcto. No contiene lógica de configuración directa; solo instrucciones de inclusión.
+## Técnicos
 
-```sway
-# Variables globales
-include ~/.config/sway/features/variables.conf
+- openSUSE Tumbleweed.
+- NVIDIA.
+- Sway.
+- Waybar.
+- SwayNC.
+- Walker.
+- AGS (futuro).
+- GNU Stow.
 
-# Hardware
-include ~/.config/sway/features/monitors.conf
-include ~/.config/sway/features/inputs.conf
+## Arquitectónicos
 
-# Apariencia
-include ~/.config/sway/features/appearance.conf
-
-# Ventanas
-include ~/.config/sway/features/window-rules.conf
-include ~/.config/sway/features/workspaces.conf
-
-# Inicio
-include ~/.config/sway/features/autostart.conf
-
-# Funciones
-include ~/.config/sway/features/screenshots.conf
-include ~/.config/sway/features/clipboard.conf
-include ~/.config/sway/features/notifications.conf
-include ~/.config/sway/features/power.conf
-
-# Atajos
-include ~/.config/sway/features/keybindings.conf
-```
-
-El orden de inclusión es significativo. Las variables se cargan primero porque son consumidas por todos los módulos posteriores.
+- Configuración modular.
+- Separación por features.
+- Recarga en caliente.
+- Simplicidad.
+- Git como fuente de verdad.
 
 ---
 
-## 4. Módulos de Features
+# Qué NO será SwayDesk
 
-### 4.1. Variables (`features/variables.conf`)
+No habrá:
 
-Define los alias y valores por defecto que el resto de la configuración consume. Modificar este archivo es la única forma de cambiar el terminal, navegador o editor predeterminado.
+- Generadores de configuración.
+- YAML como fuente principal.
+- Compilación de configuraciones.
+- Motores de templates.
+- Capas de abstracción innecesarias.
 
-```sway
-set $mod Mod4
+Todas las configuraciones serán archivos nativos de las aplicaciones.
 
-set $terminal wezterm
-set $browser firefox
-set $menu walker
+---
 
-set $filemanager thunar
-set $editor nvim
-```
+# Arquitectura General
 
-### 4.2. Monitores (`features/monitors.conf`)
-
-Contiene la configuración de salidas de video. Se mantiene separado porque es el archivo que más varía entre hosts (desktop, laptop, VM).
-
-```sway
-output DP-1 resolution 2560x1440 position 0 0
-output HDMI-A-1 resolution 1920x1080 position 2560 0
-```
-
-### 4.3. Entradas (`features/inputs.conf`)
-
-Configura teclados, touchpads y otros dispositivos de entrada.
-
-```sway
-input type:keyboard {
-    xkb_layout latam
-    xkb_variant
-}
-
-input type:touchpad {
-    tap enabled
-    natural_scroll enabled
-}
-```
-
-### 4.4. Apariencia (`features/appearance.conf`)
-
-Define la estética visual del compositor: bordes, gaps y tipografía.
-
-```sway
-default_border pixel 2
-
-gaps inner 8
-gaps outer 4
-
-font pango:JetBrainsMono Nerd Font 10
-```
-
-### 4.5. Workspaces (`features/workspaces.conf`)
-
-Mapea espacios de trabajo a monitores específicos. Crítico en configuraciones multi-monitor.
-
-```sway
-workspace 1 output DP-1
-workspace 2 output DP-1
-workspace 3 output DP-1
-
-workspace 8 output HDMI-A-1
-workspace 9 output HDMI-A-1
-workspace 10 output HDMI-A-1
-```
-
-### 4.6. Reglas de Ventana (`features/window-rules.conf`)
-
-Define comportamientos específicos por aplicación o título de ventana.
-
-```sway
-for_window [app_id="pavucontrol"] floating enable
-for_window [app_id="blueman-manager"] floating enable
-for_window [title="OpenDesk Dashboard"] floating enable
-```
-
-### 4.7. Autostart (`features/autostart.conf`)
-
-Lista de servicios y procesos que se ejecutan al iniciar la sesión de Sway. Es una de las secciones con mayor tasa de crecimiento.
-
-```sway
-exec swaync
-exec waybar
-exec swww-daemon
-exec nm-applet
-exec cliphist store
-```
-
-### 4.8. Capturas (`features/screenshots.conf`)
-
-Atajos de teclado para la captura de pantalla mediante `grim` y `slurp`.
-
-```sway
-bindsym Print exec grim ~/Pictures/screenshot.png
-bindsym Shift+Print exec grim -g "$(slurp)"
-```
-
-### 4.9. Notificaciones (`features/notifications.conf`)
-
-Atajos para la interacción con el daemon de notificaciones SwayNC.
-
-```sway
-bindsym $mod+n exec swaync-client -t
-```
-
-### 4.10. Energía (`features/power.conf`)
-
-Atajos para el menú de energía del sistema.
-
-```sway
-bindsym $mod+Shift+e exec wlogout
+```text
+openSUSE
+│
+├── NVIDIA
+├── Sway
+├── Waybar
+├── SwayNC
+├── Walker
+├── Foot
+├── WezTerm
+└── GNU Stow
+        │
+        ▼
+   SwayDesk
+        │
+        ├── Dotfiles
+        ├── Themes
+        ├── Profiles
+        ├── Scripts
+        └── Dashboard
 ```
 
 ---
 
-## 5. Subdivisión de Keybindings
+# Árbol Completo del Proyecto
 
-Para mantener el archivo principal limpio, los keybindings se subdividen en un directorio propio:
-
-```
-features/keybindings/
-├── navigation.conf
-├── applications.conf
-├── workspaces.conf
-├── media.conf
-├── screenshots.conf
-├── opendesk.conf
-└── modes.conf
-```
-
-El archivo principal los carga mediante:
-
-```sway
-include ~/.config/sway/features/keybindings/*.conf
+```text
+dotfiles/
+│
+├── install.sh
+│
+├── docs/
+│   ├── architecture.md
+│   ├── roadmap.md
+│   ├── decisions/
+│   ├── diagrams/
+│   └── assets/
+│
+├── packages/
+│   ├── base.txt
+│   ├── desktop-sway.txt
+│   ├── shell.txt
+│   ├── dev.txt
+│   ├── nvidia.txt
+│   └── fonts.txt
+│
+├── scripts/
+│   ├── 00-check-system.sh
+│   ├── 00-xdg-dirs.sh
+│   ├── 01-install-gum.sh
+│   ├── 02-install-packages.sh
+│   ├── 03-nvidia-setup.sh
+│   ├── 04-setup-dotfiles.sh
+│   ├── 05-install-fonts.sh
+│   ├── profile-devops.sh
+│   ├── profile-llm.sh
+│   ├── profile-gaming.sh
+│   └── profile-presentation.sh
+│
+├── config/
+│   ├── sway/
+│   ├── waybar/
+│   ├── foot/
+│   ├── walker/
+│   ├── swaync/
+│   └── environment.d/
+│
+├── profiles/
+├── themes/
+└── assets/
 ```
 
 ---
 
-## 6. Integración con OpenDesk
+# Organización de Sway
 
-El módulo `opendesk.conf` dentro de `keybindings/` define los atajos exclusivos del proyecto. Sway actúa únicamente como disparador de acciones; la lógica reside en OpenDesk.
+## Estructura
 
-```sway
-bindsym $mod+a exec opendesk dashboard
-bindsym $mod+c exec opendesk control-center
-bindsym $mod+p exec opendesk projects
-bindsym $mod+o exec opendesk launcher
-bindsym $mod+comma exec opendesk settings
+```text
+.config/sway/
+│
+├── config
+│
+├── features/
+│   ├── variables.conf
+│   ├── monitors.conf
+│   ├── inputs.conf
+│   ├── appearance.conf
+│   ├── autostart.conf
+│   ├── workspaces.conf
+│   ├── windows.conf
+│   ├── notifications.conf
+│   ├── screenshots.conf
+│   ├── clipboard.conf
+│   └── power.conf
+│
+├── keybindings/
+│   ├── applications.conf
+│   ├── navigation.conf
+│   ├── workspaces.conf
+│   ├── media.conf
+│   ├── system.conf
+│   └── swaydesk.conf
+│
+├── hosts/
+│   ├── desktop.conf
+│   ├── laptop.conf
+│   └── dock.conf
+│
+└── modes/
+    ├── resize.conf
+    └── launcher.conf
 ```
 
 ---
 
-## 7. Perfiles de Trabajo
+# Config Principal de Sway
 
-Los perfiles permiten activar conjuntos de configuración específicos por caso de uso. Cada perfil se carga mediante inclusión directa:
+El archivo principal únicamente importa módulos.
 
+```text
+config
+│
+├── variables
+├── hardware
+├── apariencia
+├── ventanas
+├── inicio
+├── utilidades
+└── keybindings
 ```
+
+Ventajas:
+
+- Fácil mantenimiento.
+- Archivos pequeños.
+- Navegación rápida.
+- Recarga inmediata.
+
+---
+
+# Recarga en Caliente
+
+Se modifican directamente los archivos:
+
+```bash
+~/.config/sway/features/appearance.conf
+```
+
+Posteriormente:
+
+```bash
+swaymsg reload
+```
+
+No existe generación previa.
+
+No existe compilación.
+
+No existe paso intermedio.
+
+---
+
+# Organización de Waybar
+
+```text
+.config/waybar/
+│
+├── config.jsonc
+│
+├── modules/
+│   ├── cpu.jsonc
+│   ├── memory.jsonc
+│   ├── gpu.jsonc
+│   ├── docker.jsonc
+│   ├── weather.jsonc
+│   ├── clock.jsonc
+│   └── notifications.jsonc
+│
+└── styles/
+    ├── colors.css
+    ├── widgets.css
+    ├── workspaces.css
+    └── notifications.css
+```
+
+---
+
+# Perfiles
+
+Los perfiles no generan configuración.
+
+Simplemente activan o desactivan elementos específicos.
+
+```text
 profiles/
-├── developer.conf
-├── devops.conf
-├── llm.conf
-└── presentation.conf
+├── developer
+├── devops
+├── llm
+├── gaming
+└── presentation
 ```
 
-Ejemplo de contenido por perfil:
+Ejemplos:
 
-**DevOps** (`profiles/devops.conf`):
-```sway
-bindsym $mod+d exec lazydocker
-bindsym $mod+k exec kubectl
+- Developer
+- DevOps
+- LLM Local
+- Gaming
+- Presentaciones
+
+---
+
+# Dashboard Futuro
+
+Basado en AGS.
+
+Atajos sugeridos:
+
+```text
+SUPER + A
 ```
 
-**LLM** (`profiles/llm.conf`):
-```sway
-bindsym $mod+l exec opendesk ollama
+Dashboard.
+
+```text
+SUPER + N
+```
+
+Centro de notificaciones.
+
+```text
+SUPER + C
+```
+
+Control Center.
+
+```text
+SUPER + D
+```
+
+Walker Launcher.
+
+---
+
+# Explorador de Archivos
+
+Recomendación principal:
+
+```text
+Yazi
+```
+
+Apoyo gráfico:
+
+```text
+Thunar
+```
+
+Atajo sugerido:
+
+```text
+SUPER + E
 ```
 
 ---
 
-## 8. Hosts
+# Roadmap Técnico
 
-Los archivos de host permiten aplicar configuraciones específicas al hardware donde se ejecuta Sway. Se incluyen condicionalmente según el dispositivo detectado.
+## Fase 1
 
-```
-hosts/
-├── desktop.conf
-├── laptop.conf
-└── vm.conf
-```
+Instalador.
+
+- openSUSE
+- NVIDIA
+- Sway
+- Stow
+
+## Fase 2
+
+Experiencia moderna.
+
+- Waybar
+- SwayNC
+- Walker
+- SwayOSD
+- Swww
+
+## Fase 3
+
+Modularización completa.
+
+- Features
+- Keybindings
+- Modes
+- Hosts
+
+## Fase 4
+
+Dashboard AGS.
+
+- Calendario
+- Estado sistema
+- Acciones rápidas
+
+## Fase 5
+
+Perfiles.
+
+- Developer
+- DevOps
+- LLM
+- Gaming
+- Presentation
+
+## Fase 6
+
+Centro de control.
+
+- Temas
+- Notificaciones
+- Widgets
+- Atajos
 
 ---
 
-## 9. Estrategia de Generación
+# Conclusión
 
-La configuración final no debe ser editada manualmente. Los archivos `.conf` se generan automáticamente desde la configuración declarativa de OpenDesk:
-
-| Fuente declarativa | Artefacto generado |
-|---------------------|---------------------|
-| `profiles/*.yml` | `sway/profiles/*.conf` |
-| `themes/` | `sway/features/appearance.conf` |
-| `widgets/` | `sway/features/autostart.conf` |
-| `settings.yml` | `sway/features/variables.conf` |
-
-Este patrón es análogo a un compilador que genera código binario a partir de una fuente de verdad única. La configuración resultante es limpia, reproducible y mantenible a largo plazo.
+SwayDesk es un entorno personal basado en archivos de configuración reales, organizados por responsabilidad y mantenidos mediante Stow. La prioridad es la simplicidad, la claridad y la mantenibilidad a largo plazo, evitando sistemas de generación o capas de abstracción que no aporten valor para un único usuario.
 
