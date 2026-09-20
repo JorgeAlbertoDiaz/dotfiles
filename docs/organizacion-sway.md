@@ -387,3 +387,19 @@ Centro de control.
 
 SwayDesk es un entorno personal basado en archivos de configuración reales, organizados por responsabilidad y mantenidos mediante Stow. La prioridad es la simplicidad, la claridad y la mantenibilidad a largo plazo, evitando sistemas de generación o capas de abstracción que no aporten valor para un único usuario.
 
+---
+
+# Anexo: Flujo de Datos de la Configuración
+
+El siguiente diagrama muestra cómo fluye la configuración de Sway: el `config` principal delgado incluye los 22 módulos en su orden real (`features/`, `modes/`, `keybindings/` y `hosts/`), el resultado se valida con `sway --validate -c config/sway/config` (exit 0), se despliega en `~/.config/sway/config` y, al editar cualquier módulo, se recarga en caliente con `swaymsg reload`. Los scripts auxiliares de `config/sway/scripts/` operan sobre ese estado.
+
+![Flujo de datos de la config de sway](diagramas/flujo-datos-sway.mmd)
+
+El diagrama vive en un archivo Mermaid externo (`docs/diagramas/flujo-datos-sway.mmd`) — el código no va inline en este documento. Para renderizarlo:
+
+```bash
+mmdc -i docs/diagramas/flujo-datos-sway.mmd -o docs/diagramas/flujo-datos-sway.svg
+```
+
+o abrir el `.mmd` directamente en [mermaid.live](https://mermaid.live).
+

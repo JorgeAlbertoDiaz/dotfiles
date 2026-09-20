@@ -1,0 +1,83 @@
+flowchart LR
+    MAIN["config/sway/config<br/>(config principal delgado — solo includes)"]
+
+    subgraph FEATURES["features/ (11 módulos)"]
+        direction TB
+        F1["variables.conf"]
+        F2["monitors.conf"]
+        F3["inputs.conf"]
+        F4["appearance.conf"]
+        F5["power.conf"]
+        F6["screenshots.conf"]
+        F7["notifications.conf"]
+        F8["windows.conf"]
+        F9["autostart.conf"]
+        F10["workspaces.conf"]
+        F11["clipboard.conf"]
+    end
+
+    subgraph MODOS["modes/ (2 módulos)"]
+        direction TB
+        M1["resize.conf"]
+        M2["launcher.conf"]
+    end
+
+    subgraph KEYBINDINGS["keybindings/ (6 módulos)"]
+        direction TB
+        K1["applications.conf"]
+        K2["navigation.conf"]
+        K3["workspaces.conf"]
+        K4["media.conf"]
+        K5["system.conf"]
+        K6["swaydesk.conf"]
+    end
+
+    subgraph HOSTS["hosts/ (3 módulos)"]
+        direction TB
+        H1["desktop.conf"]
+        H2["laptop.conf"]
+        H3["dock.conf"]
+    end
+
+    subgraph SCRIPTS["scripts (config/sway/scripts)"]
+        direction TB
+        S1["dashboard.sh"]
+        S2["menu-sway.sh"]
+        S3["sway-font.sh"]
+        S4["sway-gaps.sh"]
+        S5["wm-keybinds.sh"]
+    end
+
+    %% Orden real de includes de config/sway/config (22 módulos)
+    MAIN -->|"01"| F1
+    MAIN -->|"02"| F2
+    MAIN -->|"03"| F3
+    MAIN -->|"04"| F4
+    MAIN -->|"05"| F5
+    MAIN -->|"06"| M1
+    MAIN -->|"07"| M2
+    MAIN -->|"08"| K1
+    MAIN -->|"09"| K2
+    MAIN -->|"10"| K3
+    MAIN -->|"11"| K4
+    MAIN -->|"12"| K5
+    MAIN -->|"13"| K6
+    MAIN -->|"14"| F6
+    MAIN -->|"15"| F7
+    MAIN -->|"16"| F8
+    MAIN -->|"17"| F9
+    MAIN -->|"18"| F10
+    MAIN -->|"19"| F11
+    MAIN -->|"20"| H1
+    MAIN -->|"21"| H2
+    MAIN -->|"22"| H3
+
+    FEATURES -->|"11 módulos"| VALIDATE
+    MODOS -->|"2 módulos"| VALIDATE
+    KEYBINDINGS -->|"6 módulos"| VALIDATE
+    HOSTS -->|"3 módulos"| VALIDATE
+
+    VALIDATE["sway --validate -c config/sway/config"] -->|"exit 0"| DEPLOY["~/.config/sway/config<br/>(desplegado con GNU Stow)"]
+    DEPLOY -->|"editar un módulo .conf"| EDIT["Edición directa del archivo"]
+    EDIT -->|"swaymsg reload — recarga en caliente, sin generación ni compilación"| SWAY_RUN["sway en ejecución"]
+    SWAY_RUN -->|"automatizan tareas sobre el compositor"| SCRIPTS
