@@ -18,15 +18,21 @@ Este repositorio no solo guarda dotfiles: incluye un instalador que prepara un s
 |---|---|
 | `install.sh` | Orquestador principal con interfaz TUI (gum) |
 | `scripts/` | Scripts individuales, ejecutables de forma independiente |
-| `packages/` | Archivos `.txt` planos con paquetes zypper (1 por línea) |
+| `packages/` | Archivos `.txt` planos con paquetes (1 por línea): zypper o appids Flatpak |
 | `config/` | Configuraciones de copia directa (cada app a `~/.config/<app>`) |
 | `docs/` | Documentación y diagramas (Mermaid en `.mmd`) |
 
 ### `packages/`
 
-Cada archivo de texto agrupa paquetes por componente. El script
-`scripts/02-install-packages.sh` los recorre línea por línea. Las líneas que
-empiezan por `#` se ignoran.
+Cada archivo de texto agrupa paquetes por componente, bajo un convenio doble:
+
+- `*.txt` planos con paquetes zypper (1 por línea); el script
+  `scripts/02-install-packages.sh` los recorre línea por línea y se ignoran
+  las líneas que empiezan por `#`.
+- `flatpak-apps.txt` con appids de Flathub (1 por línea) que NO pasa por
+  zypper: lo instala `scripts/02b-install-flatpak.sh`, que comprueba la
+  presencia de flatpak antes de tocar flathub y registra el remote `flathub`
+  con `--if-not-exists`.
 
 | Archivo | Componente |
 |---|---|
@@ -34,7 +40,13 @@ empiezan por `#` se ignoran.
 | `desktop-sway.txt` | Escritorio Sway + utilidades Wayland |
 | `nvidia.txt` | Controladores NVIDIA (GTX 1060 3 GB) |
 | `shell.txt` | Shell, terminal y editor |
-| `dev.txt` | Herramientas de desarrollo |
+| `dev-core.txt` | Herramientas de desarrollo comunes |
+| `dev-php.txt` | Desarrollo PHP (nombres versionados `php8-*`) |
+| `dev-db.txt` | Bases de datos y contenedores (mariadb, sqlite3, podman) |
+| `dev-rust.txt` | Desarrollo Rust |
+| `dev-python.txt` | Desarrollo Python |
+| `dev-angular.txt` | Desarrollo Angular/Node |
+| `flatpak-apps.txt` | Aplicaciones Flatpak (appids de Flathub, 1 por línea) |
 
 ### `config/` (copia directa)
 

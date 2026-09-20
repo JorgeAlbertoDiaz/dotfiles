@@ -1,0 +1,6 @@
+# Dev: bases de datos y contenedores
+mariadb
+mariadb-client
+sqlite3
+podman
+python314-podman-compose

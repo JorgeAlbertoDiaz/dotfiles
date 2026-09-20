@@ -267,6 +267,23 @@ info "Instalando componentes obligatorios (base, shell)..."
 run_component base
 run_component shell
 
+# ---------------------------------------------------------------------------
+# Flatpak: paso opt-in tras la instalación de paquetes base/shell
+#     (02b comprueba que flatpak esté instalado antes de tocar flathub)
+# ---------------------------------------------------------------------------
+FLATPAK_MSG="¿Instalar aplicaciones Flatpak (Thunderbird, DBeaver, Postman, OnlyOffice)?"
+INSTALAR_FLATPAK=0
+if command -v gum &>/dev/null; then
+  gum confirm --default=false "${FLATPAK_MSG}" && INSTALAR_FLATPAK=1
+else
+  confirm "${FLATPAK_MSG}" && INSTALAR_FLATPAK=1
+fi
+if [[ ${INSTALAR_FLATPAK} -eq 1 ]]; then
+  "${SCRIPT_DIR}/scripts/02b-install-flatpak.sh"
+else
+  warn "Omitiendo la instalación de aplicaciones Flatpak"
+fi
+
 # Fuentes automáticas: se ejecutan cuando no se eligieron explícitamente
 FONT_AUTO_DONE=0
 run_fonts_auto() {

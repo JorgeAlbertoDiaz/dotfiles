@@ -1,0 +1,6 @@
+# Aplicaciones Flatpak (se instalan con el paso flatpak, no con zypper)
+# Verificado contra flathub.org — appids exactos
+io.dbeaver.DBeaverCommunity
+com.getpostman.Postman
+org.mozilla.Thunderbird
+org.onlyoffice.desktopeditors

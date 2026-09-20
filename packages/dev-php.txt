@@ -6,5 +6,7 @@ php8-mbstring
 php8-xmlreader
 php8-zip
 php8-curl
-php8-mysql
 composer
+# Extensiones de base de datos para PHP (nombres versionados openSUSE)
+php8-mysql
+php8-sqlite
