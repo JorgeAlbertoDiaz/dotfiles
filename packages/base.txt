@@ -17,3 +17,5 @@ inotify-tools
 figlet
 openssh
 speedtest-cli
+fastfetch
+flatpak
