@@ -35,6 +35,7 @@ COMPONENTES=(
   "Dev Rust"
   "Dev Python"
   "Dev Angular/Node"
+  "Dev Bases de Datos"
   "Dotfiles"
 )
 
