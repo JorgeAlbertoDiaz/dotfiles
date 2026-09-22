@@ -8,27 +8,21 @@
         "sway/workspaces"
     ],
 
-    "modules-center": [],
+    "modules-center": [
+        "custom/weather"
+    ],
 
     "modules-right": [
         "custom/notification",
         "clock"
     ],
 
-    "clock": {
-        "format": "󰃰 {:%d/%m/%Y %H:%M}",
-        "tooltip-format": "<tt><small>{calendar}</small></tt>",
-        "calendar": {
-            "mode": "month",
-            "mode-mon-col": 3,
-            "on-scroll": 1,
-            "format": {
-                "months": "<span color='#ffead3'><b>{}</b></span>",
-                "days": "<span color='#ecc6d9'><b>{}</b></span>",
-                "today": "<span color='#ff6699'><b><u>{}</u></b></span>"
-            }
-        },
-        "on-click": "tu_terminal -e calcurse"
+    "custom/weather": {
+        "format": "{} ",
+        "tooltip": true,
+        "interval": 3600,
+        "exec": "curl -s 'https://wttr.in/Tafi%20Viejo,Tucuman,Argentina?format=%c+%t'",
+        "exec-if": "ping wttr.in -c1"
     },
 
     "custom/notification": {
@@ -50,5 +44,21 @@
         "on-click": "swaync-client -t -sw",
         "on-click-right": "swaync-client -d -sw",
         "escape": true
+    },
+
+    "clock": {
+        "format": "󰃰 {:%d/%m/%Y %H:%M}",
+        "tooltip-format": "<tt><small>{calendar}</small></tt>",
+        "calendar": {
+            "mode": "month",
+            "mode-mon-col": 3,
+            "on-scroll": 1,
+            "format": {
+                "months": "<span color='#ffead3'><b>{}</b></span>",
+                "days": "<span color='#ecc6d9'><b>{}</b></span>",
+                "today": "<span color='#ff6699'><b><u>{}</u></b></span>"
+            }
+        },
+        "on-click": "tu_terminal -e calcurse"
     }
 }
