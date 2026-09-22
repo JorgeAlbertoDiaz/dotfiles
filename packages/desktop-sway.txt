@@ -24,4 +24,3 @@ libnotify-tools
 swappy
 cliphist
 wf-recorder
-kooha
