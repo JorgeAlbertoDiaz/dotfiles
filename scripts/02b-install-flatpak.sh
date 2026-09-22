@@ -28,12 +28,12 @@ fi
 # ---------------------------------------------------------------------------
 # 2) Remote flathub (idempotente)
 # ---------------------------------------------------------------------------
-info "Registrando el remote flathub (si no existe)..."
-if ! flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo; then
-  error "No se pudo registrar el remote flathub"
+info "Registrando el remote flathub (si no existe) a nivel de usuario..."
+if ! flatpak remote-add --if-not-exists --user flathub https://flathub.org/repo/flathub.flatpakrepo; then
+  error "No se pudo registrar el remote flathub a nivel de usuario"
   exit 1
 fi
-ok "Remote flathub disponible"
+ok "Remote flathub disponible a nivel de usuario"
 
 # ---------------------------------------------------------------------------
 # 3) Aplicaciones Flatpak
