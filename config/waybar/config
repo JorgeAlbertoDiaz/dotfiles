@@ -5,34 +5,30 @@
     "spacing": 8,
 
     "modules-left": [
-        "custom/weather",
-        "network"
+        "sway/workspaces"
     ],
 
-    "modules-center": [
-        "custom/notification"
-    ],
+    "modules-center": [],
 
     "modules-right": [
+        "custom/notification",
         "clock"
     ],
 
-    "custom/weather": {
-        "format": "{} ",
-        "tooltip": true,
-        "interval": 3600,
-        "exec": "curl -s 'https://wttr.in/Tafi%20Viejo,Tucuman,Argentina?format=%c+%t'",
-        "exec-if": "ping wttr.in -c1"
-    },
-
-    "network": {
-        "format-wifi": "󰤨  {essid}",
-        "format-ethernet": "󰈀  {ipaddr}/{cidr}",
-        "format-disconnected": "󰤭  Desconectado",
-        "tooltip-format": "{ifname} via {gwaddr} 󰊗",
-        "tooltip-format-wifi": "{essid} ({signalStrength}%) 󰤨",
-        "tooltip-format-disconnected": "Desconectado",
-        "on-click": "tu_terminal -e nmtui" 
+    "clock": {
+        "format": "󰃰 {:%d/%m/%Y %H:%M}",
+        "tooltip-format": "<tt><small>{calendar}</small></tt>",
+        "calendar": {
+            "mode": "month",
+            "mode-mon-col": 3,
+            "on-scroll": 1,
+            "format": {
+                "months": "<span color='#ffead3'><b>{}</b></span>",
+                "days": "<span color='#ecc6d9'><b>{}</b></span>",
+                "today": "<span color='#ff6699'><b><u>{}</u></b></span>"
+            }
+        },
+        "on-click": "tu_terminal -e calcurse"
     },
 
     "custom/notification": {
@@ -54,24 +50,5 @@
         "on-click": "swaync-client -t -sw",
         "on-click-right": "swaync-client -d -sw",
         "escape": true
-    },
-
-    "clock": {
-        "format": "󰃰 {:%d/%m/%Y %H:%M}",
-        "tooltip-format": "<tt><small>{calendar}</small></tt>",
-        "calendar": {
-            "mode": "month",
-            "mode-mon-col": 3,
-            "on-scroll": 1,
-            "format": {
-                "months": "<span color='#ffead3'><b>{}</b></span>",
-                "days": "<span color='#ecc6d9'><b>{}</b></span>",
-                "today": "<span color='#ff6699'><b><u>{}</u></b></span>"
-            }
-        },
-        "on-click": "tu_terminal -e calcurse"
-    },
-
-    "font-family": "JetBrainsMono Nerd Font",
-    "font-size": 16
+    }
 }
