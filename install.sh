@@ -98,6 +98,7 @@ run_component() {
         warn "Omitiendo la instalación del Angular CLI"
       fi
       info "Finalizado: Dev Angular/Node"
+      ;;
 
     "Dev Bases de Datos")
       "${SCRIPT_DIR}/scripts/02-install-packages.sh" dev-db.txt
