@@ -60,7 +60,7 @@ fi
 info "Instalando ${#apps[@]} aplicación(es) Flatpak desde flathub..."
 for app in "${apps[@]}"; do
   info "Instalando: ${app}"
-  flatpak install -y --noninteractive flathub "${app}"
+  flatpak install -y --noninteractive --user flathub "${app}"
   ok "Instalada: ${app}"
 done
 
