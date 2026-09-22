@@ -304,6 +304,12 @@ for item in "${sel[@]}"; do
   run_component "${item}"
 done
 
+# Si el usuario seleccionó Escritorio Sway pero el array sel quedó vacío
+# en algunos entornos, asegurarnos de instalarlo igualmente.
+if [[ " ${sel[*]} " == *" Escritorio Sway "* ]] || [[ ${#sel[@]} -eq 0 ]]; then
+  run_component "Escritorio Sway"
+fi
+
 # Si dotfiles no estaba en la lista pero hay fuentes automáticas pendientes
 if [[ ${FONT_AUTO} -eq 1 && ${FONT_AUTO_DONE} -eq 0 ]]; then
   run_fonts_auto
