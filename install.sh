@@ -89,7 +89,7 @@ run_component() {
       "${SCRIPT_DIR}/scripts/02-install-packages.sh" dev-python.txt
       info "Finalizado: Dev Python"
       ;;
-    "Dev Angular/Node")
+"Dev Angular/Node")
       "${SCRIPT_DIR}/scripts/02-install-packages.sh" dev-angular.txt
       if confirm "¿Instalar también el CLI de Angular globalmente (npm install -g @angular/cli)?"; then
         as_root npm install -g @angular/cli
@@ -98,6 +98,11 @@ run_component() {
         warn "Omitiendo la instalación del Angular CLI"
       fi
       info "Finalizado: Dev Angular/Node"
+
+    "Dev Bases de Datos")
+      "${SCRIPT_DIR}/scripts/02-install-packages.sh" dev-db.txt
+      info "Finalizado: Dev Bases de Datos"
+
       ;;
     "Dotfiles")
       # En instalación completa, 04 aplica todo sin preguntar su submenú.
