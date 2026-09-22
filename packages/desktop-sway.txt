@@ -20,3 +20,8 @@ wob
 kanshi
 feh
 swaync
+libnotify-tools
+swappy
+cliphist
+wf-recorder
+kooha
