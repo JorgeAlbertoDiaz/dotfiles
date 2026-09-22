@@ -1,52 +1,77 @@
 {
     "layer": "top",
     "position": "top",
+    "height": 30,
+    "spacing": 8,
 
     "modules-left": [
-        "sway/workspaces"
+        "custom/weather",
+        "network"
     ],
 
     "modules-center": [
-        "clock"
+        "custom/notification"
     ],
 
     "modules-right": [
-        "pulseaudio",
-        "network",
-        "cpu",
-        "memory",
-        "battery",
-        "tray"
+        "clock"
     ],
 
-    "clock": {
-        "format": "{:%d/%m/%Y %H:%M}"
-    },
-
-    "cpu": {
-        "format": " {usage}%"
-    },
-
-    "memory": {
-        "format": " {used:0.1f}GiB"
+    "custom/weather": {
+        "format": "{} ",
+        "tooltip": true,
+        "interval": 3600,
+        "exec": "curl -s 'https://wttr.in/Tafi%20Viejo,Tucuman,Argentina?format=%c+%t'",
+        "exec-if": "ping wttr.in -c1"
     },
 
     "network": {
-        "format-wifi": " {essid}",
-        "format-ethernet": "󰈀 {ipaddr}",
-        "format-disconnected": "󰖪 desconectado"
+        "format-wifi": "󰤨  {essid}",
+        "format-ethernet": "󰈀  {ipaddr}/{cidr}",
+        "format-disconnected": "󰤭  Desconectado",
+        "tooltip-format": "{ifname} via {gwaddr} 󰊗",
+        "tooltip-format-wifi": "{essid} ({signalStrength}%) 󰤨",
+        "tooltip-format-disconnected": "Desconectado",
+        "on-click": "tu_terminal -e nmtui" 
     },
 
-    "pulseaudio": {
-        "format": " {volume}%",
-        "format-muted": "󰝟 muted"
+    "custom/notification": {
+        "tooltip": false,
+        "format": " {icon} ",
+        "format-icons": {
+            "notification": "󰂚<span foreground='red'><sup></sup></span>",
+            "none": "󰂚",
+            "dnd-notification": "󰂛<span foreground='red'><sup></sup></span>",
+            "dnd-none": "󰂛",
+            "inhibited-notification": "󰂚<span foreground='red'><sup></sup></span>",
+            "inhibited-none": "󰂚",
+            "dnd-inhibited-notification": "󰂛<span foreground='red'><sup></sup></span>",
+            "dnd-inhibited-none": "󰂛"
+        },
+        "return-type": "json",
+        "exec-if": "which swaync-client",
+        "exec": "swaync-client -swb",
+        "on-click": "swaync-client -t -sw",
+        "on-click-right": "swaync-client -d -sw",
+        "escape": true
     },
 
-    "battery": {
-        "format": " {capacity}%"
+    "clock": {
+        "format": "󰃰 {:%d/%m/%Y %H:%M}",
+        "tooltip-format": "<tt><small>{calendar}</small></tt>",
+        "calendar": {
+            "mode": "month",
+            "mode-mon-col": 3,
+            "on-scroll": 1,
+            "format": {
+                "months": "<span color='#ffead3'><b>{}</b></span>",
+                "days": "<span color='#ecc6d9'><b>{}</b></span>",
+                "today": "<span color='#ff6699'><b><u>{}</u></b></span>"
+            }
+        },
+        "on-click": "tu_terminal -e calcurse"
     },
 
-    "tray": {
-        "spacing": 8
-    }
+    "font-family": "JetBrainsMono Nerd Font",
+    "font-size": 16
 }
