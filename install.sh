@@ -59,6 +59,7 @@ run_component() {
 
   case "${item}" in
     base|shell)
+      info "Ejecutando: ${SCRIPT_DIR}/scripts/02-install-packages.sh ${item}.txt"
       "${SCRIPT_DIR}/scripts/02-install-packages.sh" "${item}.txt"
       info "Finalizado: ${item}"
       ;;
