@@ -1,23 +1,25 @@
 #!/usr/bin/env bash
 # sway-font.sh — personaliza la fuente de sway sobre la config APLICADA
-# (~/.config/sway/config), no sobre la del repositorio.
+# (~/.config/sway), no sobre la del repositorio.
 #
 # Uso:
 #   sway-font.sh                      # interactivo: familia + tamaño en wofi
 #   sway-font.sh <familia>            # aplica familia (tamaño actual o por defecto)
 #   sway-font.sh <familia> <tamaño>   # aplica familia y tamaño
 #
-# Reescribe la línea "font pango:" del config de sway conservando el resto. Si
-# esa línea delega en $font-family/$font-size, edita esas variables en vez de
-# pisarla. Si la línea no existe, la agrega en la sección de Variables. Si hay
-# una sesión de sway activa, recarga la configuración.
+# Edita el archivo del árbol que REALMENTE tiene la fuente: si la línea
+# "font pango:" delega en $font-family/$font-size, reescribe esas variables donde
+# estén definidas y deja la línea intacta; si la lleva literal, reescribe la
+# línea donde esté. Nunca agrega una línea nueva. Si más de un archivo declara
+# "font pango:" no elige por vos: lo dice y sale. Si hay una sesión de sway
+# activa, recarga la configuración.
 set -euo pipefail
 
 CONFIG_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/sway/config"
 DEFAULT_FAMILY='JetBrainsMono Nerd Font'
-# Módulo que define $font-family / $font-size. Solo se toca si la línea
-# "font pango:" delega el valor en esas variables en vez de llevarlo literal.
-VARS_FILE="$(dirname "${CONFIG_FILE}")/features/variables-colors.conf"
+# Se resuelve en tiempo de ejecución (ver archivo_variables): quién define
+# $font-family depende de cómo esté montado el árbol de cada máquina.
+VARS_FILE=''
 
 # Opciones base de wofi (estilo consistente con el launcher del sistema).
 WOFI_OPTS=(--dmenu --insensitive)
@@ -46,19 +48,126 @@ elegir_tamano() {
     wofi "${WOFI_OPTS[@]}" --prompt 'Tamaño > ' || true
 }
 
-# Tamaño actual definido en la config (para usarlo como default al editar).
-# La línea "font pango:" tiene dos formas válidas: literal
-# ("font pango:JetBrainsMono Nerd Font 12") o delegada en variables
-# ("font pango:$font-family $font-size"). En la segunda el número no está en
-# esa línea, así que la captura devuelve la variable y el tamaño real se lee
-# de "set $font-size".
+# --- Dónde vive la fuente dentro del árbol de configuración ---
+# Ni la línea "font pango:" ni las variables que la alimentan están en el config
+# raíz: viven en módulos incluidos (features/appearance.conf y
+# features/variables-colors.conf). El script no adivina qué archivo es: recorre
+# los que el config raíz carga y exige que cada valor tenga un único dueño.
+
+TREE=()
+TREE_VISTOS=''
+CANDIDATOS=()
+
+# Recorre en profundidad los includes de un archivo, en el orden en que sway los
+# lee (primero el config raíz, después sus includes). Tope de profundidad y
+# control de ciclos para que un include recursivo no cuelgue el script.
+_recolectar() {
+  local archivo="$1" nivel="$2" include patron hijo
+  if [[ "${nivel}" -gt 8 ]] || [[ " ${TREE_VISTOS} " == *" ${archivo} "* ]]; then
+    return 0
+  fi
+  TREE_VISTOS+=" ${archivo}"
+  TREE+=("${archivo}")
+  while read -r include; do
+    [[ -n "${include}" ]] || continue
+    if [[ "${include}" == /* ]]; then
+      patron="${include}"
+    else
+      patron="$(dirname "${archivo}")/${include}"
+    fi
+    # Sin entrecomillar para que un include con comodín se expanda; los
+    # patrones sin coincidencia caen en el -f y se descartan.
+    for hijo in ${patron}; do
+      if [[ -f "${hijo}" ]]; then
+        _recolectar "${hijo}" "$(( nivel + 1 ))"
+      fi
+    done
+  done < <(sed -nE 's/^[[:space:]]*include[[:space:]]+//p' "${archivo}" 2>/dev/null)
+}
+
+# CANDIDATOS = archivos del árbol con una línea que matchea $1.
+buscar_en_arbol() {
+  local regex="$1" archivo
+  TREE=()
+  TREE_VISTOS=''
+  CANDIDATOS=()
+  _recolectar "${CONFIG_FILE}" 0
+  for archivo in ${TREE[@]+"${TREE[@]}"}; do
+    if grep -qlE "${regex}" "${archivo}" 2>/dev/null; then
+      CANDIDATOS+=("${archivo}")
+    fi
+  done
+}
+
+# Resuelve el único dueño de un valor o explica por qué no se puede decidir.
+# $1 = regex, $2 = qué se busca, $3 = pista para el usuario.
+resolver_unico() {
+  local regex="$1" que="$2" pista="$3" rc=0
+  unico_en_arbol "${regex}" || rc=$?
+  case "${rc}" in
+    0) return 0 ;;
+    1)
+      echo "No encontré ${que} en el árbol de configuración de sway." >&2
+      echo "  Busqué en ${#TREE[@]} archivos alcanzables desde ${CONFIG_FILE}" >&2
+      echo "  (directorio base: $(dirname "${CONFIG_FILE}"))." >&2
+      echo "  ${pista}" >&2
+      return 1 ;;
+    *)
+      echo "Hay ${#CANDIDATOS[@]} archivos que definen ${que}; no puedo elegir por vos:" >&2
+      printf '  %s\n' "${CANDIDATOS[@]}" >&2
+      echo "  Dejá una sola definición y volvé a correr el script." >&2
+      return 1 ;;
+  esac
+}
+
+# Imprime el path del único archivo que matchea $1. Falla con 1 si no hay
+# ninguno y con 2 si hay varios: en el caso múltiple el llamador avisa.
+unico_en_arbol() {
+  buscar_en_arbol "$1"
+  case "${#CANDIDATOS[@]}" in
+    0) return 1 ;;
+    1) printf '%s' "${CANDIDATOS[0]}" ;;
+    *) return 2 ;;
+  esac
+}
+
+# Archivo que declara la fuente.
+archivo_fuente() {
+  resolver_unico '^font pango:' 'una línea "font pango:"' \
+    'Revisá que features/appearance.conf siga declarando la fuente.'
+}
+
+# Archivo que define $font-family (y por lo tanto $font-size).
+archivo_variables() {
+  resolver_unico '^set[[:space:]]+\$font-family[[:space:]]' 'la variable $font-family' \
+    'La línea "font pango:" delega en $font-family, pero nadie lo define.'
+}
+
+# Tamaño actual de la fuente, sea literal o delegado en $font-size. Vacío si no
+# se puede determinar: el llamador aplica su default.
 tamano_actual() {
-  local token
-  token="$(sed -nE 's|^font pango:.* (\$[A-Za-z-]+\|[0-9]+)$|\1|p' "${CONFIG_FILE}" 2>/dev/null | head -n1)"
+  local fuente variables token salida
+  fuente="$(archivo_fuente 2>/dev/null)" || return 0
+  salida="$(sed -nE 's|^font pango:.* (\$[A-Za-z-]+\|[0-9]+)$|\1|p' "${fuente}" 2>/dev/null)"
+  token="${salida%%$'\n'*}"
   if [[ "${token}" == \$* ]]; then
-    token="$(sed -nE 's|^set \$font-size +([0-9]+).*$|\1|p' "${VARS_FILE}" 2>/dev/null | head -n1)"
+    # Delegada: el número no está en la línea, está en "set $font-size".
+    variables="$(archivo_variables 2>/dev/null)" || return 0
+    salida="$(sed -nE 's|^set[[:space:]]+\$font-size[[:space:]]+([0-9]+).*$|\1|p' "${variables}" 2>/dev/null)"
+    token="${salida%%$'\n'*}"
   fi
   printf '%s' "${token}"
+}
+
+# Escapa una cadena para usarla como REEMPLAZO en sed: el separador elegido
+# (|), & (que expande al texto matcheado) y \ (backreference) tienen
+# significado. El orden importa: primero la barra invertida.
+escapar_sed() {
+  local s="$1"
+  s="${s//\\/\\\\}"
+  s="${s//&/\\&}"
+  s="${s//|/\\|}"
+  printf '%s' "${s}"
 }
 
 cambiar_fuente() {
@@ -66,34 +175,31 @@ cambiar_fuente() {
   local tamano="$2"
   local nueva_linea="font pango:${familia}"
   [[ -n "${tamano}" ]] && nueva_linea="font pango:${familia} ${tamano}"
+  # La familia viene de wofi o de la línea de comandos: no se asume que sea
+  # "limpia", así que se escapa antes de interpolarla en un sed.
+  local familia_sed tamano_sed
+  familia_sed="$(escapar_sed "${familia}")"
+  tamano_sed="$(escapar_sed "${tamano}")"
 
   if [[ ! -f "${CONFIG_FILE}" ]]; then
     echo "No existe ${CONFIG_FILE}; primero aplicá los dotfiles (scripts/04-setup-dotfiles.sh)." >&2
     return 1
   fi
 
-  if grep -qE '^font pango:.* \$' "${CONFIG_FILE}"; then
-    # La línea delega en $font-family/$font-size: el valor real no está ahí, así
-    # que se edita el módulo de variables y la línea se deja intacta.
-    if [[ ! -f "${VARS_FILE}" ]]; then
-      echo "No existe ${VARS_FILE}; no se puede editar \$font-family/\$font-size." >&2
-      return 1
-    fi
-    sed -i -E "s|^set \\\$font-family .*|set \\\$font-family ${familia}|" "${VARS_FILE}"
+  local fuente
+  fuente="$(archivo_fuente)" || return 1
+
+  if grep -qE '^font pango:.* \$' "${fuente}"; then
+    # Delegada: el valor real no está en la línea, así que se edita quien define
+    # la variable y la línea "font pango:" queda byte a byte igual.
+    VARS_FILE="$(archivo_variables)" || return 1
+    sed -i -E "s|^set[[:space:]]+\\\$font-family[[:space:]].*|set \$font-family ${familia_sed}|" "${VARS_FILE}"
     if [[ -n "${tamano}" ]]; then
-      sed -i -E "s|^set \\\$font-size .*|set \\\$font-size ${tamano}|" "${VARS_FILE}"
+      sed -i -E "s|^set[[:space:]]+\\\$font-size[[:space:]].*|set \$font-size ${tamano_sed}|" "${VARS_FILE}"
     fi
-  elif grep -q '^font pango:' "${CONFIG_FILE}"; then
-    sed -i -E "s|^font pango:.*|${nueva_linea}|" "${CONFIG_FILE}"
   else
-    # No existe la línea: la agrega tras la sección de Variables (o al final).
-    local linea_vars
-    linea_vars="$(grep -n -iE '^# *variables' "${CONFIG_FILE}" 2>/dev/null | head -n1 | cut -d: -f1 || true)"
-    if [[ -n "${linea_vars}" ]]; then
-      sed -i "${linea_vars}a ${nueva_linea}" "${CONFIG_FILE}"
-    else
-      printf '%s\n' "${nueva_linea}" >> "${CONFIG_FILE}"
-    fi
+    # Literal: se reescribe la línea donde está, sin tocar el resto.
+    sed -i -E "s|^font pango:.*|font pango:${familia_sed}${tamano:+ ${tamano_sed}}|" "${fuente}"
   fi
 
   echo "Fuente de sway actualizada: ${nueva_linea}"
