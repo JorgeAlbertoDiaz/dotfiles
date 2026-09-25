@@ -141,7 +141,7 @@ dotfiles/
 ├── config
 │
 ├── features/
-│   ├── variables.conf
+│   ├── variables-colors.conf
 │   ├── monitors.conf
 │   ├── inputs.conf
 │   ├── appearance.conf

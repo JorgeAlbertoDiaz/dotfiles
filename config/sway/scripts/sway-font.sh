@@ -7,13 +7,17 @@
 #   sway-font.sh <familia>            # aplica familia (tamaño actual o por defecto)
 #   sway-font.sh <familia> <tamaño>   # aplica familia y tamaño
 #
-# Reescribe la línea "font pango:" del config de sway conservando el resto.
-# Si la línea no existe, la agrega en la sección de Variables. Si hay una
-# sesión de sway activa, recarga la configuración.
+# Reescribe la línea "font pango:" del config de sway conservando el resto. Si
+# esa línea delega en $font-family/$font-size, edita esas variables en vez de
+# pisarla. Si la línea no existe, la agrega en la sección de Variables. Si hay
+# una sesión de sway activa, recarga la configuración.
 set -euo pipefail
 
 CONFIG_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/sway/config"
 DEFAULT_FAMILY='JetBrainsMono Nerd Font'
+# Módulo que define $font-family / $font-size. Solo se toca si la línea
+# "font pango:" delega el valor en esas variables en vez de llevarlo literal.
+VARS_FILE="$(dirname "${CONFIG_FILE}")/features/variables-colors.conf"
 
 # Opciones base de wofi (estilo consistente con el launcher del sistema).
 WOFI_OPTS=(--dmenu --insensitive)
@@ -43,8 +47,18 @@ elegir_tamano() {
 }
 
 # Tamaño actual definido en la config (para usarlo como default al editar).
+# La línea "font pango:" tiene dos formas válidas: literal
+# ("font pango:JetBrainsMono Nerd Font 12") o delegada en variables
+# ("font pango:$font-family $font-size"). En la segunda el número no está en
+# esa línea, así que la captura devuelve la variable y el tamaño real se lee
+# de "set $font-size".
 tamano_actual() {
-  sed -nE 's/^font pango:[^ ]+ ([0-9]+)$/\1/p' "${CONFIG_FILE}" 2>/dev/null | head -n1
+  local token
+  token="$(sed -nE 's|^font pango:.* (\$[A-Za-z-]+\|[0-9]+)$|\1|p' "${CONFIG_FILE}" 2>/dev/null | head -n1)"
+  if [[ "${token}" == \$* ]]; then
+    token="$(sed -nE 's|^set \$font-size +([0-9]+).*$|\1|p' "${VARS_FILE}" 2>/dev/null | head -n1)"
+  fi
+  printf '%s' "${token}"
 }
 
 cambiar_fuente() {
@@ -58,7 +72,18 @@ cambiar_fuente() {
     return 1
   fi
 
-  if grep -q '^font pango:' "${CONFIG_FILE}"; then
+  if grep -qE '^font pango:.* \$' "${CONFIG_FILE}"; then
+    # La línea delega en $font-family/$font-size: el valor real no está ahí, así
+    # que se edita el módulo de variables y la línea se deja intacta.
+    if [[ ! -f "${VARS_FILE}" ]]; then
+      echo "No existe ${VARS_FILE}; no se puede editar \$font-family/\$font-size." >&2
+      return 1
+    fi
+    sed -i -E "s|^set \\\$font-family .*|set \\\$font-family ${familia}|" "${VARS_FILE}"
+    if [[ -n "${tamano}" ]]; then
+      sed -i -E "s|^set \\\$font-size .*|set \\\$font-size ${tamano}|" "${VARS_FILE}"
+    fi
+  elif grep -q '^font pango:' "${CONFIG_FILE}"; then
     sed -i -E "s|^font pango:.*|${nueva_linea}|" "${CONFIG_FILE}"
   else
     # No existe la línea: la agrega tras la sección de Variables (o al final).

@@ -198,8 +198,8 @@ describe() {
   local a="${1,,}"
   case "${a}" in
     *'kill'*|*'close'*)               echo "Cerrar ventana" ;;
-    *'exec $menu'*|*wofi*|*dmenu*|*bemenu*) echo "Lanzador de aplicaciones" ;;
-    *'exec $term'*|*alacritty*|*foot*|*kitty*|*wezterm*|*konsole*) echo "Abrir terminal" ;;
+    *'exec $launcher'*|*wofi*|*dmenu*|*bemenu*) echo "Lanzador de aplicaciones" ;;
+    *'exec $terminal'*|*alacritty*|*foot*|*kitty*|*wezterm*|*konsole*) echo "Abrir terminal" ;;
     *'what to do'*)                   echo "Menú: bloquear / salir / reiniciar / suspender / apagar" ;;
     *'exec swaylock'*|*lock*)         echo "Bloquear pantalla" ;;
     *'exec swaynag'*|*'swaymsg exit'*) echo "Salir de sway (confirmación)" ;;

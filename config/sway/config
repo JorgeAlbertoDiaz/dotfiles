@@ -24,7 +24,7 @@
 # ----------------------------------------------------------------------------
 # Features base (en orden de dependencia)
 # ----------------------------------------------------------------------------
-include features/variables.conf
+include features/variables-colors.conf
 include features/monitors.conf
 include features/inputs.conf
 include features/appearance.conf
