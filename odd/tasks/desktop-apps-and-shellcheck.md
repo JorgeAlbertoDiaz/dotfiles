@@ -43,6 +43,15 @@ sin volver a abrir zypper.
 | Gestor de archivos CLI | `yazi`, `ranger` |
 | Tematización GTK | `nwg-look` |
 
+## Paquetes agregados a `dev-core.txt` (4 nuevos, 4 → 8)
+| Paquete | Motivo |
+|---|---|
+| `shellcheck` | Lint de scripts shell |
+| `ncurses-devel` | Headers de ncurses (desarrollo/build) |
+| `git` | Herramienta de control de versiones (explícito por solicitud) |
+| `ctags` | Generación de tags para navegación en código |
+| `curl` | Transferencias HTTP (explícito por solicitud) |
+
 ## Paquetes YA presentes — NO duplicados
 `foot`, `wl-clipboard`, `grim`, `slurp`, `pavucontrol`, `NetworkManager-applet`,
 `thunar`, `swappy`, `cliphist`, `xwayland`, `waybar`, `wofi`, `swaybg`, `swaylock`,

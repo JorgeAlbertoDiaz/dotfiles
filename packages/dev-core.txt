@@ -3,3 +3,8 @@ gcc
 make
 neovim
 shellcheck  # lint de scripts shell
+# Herramientas de desarrollo adicionales solicitadas
+ncurses-devel
+git
+ctags
+curl
