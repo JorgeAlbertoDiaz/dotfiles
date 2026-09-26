@@ -38,7 +38,6 @@ Cada archivo de texto agrupa paquetes por componente, bajo un convenio doble:
 |---|---|
 | `base.txt` | Herramientas base del sistema |
 | `desktop-sway.txt` | Escritorio Sway + utilidades Wayland |
-| `nvidia.txt` | Controladores NVIDIA (GTX 1060 3 GB) |
 | `shell.txt` | Shell, terminal y editor |
 | `dev-core.txt` | Herramientas de desarrollo comunes |
 | `dev-php.txt` | Desarrollo PHP (nombres versionados `php8-*`) |
@@ -47,6 +46,14 @@ Cada archivo de texto agrupa paquetes por componente, bajo un convenio doble:
 | `dev-python.txt` | Desarrollo Python |
 | `dev-angular.txt` | Desarrollo Angular/Node |
 | `flatpak-apps.txt` | Aplicaciones Flatpak (appids de Flathub, 1 por línea) |
+
+Los controladores de hardware **no** viven en `packages/`. Cada dispositivo
+tiene su propio entry-point autocontenido en `scripts/drivers/`, con nombre
+`driver-<vendor>-<modelo>.sh`, porque los paquetes que hacen falta dependen de
+LA PLACA y no del sistema. `scripts/drivers/drivers-menu.sh` descubre todos los
+`driver-*.sh` por glob y lanza el que elijas, así que agregar un dispositivo
+nuevo (otra GPU, una impresora) es agregar un archivo: no hay que tocar
+`install.sh` ni el submenú.
 
 ### `config/` (copia directa)
 

@@ -29,7 +29,7 @@ REPO_DIR="${SCRIPT_DIR}"
 COMPONENTES=(
   "Escritorio Sway"
   "Nerd Fonts"
-  "NVIDIA"
+  "Drivers"
   "Dev Core"
   "Dev PHP"
   "Dev Rust"
@@ -68,10 +68,11 @@ run_component() {
       "${SCRIPT_DIR}/scripts/02-install-packages.sh" desktop-sway.txt
       info "Finalizado: Escritorio Sway"
       ;;
-    "NVIDIA")
-      info "Ejecutando: ${SCRIPT_DIR}/scripts/03-nvidia-setup.sh (configuración NVIDIA)"
-      "${SCRIPT_DIR}/scripts/03-nvidia-setup.sh"
-      info "Finalizado: configuración NVIDIA"
+    "Drivers")
+      # Submenú: lista los driver-*.sh de scripts/drivers/ y lanza el elegido.
+      info "Ejecutando: ${SCRIPT_DIR}/scripts/drivers/drivers-menu.sh (controladores por hardware)"
+      "${SCRIPT_DIR}/scripts/drivers/drivers-menu.sh"
+      info "Finalizado: configuración de drivers"
       ;;
     "Nerd Fonts")
       info "Ejecutando: ${SCRIPT_DIR}/scripts/05-install-fonts.sh --install-only"

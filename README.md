@@ -19,14 +19,14 @@ todo el sistema — repositorios, paquetes, controladores NVIDIA, shell y dotfil
 ```bash
 git clone https://github.com/JorgeAlbertoDiaz/dotfiles.git ~/dotfiles
 cd ~/dotfiles
-chmod +x install.sh scripts/*.sh
+chmod +x install.sh scripts/*.sh scripts/drivers/*.sh
 ./install.sh
 ```
 
 El instalador verifica el sistema, garantiza los directorios XDG, instala
 `gum` si falta, y muestra un menú interactivo multi-selección para elegir los
 componentes a instalar: paquetes base, escritorio Sway, shell, herramientas
-dev, NVIDIA y dotfiles.
+dev, drivers de hardware y dotfiles.
 
 ## Estructura
 
@@ -36,7 +36,6 @@ dev, NVIDIA y dotfiles.
 ├── packages/                # Paquetes zypper en texto plano (1 por línea)
 │   ├── base.txt
 │   ├── desktop-sway.txt
-│   ├── nvidia.txt
 │   ├── shell.txt
 │   └── dev.txt
 ├── scripts/                 # Scripts independientes
@@ -45,9 +44,11 @@ dev, NVIDIA y dotfiles.
 │   ├── 00-xdg-dirs.sh       # Verifica/crea directorios XDG y descargas
 │   ├── 01-install-gum.sh    # Instala gum (zypper + fallback GitHub)
 │   ├── 02-install-packages.sh  # Recorre packages/*.txt e instala con zypper
-│   ├── 03-nvidia-setup.sh   # Repo NVIDIA + controladores + GRUB/modprobe
 │   ├── 04-setup-dotfiles.sh # Copia dotfiles a ~/.config/<app> + zsh
-│   └── 05-install-fonts.sh  # Instala y configura Nerd Fonts por app
+│   ├── 05-install-fonts.sh  # Instala y configura Nerd Fonts por app
+│   └── drivers/              # Controladores por hardware (un script por placa)
+│       ├── drivers-menu.sh   # Submenú: lista y lanza cada driver-*.sh
+│       └── driver-nvidia-gtx1060.sh  # Repo NVIDIA + G06 + GRUB/modprobe
 ├── config/                  # Copia directa: cada app en ~/.config/<app>
 │   ├── home/                # Dotfiles que van directo a $HOME
 │   └── <app>/customize.sh   # Personalizan la fuente de cada aplicación
@@ -65,7 +66,11 @@ Más detalles en [docs/index.md](docs/index.md).
   `scripts/04-setup-dotfiles.sh`. `home/` se copia a `$HOME`. Los
   `customize.sh` son herramientas del repo y no se copian; se ejecutan desde
   `05-install-fonts.sh` para configurar la fuente por app.
-- Los controladores NVIDIA se instalan desde el repositorio oficial de NVIDIA.
+- Los controladores de hardware viven en `scripts/drivers/`, un
+  `driver-<vendor>-<modelo>.sh` autocontenido por placa. El submenú
+  `drivers-menu.sh` los descubre solo, así que agregar una GPU nueva no
+  requiere tocar `install.sh`. Los controladores NVIDIA se instalan desde el
+  repositorio oficial de NVIDIA.
 - Las Nerd Fonts se descargan por familia desde `ryanoasis/nerd-fonts`
   (GitHub Releases) y se instalan en `~/.local/share/fonts` sin sudo.
 - La shell por defecto se cambia a zsh (opcional durante la instalación).
