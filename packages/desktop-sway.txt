@@ -24,3 +24,24 @@ libnotify-tools
 swappy
 cliphist
 wf-recorder
+# Navegador (en openSUSE el paquete se llama MozillaFirefox, no firefox)
+MozillaFirefox
+# Thunar: automount de volúmenes
+thunar-volman
+# Visores de imagen
+imv
+swayimg
+# Reproducción de video
+mpv
+# Visores de PDF
+zathura
+zathura-plugin-pdf-poppler
+evince
+# Terminales alternativas (foot ya está en la lista)
+alacritty
+wezterm
+# Gestores de archivos CLI
+yazi
+ranger
+# Tematización GTK para Sway (iconos, cursores, temas oscuros)
+nwg-look

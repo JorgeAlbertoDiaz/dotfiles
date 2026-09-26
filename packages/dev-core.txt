@@ -2,3 +2,4 @@
 gcc
 make
 neovim
+shellcheck  # lint de scripts shell
