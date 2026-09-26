@@ -45,3 +45,8 @@ yazi
 ranger
 # Tematización GTK para Sway (iconos, cursores, temas oscuros)
 nwg-look
+# Thunar no trae plugins en openSUSE (no existen en repo-oss ni repo-non-oss),
+# así que el preview y la compresión los dan estas herramientas:
+gthumb
+file-roller
+engrampa
