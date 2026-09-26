@@ -53,9 +53,16 @@ if [[ ${#missing_pkgs[@]} -eq 0 ]]; then
 else
   info "Instalando controladores NVIDIA pendientes: ${missing_pkgs[*]}"
   info "La licencia de NVIDIA requiere aceptación interactiva (EULA) en pantalla."
-  # Sin -n ni --auto-agree-with-licenses: zypper muestra la EULA y pregunta.
-  as_root zypper in "${missing_pkgs[@]}"
-  ok "Controladores NVIDIA instalados"
+  # Intentar instalación; si falla (EULA interactiva o paquetes no disponibles)
+  # se advertirá y se continuará sin la configuración NVIDIA.
+  if as_root zypper in "${missing_pkgs[@]}" 2>/dev/null; then
+    ok "Controladores NVIDIA instalados"
+  else
+    warn "No se pudieron instalar los controladores NVIDIA."
+    warn "Esto puede deberse a que es necesario aceptar la licencia EULA en pantalla"
+    warn "o a que los paquetes no estén disponibles en el repositorio configurado."
+    warn "Se omitirá la configuración NVIDIA y continuará la instalación."
+  fi
 fi
 
 # ---------------------------------------------------------------------------
