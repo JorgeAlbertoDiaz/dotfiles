@@ -64,50 +64,64 @@ run_component() {
       info "Finalizado: ${item}"
       ;;
     "Escritorio Sway")
+      info "Ejecutando: ${SCRIPT_DIR}/scripts/02-install-packages.sh desktop-sway.txt"
       "${SCRIPT_DIR}/scripts/02-install-packages.sh" desktop-sway.txt
       info "Finalizado: Escritorio Sway"
       ;;
     "NVIDIA")
+      info "Ejecutando: ${SCRIPT_DIR}/scripts/03-nvidia-setup.sh (configuración NVIDIA)"
       "${SCRIPT_DIR}/scripts/03-nvidia-setup.sh"
       info "Finalizado: configuración NVIDIA"
       ;;
     "Nerd Fonts")
+      info "Ejecutando: ${SCRIPT_DIR}/scripts/05-install-fonts.sh --install-only"
       "${SCRIPT_DIR}/scripts/05-install-fonts.sh" --install-only
       info "Finalizado: instalación de fuentes"
       ;;
     "Dev Core")
+      info "Ejecutando: ${SCRIPT_DIR}/scripts/02-install-packages.sh dev-core.txt"
       "${SCRIPT_DIR}/scripts/02-install-packages.sh" dev-core.txt
       info "Finalizado: Dev Core"
       ;;
     "Dev PHP")
+      info "Ejecutando: ${SCRIPT_DIR}/scripts/02-install-packages.sh dev-php.txt"
       "${SCRIPT_DIR}/scripts/02-install-packages.sh" dev-php.txt
       info "Finalizado: Dev PHP"
       ;;
     "Dev Rust")
+      info "Ejecutando: ${SCRIPT_DIR}/scripts/02-install-packages.sh dev-rust.txt"
       "${SCRIPT_DIR}/scripts/02-install-packages.sh" dev-rust.txt
       info "Finalizado: Dev Rust"
       ;;
     "Dev Python")
+      info "Ejecutando: ${SCRIPT_DIR}/scripts/02-install-packages.sh dev-python.txt"
       "${SCRIPT_DIR}/scripts/02-install-packages.sh" dev-python.txt
       info "Finalizado: Dev Python"
       ;;
 "Dev Angular/Node")
+      info "Ejecutando: ${SCRIPT_DIR}/scripts/02-install-packages.sh dev-angular.txt"
       "${SCRIPT_DIR}/scripts/02-install-packages.sh" dev-angular.txt
-      if confirm "¿Instalar también el CLI de Angular globalmente (npm install -g @angular/cli)?"; then
-        as_root npm install -g @angular/cli
-        ok "Angular CLI instalado globalmente"
+      # Verificar si el Angular CLI ya está instalado globalmente
+      if npm list -g @angular/cli &>/dev/null; then
+        ok "Angular CLI ya está instalado globalmente (omitiendo pregunta)"
       else
-        warn "Omitiendo la instalación del Angular CLI"
+        if confirm "¿Instalar también el CLI de Angular globalmente (npm install -g @angular/cli)?"; then
+          as_root npm install -g @angular/cli
+          ok "Angular CLI instalado globalmente"
+        else
+          warn "Omitiendo la instalación del Angular CLI"
+        fi
       fi
       info "Finalizado: Dev Angular/Node"
       ;;
 
-    "Dev Bases de Datos")
+"Dev Bases de Datos")
+      info "Ejecutando: ${SCRIPT_DIR}/scripts/02-install-packages.sh dev-db.txt"
       "${SCRIPT_DIR}/scripts/02-install-packages.sh" dev-db.txt
       info "Finalizado: Dev Bases de Datos"
-
       ;;
     "Dotfiles")
+      info "Ejecutando: ${SCRIPT_DIR}/scripts/04-setup-dotfiles.sh (aplicación de dotfiles)"
       # En instalación completa, 04 aplica todo sin preguntar su submenú.
       if [[ ${DOTFILES_TODOS} -eq 1 ]]; then
         "${SCRIPT_DIR}/scripts/04-setup-dotfiles.sh" todos
@@ -117,7 +131,8 @@ run_component() {
       info "Finalizado: aplicación de dotfiles"
       ;;
     *)
-      warn "Componente desconocido: ${item}"
+      error "Componente desconocido: ${item}. No puedo instalarlo."
+      exit 1
       ;;
   esac
 }
@@ -208,6 +223,12 @@ else
         --header "Selecciona los componentes a instalar (Espacio=seleccionar, Enter=continuar):" \
         "${COMPONENTES[@]}")"; then
       warn "No se seleccionó ningún componente."
+      exit 1
+    fi
+    # gum choose --no-limit puede devolver "-" con exit 0 en algunos edge cases
+    # (cuando la selección es cancelada o el terminal resize ocurre). Rechazarlo explícito.
+    if [[ "${seleccion}" == "-" || -z "${seleccion}" ]]; then
+      warn "No se seleccionó ningún componente (salida '-' o vacía)."
       exit 1
     fi
     mapfile -t sel <<< "${seleccion}"
