@@ -16,6 +16,8 @@
 #      - Salir
 #   5. Instala los componentes obligatorios (base, shell) y los opcionales
 #      elegidos, ejecutando los scripts correspondientes en el orden correcto.
+#      "Zsh (plugins)" queda justo antes de "Dotfiles": el shell ya tiene sus
+#      plugins cuando se aplica la configuración.
 #
 # Si gum no puede instalarse, usa un flujo bash simple como fallback.
 set -euo pipefail
@@ -36,6 +38,7 @@ COMPONENTES=(
   "Dev Python"
   "Dev Angular/Node"
   "Dev Bases de Datos"
+  "Zsh (plugins)"
   "Dotfiles"
 )
 
@@ -120,6 +123,11 @@ run_component() {
       info "Ejecutando: ${SCRIPT_DIR}/scripts/02-install-packages.sh dev-db.txt"
       "${SCRIPT_DIR}/scripts/02-install-packages.sh" dev-db.txt
       info "Finalizado: Dev Bases de Datos"
+      ;;
+    "Zsh (plugins)")
+      info "Ejecutando: ${SCRIPT_DIR}/scripts/08-setup-zsh.sh (plugins de zsh)"
+      "${SCRIPT_DIR}/scripts/08-setup-zsh.sh"
+      info "Finalizado: plugins de zsh"
       ;;
     "Dotfiles")
       info "Ejecutando: ${SCRIPT_DIR}/scripts/04-setup-dotfiles.sh (aplicación de dotfiles)"

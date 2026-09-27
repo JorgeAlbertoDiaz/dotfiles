@@ -46,6 +46,7 @@ dev, drivers de hardware y dotfiles.
 │   ├── 02-install-packages.sh  # Recorre packages/*.txt e instala con zypper
 │   ├── 04-setup-dotfiles.sh # Copia dotfiles a ~/.config/<app> + zsh
 │   ├── 05-install-fonts.sh  # Instala y configura Nerd Fonts por app
+│   ├── 08-setup-zsh.sh      # Instala los plugins de zsh (sin sudo)
 │   └── drivers/              # Controladores por hardware (un script por placa)
 │       ├── drivers-menu.sh   # Submenú: lista y lanza cada driver-*.sh
 │       └── driver-nvidia-gtx1060.sh  # Repo NVIDIA + G06 + GRUB/modprobe
@@ -78,3 +79,8 @@ Más detalles en [docs/index.md](docs/index.md).
   editados directamente en `~/.zshrc` se sobrescriben la próxima vez que se
   aplica `scripts/04-setup-dotfiles.sh`. Hay que editar siempre
   `config/home/.zshrc`.
+- Los plugins de zsh (`zsh-autosuggestions` y `zsh-syntax-highlighting`) los
+  instala `scripts/08-setup-zsh.sh` en
+  `${XDG_DATA_HOME:-~/.local/share}/zsh/plugins`, sin sudo y con clones
+  superficiales. `config/home/.zshrc` los carga comprobando que el archivo sea
+  legible, de modo que la shell funciona igual aunque no estén instalados.
