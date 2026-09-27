@@ -170,13 +170,15 @@ Durante la sesión aparecieron modificaciones en `config/waybar/config` y
 `sway/mode`, `clock`, `tray`, `network`, `cpu`, `memory`, `disk`, `custom/power`
 y reformatean a tabs). No son de este trabajo: no las toqué ni las revertí.
 
-El usuario las commiteó después como `14e80cb` — **en esta misma rama**, encima
-de los commits de zsh. Consecuencia: un PR desde `feat/zsh-nativo` arrastraría
-zsh y Waybar en el mismo diff.
+El usuario las commiteó después como `14e80cb`, encima de los commits de zsh y en
+la misma rama. Se separaron al final de la sesión: Waybar quedó en `feat/waybar`
+(`c78c5fc`) y esta rama conserva sólo el trabajo de zsh. El estado intermedio
+mixed quedó preservado en `backup/mixed-936b5fc` por si hay que recuperar algo.
 
 La review nativa (`lineage review-9e61d086febc011e`) **no quedó contaminada**:
 congeló `candidate_tree 94d344fe` cuando el HEAD era `89d8884`, así que ese commit
-de Waybar entró después del freeze y no forma parte del candidato revisado.
+de Waybar entró después del freeze y no forma parte del candidato revisado. Por
+el mismo motivo, la separación de ramas posterior no altera ese candidato.
 
 ## Riesgos y deuda conocida
 - **`git clone --depth 1` + `git pull --ff-only`.** Un clone superficial combinado
