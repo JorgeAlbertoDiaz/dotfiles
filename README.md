@@ -74,3 +74,7 @@ Más detalles en [docs/index.md](docs/index.md).
 - Las Nerd Fonts se descargan por familia desde `ryanoasis/nerd-fonts`
   (GitHub Releases) y se instalan en `~/.local/share/fonts` sin sudo.
 - La shell por defecto se cambia a zsh (opcional durante la instalación).
+- `config/home/.zshrc` también se **copia** a `$HOME`, no se enlaza: los cambios
+  editados directamente en `~/.zshrc` se sobrescriben la próxima vez que se
+  aplica `scripts/04-setup-dotfiles.sh`. Hay que editar siempre
+  `config/home/.zshrc`.
