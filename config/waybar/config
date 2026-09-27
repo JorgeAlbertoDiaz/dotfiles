@@ -1,64 +1,119 @@
 {
-    "layer": "top",
-    "position": "top",
-    "height": 30,
-    "spacing": 8,
+	"layer": "top",
+	"position": "top",
+	"height": 30,
+	"spacing": 8,
 
-    "modules-left": [
-        "sway/workspaces"
-    ],
+	"modules-left": [
+		"sway/workspaces",
+		"sway/mode"
+	],
 
-    "modules-center": [
-        "custom/weather"
-    ],
+	"modules-center": [
+		"clock",
+		"custom/weather"
+	],
 
-    "modules-right": [
-        "custom/notification",
-        "clock"
-    ],
+	"modules-right": [
+		"tray",
+		"network",
+		"cpu",
+		"memory",
+		"disk",
+		"custom/notification",
+		"custom/power"
+	],
 
-    "custom/weather": {
-        "format": "{} ",
-        "tooltip": true,
-        "interval": 3600,
-        "exec": "curl -s 'https://wttr.in/Tafi%20Viejo,Tucuman,Argentina?format=%c+%t'",
-        "exec-if": "ping wttr.in -c1"
-    },
+	"sway/workspaces": {
+		"disable-scroll": true,
+		"all-outputs": true,
+		"persistent-workspaces": {
+			"1": [], "2": [], "3": [], "4": [], "5": []
+		}
+	},
 
-    "custom/notification": {
-        "tooltip": false,
-        "format": " {icon} ",
-        "format-icons": {
-            "notification": "󰂚<span foreground='red'><sup></sup></span>",
-            "none": "󰂚",
-            "dnd-notification": "󰂛<span foreground='red'><sup></sup></span>",
-            "dnd-none": "󰂛",
-            "inhibited-notification": "󰂚<span foreground='red'><sup></sup></span>",
-            "inhibited-none": "󰂚",
-            "dnd-inhibited-notification": "󰂛<span foreground='red'><sup></sup></span>",
-            "dnd-inhibited-none": "󰂛"
-        },
-        "return-type": "json",
-        "exec-if": "which swaync-client",
-        "exec": "swaync-client -swb",
-        "on-click": "swaync-client -t -sw",
-        "on-click-right": "swaync-client -d -sw",
-        "escape": true
-    },
+	"custom/weather": {
+		"format": "{} Tafí Viejo",
+		"tooltip": true,
+		"interval": 3600,
+		"exec": "curl -s 'https://wttr.in/Tafi%20Viejo?format=%c+%t&m'",
+		"exec-if": "ping wttr.in -c1"
+	},
 
-    "clock": {
-        "format": "󰃰 {:%d/%m/%Y %H:%M}",
-        "tooltip-format": "<tt><small>{calendar}</small></tt>",
-        "calendar": {
-            "mode": "month",
-            "mode-mon-col": 3,
-            "on-scroll": 1,
-            "format": {
-                "months": "<span color='#ffead3'><b>{}</b></span>",
-                "days": "<span color='#ecc6d9'><b>{}</b></span>",
-                "today": "<span color='#ff6699'><b><u>{}</u></b></span>"
-            }
-        },
-        "on-click": "tu_terminal -e calcurse"
-    }
+	"clock": {
+		"format": "󰃰 {:%d/%m/%Y %H:%M}",
+		"tooltip-format": "<tt><small>{calendar}</small></tt>",
+		"calendar": {
+			"mode": "month",
+			"mode-mon-col": 3,
+			"on-scroll": 1,
+			"format": {
+				"months": "<span color='#ff9c00'><b>{}</b></span>",
+				"days": "<span color='#c6c6c6'><b>{}</b></span>",
+				"today": "<span color='#aeee00'><b><u>{}</u></b></span>"
+			}
+		},
+		"on-click": "wezterm -e calcurse"
+	},
+
+	"tray": {
+		"icon-size": 18,
+		"spacing": 10
+	},
+
+	"network": {
+		"format-wifi": "",
+		"format-ethernet": "󰈀",
+		"format-disconnected": "󰖪",
+		"tooltip-format-wifi": "Red: {essid}\nSeñal: {signalStrength}%\n↓ {bandwidthDownBits} | ↑ {bandwidthUpBits}",
+		"tooltip-format-ethernet": "Ethernet conectado\n↓ {bandwidthDownBits} | ↑ {bandwidthUpBits}",
+		"tooltip-format-disconnected": "Desconectado",
+		"on-click": "wezterm -e nmtui"
+	},
+
+	"cpu": {
+		"format": "",
+		"tooltip": true,
+		"tooltip-format": "CPU: {usage}%\nCarga: {load}"
+	},
+
+	"memory": {
+		"format": "",
+		"tooltip": true,
+		"tooltip-format": "RAM: {used:0.1f}GB / {total:0.1f}GB\nSwap: {swapUsed:0.1f}GB"
+	},
+
+	"disk": {
+		"format": "",
+		"tooltip": true,
+		"tooltip-format": "Disco: {used} / {total}\nLibre: {percentage_free}%"
+	},
+
+	"custom/notification": {
+		"tooltip": false,
+		"format": "{icon}",
+		"format-icons": {
+			"notification": "󰂚<span foreground='#ff2c4b'><sup></sup></span>",
+			"none": "󰂚",
+			"dnd-notification": "󰂛<span foreground='#ff2c4b'><sup></sup></span>",
+			"dnd-none": "󰂛",
+			"inhibited-notification": "󰂚<span foreground='#ff2c4b'><sup></sup></span>",
+			"inhibited-none": "󰂚",
+			"dnd-inhibited-notification": "󰂛<span foreground='#ff2c4b'><sup></sup></span>",
+			"dnd-inhibited-none": "󰂛"
+		},
+		"return-type": "json",
+		"exec-if": "which swaync-client",
+		"exec": "swaync-client -swb",
+		"on-click": "swaync-client -t -sw",
+		"on-click-right": "swaync-client -d -sw",
+		"escape": true
+	},
+
+	"custom/power": {
+		"format": "⏻",
+		"tooltip": false,
+		"on-click": "swaynag -t warning -m '¿Qué deseas hacer?' -B 'Apagar' 'systemctl poweroff' -B 'Reiniciar' 'systemctl reboot' -B 'Cerrar Sesión' 'swaymsg exit' -B 'Suspender' 'systemctl suspend'"
+	}
 }
+
