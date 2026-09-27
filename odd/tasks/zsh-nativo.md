@@ -164,12 +164,19 @@ Dos claims que iba a afirmar y resultaron falsos al verificar:
    cualquier línea futura debajo rompe el resaltado en silencio. Movido al
    final real del archivo.
 
-## Nota sobre cambios ajenos en el working tree
-Durante la sesión aparecieron modificaciones **no commiteadas** en
-`config/waybar/config` y `config/waybar/style.css` (mtime 12:06–12:07, a mitad
-de sesión; agregan módulos `sway/mode`, `clock`, `tray`, `network`, `cpu`,
-`memory`, `disk`, `custom/power` y reformatean a tabs). No son de este trabajo y
-no las toqué ni las revertí. Se reportan al usuario.
+## Nota sobre cambios ajenos (Waybar) y la topología de la rama
+Durante la sesión aparecieron modificaciones en `config/waybar/config` y
+`config/waybar/style.css` (mtime 12:06–12:07, a mitad de sesión; agregan módulos
+`sway/mode`, `clock`, `tray`, `network`, `cpu`, `memory`, `disk`, `custom/power`
+y reformatean a tabs). No son de este trabajo: no las toqué ni las revertí.
+
+El usuario las commiteó después como `14e80cb` — **en esta misma rama**, encima
+de los commits de zsh. Consecuencia: un PR desde `feat/zsh-nativo` arrastraría
+zsh y Waybar en el mismo diff.
+
+La review nativa (`lineage review-9e61d086febc011e`) **no quedó contaminada**:
+congeló `candidate_tree 94d344fe` cuando el HEAD era `89d8884`, así que ese commit
+de Waybar entró después del freeze y no forma parte del candidato revisado.
 
 ## Riesgos y deuda conocida
 - **`git clone --depth 1` + `git pull --ff-only`.** Un clone superficial combinado
@@ -192,4 +199,14 @@ no las toqué ni las revertí. Se reportan al usuario.
   la trampa estructural más probable del repo.
 - `SC2034` preexistentes (`REPO_DIR`, `BLUE`) siguen sin limpiarse: fuera de
   alcance.
+- **La review nativa no se completó.** El lineage `review-9e61d086febc011e`
+  quedó en `collect`: los subagentes `review-risk`, `review-resilience`,
+  `review-readability` y `review-reliability` fallaron con
+  `OpenCode's free tier can only be used from within OpenCode`. Se descartó como
+  causa el repo, el payload y `opencode.jsonc`: el subagente `general` despacha
+  en la misma sesión, y los bloques de config de `review-*` y `general` sólo
+  difieren en permisos. Es una restricción de plan/cuenta del proveedor, ajena a
+  este código. El usuario decidió enviar sin review nativa, así que **el slice
+  no tiene revisión**: la entrega queda bajo política ordinaria del repo y la
+  transacción sigue abierta, sin burns de autoridad.
 
