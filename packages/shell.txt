@@ -1,3 +1,5 @@
 # Shell, terminal y editor
 zsh
 bash-completion
+# Buscador interactivo: aporta el autocompletado con fzf que activa el .zshrc
+fzf
