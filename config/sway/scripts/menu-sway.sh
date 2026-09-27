@@ -6,6 +6,12 @@
 #   Keybindings                → lista de keybindings activos (wm-keybinds.sh --gui)
 #   Recargar configuración     → swaymsg reload (verifica que haya sesión activa)
 #   Volver                     → regresa al dashboard
+#
+# Keybindings también está en el menú principal del dashboard, a un clic menos.
+# Se deja el atajo acá de todos modos: es la misma llamada (mismo script, mismo
+# flag), no una segunda implementación, así que duplicar la entrada no puede
+# desincronizarse —y quien ya tiene el hábito de entrar por Sway > Keybindings
+# no pierde nada.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
