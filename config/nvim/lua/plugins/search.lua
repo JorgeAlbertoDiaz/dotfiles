@@ -17,6 +17,55 @@ if vim.fn.executable("rg") == 1 then
   vim.opt.grepprg = "rg --vimgrep"
 end
 
+-- :Rg / :Ag: the reference exposed the grep binaries as commands. Here they open
+-- telescope's fuzzy grep (live_grep with no term, grep_string with one), which is
+-- the same rg search behind a picker. pcall keeps the commands alive even if
+-- telescope is not installed.
+local function grep_command(term)
+  local ok, builtin = pcall(require, "telescope.builtin")
+  if not ok then
+    vim.notify("telescope.nvim no está instalado", vim.log.levels.WARN)
+    return
+  end
+  if term == nil or term == "" then
+    builtin.live_grep()
+  else
+    builtin.grep_string({ search = term })
+  end
+end
+
+vim.api.nvim_create_user_command("Rg", function(o)
+  grep_command(o.args)
+end, { nargs = "?", desc = "Buscar en el proyecto con ripgrep (telescope)" })
+vim.api.nvim_create_user_command("Ag", function(o)
+  grep_command(o.args)
+end, { nargs = "?", desc = "Alias de :Rg" })
+
+-- Shared by <leader>e and <C-p>: the reference's
+-- `rg --files --hidden --follow --glob '!.git/*'`.
+local function find_files()
+  require("telescope.builtin").find_files({
+    -- hidden + no_ignore: list every file, including dotfiles and anything
+    -- ignored by .gitignore (untracked/ignored). The heavy directories below are
+    -- still filtered so node_modules cannot flood the picker.
+    hidden = true,
+    no_ignore = true,
+    file_ignore_patterns = {
+      "%.git",
+      "node_modules",
+      "target",
+      "dist",
+      "__pycache__",
+      "%.pyc",
+      "%.rbc",
+      "%.db",
+      "%.sqlite",
+      "%.o",
+      "%.obj",
+    },
+  })
+end
+
 return {
   -- telescope.nvim: replacement for fzf.vim. vim.ui.select exists natively
   -- (verified in 0.12.5) and telescope's prompt is built on it, so the second
@@ -29,31 +78,22 @@ return {
     keys = {
       -- :Buffers from the reference.
       { "<leader>b", "<cmd>Telescope buffers<cr>", desc = "Find in open buffers" },
+      { "<leader>e", find_files, desc = "Find files (all, hidden included)" },
+      -- <C-p>: the reference's fuzzy-finder key, in normal mode. Command-line
+      -- <C-p> stays as path completion (config/keymaps.lua); different mode.
+      { "<C-p>", find_files, desc = "Find files (all, fuzzy)" },
+      -- <leader><space>: repo-wide text search. rg is substring-based (not a word
+      -- match) and --ignore-case makes it case-insensitive, i.e. "contains".
       {
-        "<leader>e",
+        "<leader><space>",
         function()
-          require("telescope.builtin").find_files({
-            -- The reference's `rg --files --hidden --follow --glob '!.git/*'`.
-            -- 'hidden' is the direct translation; telescope's `follow` only
-            -- applies to the `find` fallback command, so --follow has no
-            -- equivalent when fd/rg is used.
-            hidden = true,
-            file_ignore_patterns = {
-              "%.git",
-              "node_modules",
-              "target",
-              "dist",
-              "__pycache__",
-              "%.pyc",
-              "%.rbc",
-              "%.db",
-              "%.sqlite",
-              "%.o",
-              "%.obj",
-            },
+          require("telescope.builtin").live_grep({
+            additional_args = function()
+              return { "--ignore-case" }
+            end,
           })
         end,
-        desc = "Find files (hidden included)",
+        desc = "Search in project (substring, ignore case)",
       },
     },
     config = function()
@@ -76,6 +116,10 @@ return {
     "ibhagwan/fzf-lua",
     keys = {
       { "<leader>y", "<cmd>FzfLua history<cr>", desc = "Search the fzf history" },
+      -- The draft's fuzzy command history. <C-h> was not usable: normal-mode <C-h>
+      -- is window-left and command-line <C-h> is Backspace, so this uses the
+      -- non-conflicting <leader>:.
+      { "<leader>:", "<cmd>FzfLua command_history<cr>", desc = "Command history (fuzzy)" },
     },
     -- :FzfLua stays available for everything the reference reached through
     -- `:Fzf` and its friends.

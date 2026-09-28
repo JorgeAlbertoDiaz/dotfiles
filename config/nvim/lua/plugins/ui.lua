@@ -103,9 +103,17 @@ return {
   -- needed before it has been asked for.
   {
     "nvim-neo-tree/neo-tree.nvim",
+    -- neo-tree requires these three. Without nui.nvim the module fails to load
+    -- and :Neotree does not exist, which is why F2/F3 errored out. Declaring
+    -- them here makes lazy install them as part of the same spec.
+    dependencies = {
+      "nvim-lua/plenary.nvim",
+      "nvim-tree/nvim-web-devicons",
+      "MunifTanjim/nui.nvim",
+    },
     keys = {
       -- NERDTreeFind / NERDTreeToggle from the reference, same two keys.
-      { "<F2>", "<cmd>Neotree reveal force_cwd<cr>", desc = "Reveal the current file in the tree" },
+      { "<F2>", "<cmd>Neotree reveal_force_cwd<cr>", desc = "Reveal the current file in the tree" },
       { "<F3>", "<cmd>Neotree toggle<cr>", desc = "Toggle the file tree" },
     },
     opts = {
@@ -115,8 +123,9 @@ return {
       enable_git_status = true,
       enable_diagnostics = true,
       -- NERDTreeWinSize=50, faithfully: window.width is in columns for the
-      -- left/right positions.
-      window = { position = "left", width = 50 },
+      -- left/right positions. Position is "right" by request: the tree opens on
+      -- the right edge.
+      window = { position = "right", width = 50 },
       sort_case_insensitive = true,
       filesystem = {
         -- NERDTreeChDirMode=2: the tree always stays on the file being

@@ -93,6 +93,14 @@ local langs = {
     lint = {},
     fmt = { "prettier" },
   },
+  -- markdown: no LSP, linter or formatter. It is here for one reason: the
+  -- tree-sitter parser, which gives '=' a real indent provider instead of
+  -- 'autoindent' copying the previous line (what mangled .md files).
+  markdown = {
+    ft = { "markdown" },
+    lint = {},
+    fmt = {},
+  },
 }
 
 -- Languages the reference declared and this config deliberately does not.
@@ -208,8 +216,12 @@ end
 function M.server_filetypes()
   local out = {}
   for _, entry in pairs(langs) do
-    out[entry.lsp] = out[entry.lsp] or {}
-    vim.list_extend(out[entry.lsp], entry.ft)
+    -- A language may declare no LSP (markdown): it still needs a parser and the
+    -- per-filetype wiring, just not a server.
+    if entry.lsp then
+      out[entry.lsp] = out[entry.lsp] or {}
+      vim.list_extend(out[entry.lsp], entry.ft)
+    end
   end
   for name, fts in pairs(out) do
     out[name] = sorted_unique(fts)

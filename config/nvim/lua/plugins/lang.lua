@@ -75,12 +75,12 @@ return {
         end
       end
 
-      -- Highlighting only. The `indentexpr` and `foldexpr` that main also
-      -- offers are deliberately NOT enabled: config/autocmds.lua carries the
-      -- reference's per-language indentation (python's tabstop=8 with a
-      -- shiftwidth=4 and cinwords, html's ts=2, javascript's ts=4), and that is
-      -- a surviving UX decision, not an oversight. A tree-sitter indentexpr
-      -- would silently override all of it.
+      -- Highlighting AND indentation. main also offers `foldexpr`, which stays
+      -- off; `indentexpr` is enabled so that '=' is driven by the language's
+      -- tree-sitter indents query instead of 'autoindent' copying the previous
+      -- line (which is what mangled Markdown). config/autocmds.lua still owns the
+      -- per-language widths and expandtab; the indent expression is the only
+      -- thing tree-sitter takes over.
       --
       -- pcall because vim.treesitter.start() raises when the parser is missing,
       -- and "missing" is exactly the state this file exists to fix -- it should
@@ -90,18 +90,31 @@ return {
       local reported_failure = false
       vim.api.nvim_create_autocmd("FileType", {
         group = vim.api.nvim_create_augroup("lang_treesitter", { clear = true }),
-        desc = "Start tree-sitter highlighting for the declared languages",
+        desc = "Start tree-sitter highlighting and indentation for the declared languages",
         callback = function(args)
-          if not vim.tbl_contains(langs.filetypes(), vim.bo[args.buf].filetype) then
+          local ft = vim.bo[args.buf].filetype
+          if not vim.tbl_contains(langs.filetypes(), ft) then
             return
           end
           local ok, err = pcall(vim.treesitter.start, args.buf)
-          if not ok and not reported_failure then
-            reported_failure = true
-            vim.notify(
-              ("nvim-treesitter: %s"):format(err),
-              vim.log.levels.WARN
-            )
+          if not ok then
+            if not reported_failure then
+              reported_failure = true
+              vim.notify(("nvim-treesitter: %s"):format(err), vim.log.levels.WARN)
+            end
+            return
+          end
+          -- Only when the language actually ships an indents query. Scheduled so
+          -- it wins over the runtime indent script the FileType event may load
+          -- afterwards; the buffer check guards against a wiped buffer.
+          local lang = vim.treesitter.language.get_lang(ft) or ft
+          local qok, query = pcall(vim.treesitter.query.get, lang, "indents")
+          if qok and query then
+            vim.schedule(function()
+              if vim.api.nvim_buf_is_valid(args.buf) then
+                vim.bo[args.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+              end
+            end)
           end
         end,
       })

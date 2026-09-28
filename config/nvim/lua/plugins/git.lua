@@ -19,6 +19,8 @@ return {
       { "<leader>gb", "<cmd>Git blame<cr>", desc = "Git: blame" },
       { "<leader>gd", "<cmd>Gvdiffsplit<cr>", desc = "Git: diff against the index" },
       { "<leader>gr", "<cmd>GRemove<cr>", desc = "Git: remove hunks" },
+      -- :GBrowse opens the current file (and line) in the repo's web UI.
+      { "<leader>o", "<cmd>GBrowse<cr>", desc = "Git: open the file in the browser" },
     },
   },
 

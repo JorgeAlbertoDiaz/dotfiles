@@ -29,6 +29,10 @@ return {
     },
     config = function(_, opts)
       require("mini.comment").setup(opts)
+      -- Discoverable aliases for the plugin's own gcc / gc. remap=true replays
+      -- the plugin's expression mapping, so counts and dot-repeat still work.
+      vim.keymap.set("n", "<leader>cc", "gcc", { remap = true, desc = "Toggle comment (line)" })
+      vim.keymap.set("x", "<leader>cc", "gc", { remap = true, desc = "Toggle comment (selection)" })
     end,
   },
 

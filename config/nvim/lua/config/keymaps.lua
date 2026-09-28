@@ -47,24 +47,43 @@ map({
   ["<leader>c"] = "<cmd>bd<cr>",
 })
 
--- Tabs. Normal mode only, so <Tab> in insert mode still inserts a tab. The
--- reference's three keys, verbatim.
+-- Tabs. Normal mode only, so <Tab> in insert mode still inserts a tab. <Tab> and
+-- <S-Tab> move between tabs (the reference's gt / gT); <S-t> opens a new tab.
 map({
-  ["<Tab>"] = "<cmd>tabnew<cr>",
-  ["<S-Tab>"] = "<cmd>tabprev<cr>",
+  ["<Tab>"] = "gt",
+  ["<S-Tab>"] = "gT",
   ["<S-t>"] = "<cmd>tabnew<cr>",
 })
 
 -- The reference's 'lcd %:p:h': the working directory follows the file.
 map({ ["<leader>."] = "<cmd>lcd %:p:h<cr>" })
 
+-- Whole-file reindent. Guarded: without a real indent provider (indentexpr,
+-- cindent, lisp or equalprg) '=' would fall back to 'autoindent' and just copy
+-- the previous line, which is what breaks prose filetypes, so it refuses and says
+-- why. With tree-sitter indentation enabled (lua/plugins/lang.lua) this is the
+-- normal case. Native >>/<< and the visual </> cover the block cases.
+map({
+  ["<leader>="] = function()
+    if vim.bo.indentexpr == "" and not vim.bo.cindent and not vim.bo.lisp and vim.bo.equalprg == "" then
+      vim.notify(
+        ("Sin indentador para '%s'; no se reindenta"):format(vim.bo.filetype),
+        vim.log.levels.WARN
+      )
+      return
+    end
+    vim.cmd("keepjumps normal! gg=G")
+  end,
+}, { desc = "Reindent the whole file", silent = true })
+
 -- Search. The zzv / zzzv variants are the reference's, and they are the reason
 -- 'hlsearch' is worth having: without them the match is scrolled off screen.
--- <leader><space> is ", " on a US keyboard.
 map({
   ["n"] = "nzzzv",
   ["N"] = "Nzzzv",
-  ["<leader><space>"] = "<cmd>noh<cr>",
+  -- <leader>/ clears the highlight. <leader><space> moved to telescope's
+  -- project-wide search (lua/plugins/search.lua).
+  ["<leader>/"] = "<cmd>noh<cr>",
 })
 
 -- <leader>sh: the reference's terminal key, kept with the exact spelling.
@@ -155,7 +174,10 @@ end
 --                 against MiniComment.setup()'s defaults. A `keys` table would
 --                 drop the operatorfunc indirection that makes 10gc_ work.
 --   <leader>b/e   telescope.nvim, in lua/plugins/search.lua
+--   <leader><space>  telescope.nvim, in lua/plugins/search.lua (repo-wide grep)
+--   <C-p>         telescope.nvim, in lua/plugins/search.lua
 --   <leader>y     fzf-lua, in lua/plugins/search.lua
+--   <leader>:     fzf-lua, in lua/plugins/search.lua (command history)
 --   <leader>g*    fugitive, in lua/plugins/git.lua
 --   F2 / F3       neo-tree, in lua/plugins/ui.lua
 --   gd / gr / K   the LSP, from the on_attach in lua/config/lsp.lua

@@ -30,10 +30,12 @@ vim.opt.fileencodings = "utf-8"
 
 -- Editing
 opt.backspace = { "indent", "eol", "start" }
+-- Real tabs, 4 columns wide (no expandtab): one byte per indent level instead of
+-- four spaces. softtabstop=0 keeps a literal tab when Tab is pressed.
 opt.tabstop = 4
 opt.softtabstop = 0
 opt.shiftwidth = 4
-opt.expandtab = true
+opt.expandtab = false
 
 -- Leader. init.lua sets this too, and earlier: the plugin specs are written
 -- against it, so it has to be resolved before lazy.nvim reads them.

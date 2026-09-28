@@ -138,7 +138,7 @@ vim.api.nvim_create_autocmd("FileType", {
   callback = function()
     vim.opt_local.tabstop = 2
     vim.opt_local.shiftwidth = 2
-    vim.opt_local.expandtab = true
+    vim.opt_local.expandtab = false
   end,
 })
 
@@ -149,7 +149,7 @@ vim.api.nvim_create_autocmd("FileType", {
     vim.opt_local.tabstop = 4
     vim.opt_local.shiftwidth = 4
     vim.opt_local.softtabstop = 4
-    vim.opt_local.expandtab = true
+    vim.opt_local.expandtab = false
   end,
 })
 
@@ -160,14 +160,27 @@ vim.api.nvim_create_autocmd("FileType", {
   group = indent_group,
   pattern = "python",
   callback = function()
-    vim.opt_local.expandtab = true
+    vim.opt_local.expandtab = false
     vim.opt_local.shiftwidth = 4
-    vim.opt_local.tabstop = 8
+    vim.opt_local.tabstop = 4
     vim.opt_local.colorcolumn = "79"
     -- croq: comments, trailing whitespace-only lines omitted, return removes
     --       indent, right-aligns the line, joins with a space
     vim.opt_local.formatoptions:append("croq")
     vim.opt_local.softtabstop = 4
     vim.opt_local.cinwords = "if,elif,else,for,while,try,except,finally,def,class,with"
+  end,
+})
+
+-- markdown: the runtime ftplugin forces expandtab/tabstop=4/softtabstop=4; keep
+-- the width but use tabs, like the rest of the config.
+vim.api.nvim_create_autocmd("FileType", {
+  group = indent_group,
+  pattern = "markdown",
+  callback = function()
+    vim.opt_local.expandtab = false
+    vim.opt_local.tabstop = 4
+    vim.opt_local.softtabstop = 4
+    vim.opt_local.shiftwidth = 4
   end,
 })
