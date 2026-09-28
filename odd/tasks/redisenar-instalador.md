@@ -152,3 +152,46 @@ WARN "Operación cancelada." que no parece error. "Todos" no pasaba por ese cami
   y home queda aditivo; flujo install.sh completo (Seleccionar componentes→Dotfiles→
   sway→reset) y (Aplicar dotfiles al sistema→sway→ESC→Salir) — ambos exit 0 con archivos
   copiados. Ojo: `RESET` colisiona con readonly de common.sh → se usa `RESET_FABRICA`.
+
+
+## Ronda 7 — consistencia gum, jerarquía de drivers y verbosidad (2026-09-28)
+
+El usuario pide 7 mejoras de UX y consistencia del instalador. Decisiones acordadas:
+
+- **P1 — gate de fuentes.** El flujo de fuentes asumía que el usuario quería instalar.
+  Antes del catálogo interactivo (solo en `select_families_install`, no en modo
+  `--family`) se pregunta `¿Querés instalar o añadir alguna Nerd Font?`. Si dice que no,
+  se omite la instalación sin error. La dependencia automática Sway/Dev-Core
+  (`FONT_AUTO`, invoca `--family JetBrainsMono`) sigue siendo automática: es dependencia
+  documentada (Nerd Fonts obligatorias para Sway/nvim).
+- **P2/P5 — gum centralizado.** `confirm()` en `common.sh` pasa a ser gum-aware: usa
+  `gum confirm --default=false` cuando hay gum y TTY; si no, cae al `read [s/N]` actual.
+  Se agrega `confirm_yes()` (default Sí) para la actualización de plugins. Call sites
+  `04:279` (reset de fábrica) reescriben su texto a Sí=borrar y recrear / No=solo copiar.
+  El `command -v gum && confirm` contradictorio de `05:195` se corrige.
+- **P3/P6 — drivers jerárquicos.** `drivers-menu.sh` imprime el árbol
+  `Drivers › <grupo> › <device>` (grupo = primer token del nombre de archivo; device =
+  resto), y luego un `gum choose --no-limit` con las hojas indentadas + `No configurar
+  drivers ahora`. Elegir nada o esa opción no configura y sale 0. La selección es
+  múltiple y ejecuta cada driver en orden; exit code agregado ≠ 0 si alguno falla.
+  Se elimina el modo single-select.
+- **P4 — update de plugins zsh.** `08-setup-zsh.sh` clona los faltantes y, si hay
+  instalados, una sola `confirm_yes "¿Actualizar los N plugins de zsh (git pull
+  --ff-only)?"` (en vez de un s/N por plugin). `--update` fuerza sin preguntar.
+- **P6 — verbosidad.** `install.sh` deja de imprimir `Ejecutando: /ruta/script.sh args`;
+  muestra un banner compacto con sangría por nivel. `common.sh` gana `LOG_PREFIX`
+  (exportable) que `info/ok/warn/error` anteponen, para sangrar salida de subprocesos.
+- **P7 — ramas.** Borrar locales integradas en main: `feat/nvim-nativo`,
+  `feat/zsh-nativo`, `feat/waybar`. `backup/mixed-936b5fc` NO está mergeada por revisión
+  (solo por patch-id) → no se borra sin confirmación explícita.
+
+### Tareas ronda 7
+
+- [ ] T22: common.sh — `confirm()` gum-aware + `confirm_yes()`; `LOG_PREFIX` en los 4
+  helpers de log; helper `has_gum`.
+- [ ] T23: 05-install-fonts.sh — gate P1 + P2 (usar confirm gum-aware).
+- [ ] T24: 08-setup-zsh.sh — P4 con confirm_yes.
+- [ ] T25: drivers-menu.sh — P3/P6 árbol + multi-select + "nada por ahora".
+- [ ] T26: install.sh — P6 verbosidad (quitar comandos crudos, banners con sangría).
+- [ ] T27: 04-setup-dotfiles.sh — reescribir texto del reset de fábrica para gum.
+- [ ] T28: Verificación — bash -n + smoke tests con stubs de gum.

@@ -61,52 +61,44 @@ COMPONENTES=(
 # ---------------------------------------------------------------------------
 run_component() {
   local item="$1"
-  info "Procesando componente: ${item}"
+  info "» ${item}"
+  export LOG_PREFIX="  "
 
   case "${item}" in
     base|shell)
-      info "Ejecutando: ${SCRIPT_DIR}/scripts/02-install-packages.sh ${item}.txt"
       "${SCRIPT_DIR}/scripts/02-install-packages.sh" "${item}.txt"
       info "Finalizado: ${item}"
       ;;
     "Escritorio Sway")
-      info "Ejecutando: ${SCRIPT_DIR}/scripts/02-install-packages.sh desktop-sway.txt"
       "${SCRIPT_DIR}/scripts/02-install-packages.sh" desktop-sway.txt
       info "Finalizado: Escritorio Sway"
       ;;
     "Drivers")
       # Submenú: lista los driver-*.sh de scripts/drivers/ y lanza el elegido.
-      info "Ejecutando: ${SCRIPT_DIR}/scripts/drivers/drivers-menu.sh (controladores por hardware)"
       "${SCRIPT_DIR}/scripts/drivers/drivers-menu.sh"
       info "Finalizado: configuración de drivers"
       ;;
     "Nerd Fonts")
-      info "Ejecutando: ${SCRIPT_DIR}/scripts/05-install-fonts.sh --install-only"
       "${SCRIPT_DIR}/scripts/05-install-fonts.sh" --install-only
       info "Finalizado: instalación de fuentes"
       ;;
     "Dev Core")
-      info "Ejecutando: ${SCRIPT_DIR}/scripts/02-install-packages.sh dev-core.txt"
       "${SCRIPT_DIR}/scripts/02-install-packages.sh" dev-core.txt
       info "Finalizado: Dev Core"
       ;;
     "Dev PHP")
-      info "Ejecutando: ${SCRIPT_DIR}/scripts/02-install-packages.sh dev-php.txt"
       "${SCRIPT_DIR}/scripts/02-install-packages.sh" dev-php.txt
       info "Finalizado: Dev PHP"
       ;;
     "Dev Rust")
-      info "Ejecutando: ${SCRIPT_DIR}/scripts/02-install-packages.sh dev-rust.txt"
       "${SCRIPT_DIR}/scripts/02-install-packages.sh" dev-rust.txt
       info "Finalizado: Dev Rust"
       ;;
     "Dev Python")
-      info "Ejecutando: ${SCRIPT_DIR}/scripts/02-install-packages.sh dev-python.txt"
       "${SCRIPT_DIR}/scripts/02-install-packages.sh" dev-python.txt
       info "Finalizado: Dev Python"
       ;;
 "Dev Angular/Node")
-      info "Ejecutando: ${SCRIPT_DIR}/scripts/02-install-packages.sh dev-angular.txt"
       "${SCRIPT_DIR}/scripts/02-install-packages.sh" dev-angular.txt
       # Verificar si el Angular CLI ya está instalado globalmente
       if npm list -g @angular/cli &>/dev/null; then
@@ -123,22 +115,18 @@ run_component() {
       ;;
 
 "Dev Bases de Datos")
-      info "Ejecutando: ${SCRIPT_DIR}/scripts/02-install-packages.sh dev-db.txt"
       "${SCRIPT_DIR}/scripts/02-install-packages.sh" dev-db.txt
       info "Finalizado: Dev Bases de Datos"
       ;;
     "Zsh (plugins)")
-      info "Ejecutando: ${SCRIPT_DIR}/scripts/08-setup-zsh.sh (plugins de zsh)"
       "${SCRIPT_DIR}/scripts/08-setup-zsh.sh"
       info "Finalizado: plugins de zsh"
       ;;
     "Nvim")
-      info "Ejecutando: ${SCRIPT_DIR}/scripts/09-setup-nvim.sh (plugins y LSP de nvim)"
       "${SCRIPT_DIR}/scripts/09-setup-nvim.sh"
       info "Finalizado: plugins y LSP de nvim"
       ;;
     "Dotfiles")
-      info "Ejecutando: ${SCRIPT_DIR}/scripts/04-setup-dotfiles.sh (aplicación de dotfiles)"
       # En instalación completa, 04 aplica todo sin preguntar su submenú.
       if [[ ${DOTFILES_TODOS} -eq 1 ]]; then
         "${SCRIPT_DIR}/scripts/04-setup-dotfiles.sh" todos
@@ -152,6 +140,7 @@ run_component() {
       exit 1
       ;;
   esac
+  LOG_PREFIX=""
 }
 
 # ---------------------------------------------------------------------------

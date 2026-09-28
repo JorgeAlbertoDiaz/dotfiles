@@ -84,6 +84,16 @@ pretty_driver_label() {
   fi
 }
 
+# Grupo jerárquico de un driver: el primer token del nombre de archivo
+# (vendor para hardware, clase para periféricos).
+#   driver-nvidia-gtx1060.sh -> NVIDIA
+#   driver-impresora-hp.sh   -> Impresora
+driver_group() {
+  local base="${1#driver-}"
+  base="${base%.sh}"
+  pretty_token "${base%%-*}"
+}
+
 # ---------------------------------------------------------------------------
 # Descubrimiento de drivers
 #     Glob de bash (con nullglob) en vez de "ls | grep": no depende de parsear
@@ -100,11 +110,14 @@ shopt -u nullglob
 
 drivers=()
 etiquetas=()
+grupos=()
+hojas=()
 for f in "${candidatos[@]}"; do
   [[ "${f}" == "${SELF_NAME}" ]] && continue
   drivers+=("${f}")
 
   etiqueta="$(pretty_driver_label "$(basename "${f}")")"
+  grupo="$(driver_group "$(basename "${f}")")"
 
   # Las etiquetas tienen que ser únicas porque son la clave con la que se
   # vuelve del texto elegido al archivo. Si dos drivers colapsan al mismo
@@ -118,6 +131,12 @@ for f in "${candidatos[@]}"; do
   done
 
   etiquetas+=("${etiqueta}")
+
+  # Hoja = etiqueta sin el prefijo del grupo, para el árbol jerárquico.
+  hoja="${etiqueta}"
+  [[ "${hoja}" == "${grupo} "* ]] && hoja="${hoja#"${grupo}" }"
+  grupos+=("${grupo}")
+  hojas+=("${hoja}")
 done
 
 if [[ ${#drivers[@]} -eq 0 ]]; then
@@ -127,59 +146,90 @@ if [[ ${#drivers[@]} -eq 0 ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# Selección
+# Selección jerárquica (árbol + multi-selección)
 # ---------------------------------------------------------------------------
 
-if command -v gum &>/dev/null; then
-  if ! seleccion="$(gum choose --header "Elegí el dispositivo a configurar:" "${etiquetas[@]}")"; then
-    warn "Selección cancelada; no se configuró ningún dispositivo."
-    exit 1
+# Árbol visible: Drivers › <grupo> › <device>. Los grupos se preservan en el
+# orden de descubrimiento.
+info "Drivers disponibles:"
+grupos_vistos=()
+for i in "${!drivers[@]}"; do
+  g="${grupos[$i]}"
+  if [[ ! " ${grupos_vistos[*]:-} " == *" ${g} "* ]]; then
+    grupos_vistos+=("${g}")
+    printf '  » %s\n' "${g}"
   fi
+  printf '      • %s\n' "${hojas[$i]}"
+done
+
+# Entradas del menú (indentadas y únicas) mapeadas a su archivo.
+menu_entries=()
+menu_files=()
+menu_labels=()
+for i in "${!drivers[@]}"; do
+  menu_entries+=("  ${grupos[$i]} › ${hojas[$i]}")
+  menu_files+=("${drivers[$i]}")
+  menu_labels+=("${etiquetas[$i]}")
+done
+menu_entries+=("  No configurar drivers ahora")
+
+seleccionados=()   # índices de drivers elegidos
+
+if has_gum; then
+  if ! elegidas="$(gum choose --no-limit --height 12 \
+      --header "Elegí los dispositivos a configurar (Espacio=seleccionar, Enter=continuar):" \
+      "${menu_entries[@]}")"; then
+    warn "Selección cancelada; no se configuró ningún dispositivo."
+    exit 0
+  fi
+  while IFS= read -r linea; do
+    [[ -z "${linea}" ]] && continue
+    [[ "${linea}" == *"No configurar drivers ahora"* ]] && continue
+    for i in "${!menu_entries[@]}"; do
+      if [[ "${menu_entries[$i]}" == "${linea}" ]]; then
+        seleccionados+=("${i}")
+        break
+      fi
+    done
+  done <<< "${elegidas}"
 else
   info "gum no está disponible; usando flujo bash simple."
-  PS3="> "
-  select seleccion in "${etiquetas[@]}"; do
-    [[ -n "${seleccion}" ]] && break
-    warn "Opción inválida, intente de nuevo."
+  for i in "${!drivers[@]}"; do
+    if confirm "¿Configurar ${etiquetas[$i]}?"; then
+      seleccionados+=("${i}")
+    fi
   done
 fi
 
-# gum puede devolver vacío en algunos edge cases de terminal: se rechaza
-# explícito antes de buscar el archivo.
-if [[ -z "${seleccion:-}" ]]; then
-  warn "No se seleccionó ningún dispositivo."
-  exit 1
-fi
-
-objetivo=""
-for i in "${!etiquetas[@]}"; do
-  if [[ "${etiquetas[$i]}" == "${seleccion}" ]]; then
-    objetivo="${drivers[$i]}"
-    break
-  fi
-done
-
-if [[ -z "${objetivo}" ]]; then
-  warn "No se pudo resolver la selección '${seleccion}' a ningún driver."
-  exit 1
+if [[ ${#seleccionados[@]} -eq 0 ]]; then
+  info "No se configuró ningún driver."
+  exit 0
 fi
 
 # ---------------------------------------------------------------------------
 # Ejecución
-#     Se propaga el exit code del driver para que install.sh (y quien llame)
-#     sepa si el paso terminó bien, pero sin perder el resumen final.
+#     Se ejecuta cada driver elegido y se propaga el peor exit code para que
+#     install.sh (y quien llame) sepa si algún paso falló.
 # ---------------------------------------------------------------------------
 
-info "Ejecutando driver: ${objetivo}"
-set +e
-"${objetivo}"
-rc=$?
-set -e
+# Sangrar la salida de los drivers un nivel más adentro que install.sh.
+export LOG_PREFIX="    "
 
-if [[ ${rc} -eq 0 ]]; then
-  ok "Driver finalizado correctamente: ${seleccion}"
-else
-  warn "El driver '${seleccion}' terminó con código ${rc}."
-fi
+rc_total=0
+for i in "${seleccionados[@]}"; do
+  objetivo="${menu_files[$i]}"
+  etiqueta_sel="${menu_labels[$i]}"
+  info "Ejecutando driver: ${etiqueta_sel}"
+  set +e
+  "${objetivo}"
+  rc=$?
+  set -e
+  if [[ ${rc} -eq 0 ]]; then
+    ok "Driver finalizado correctamente: ${etiqueta_sel}"
+  else
+    warn "El driver '${etiqueta_sel}' terminó con código ${rc}."
+    rc_total=${rc}
+  fi
+done
 
-exit "${rc}"
+exit "${rc_total}"

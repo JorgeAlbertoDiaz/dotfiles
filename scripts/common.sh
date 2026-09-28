@@ -15,10 +15,15 @@ readonly CYAN='\033[0;36m'
 # QUIET=1 suprime info/ok (warn/error siempre visibles).
 QUIET=${QUIET:-0}
 
-info()  { [[ ${QUIET} -eq 1 ]] || printf "${CYAN}[INFO]${RESET} %s\n" "$*"; }
-warn()  { printf "${YELLOW}[WARN]${RESET} %s\n" "$*"; }
-error() { printf "${RED}[ERROR]${RESET} %s\n" "$*" >&2; }
-ok()    { [[ ${QUIET} -eq 1 ]] || printf "${GREEN}[OK]${RESET} %s\n" "$*"; }
+# LOG_PREFIX se antepone a cada mensaje para sangrar la salida según el nivel
+# de la operación (p. ej. "  " para el paso que corre un componente). Se
+# exporta desde quien lo define para que los subprocesos lo hereden.
+LOG_PREFIX=${LOG_PREFIX:-}
+
+info()  { [[ ${QUIET} -eq 1 ]] || printf "${CYAN}[INFO]${RESET} %s%s\n" "${LOG_PREFIX}" "$*"; }
+warn()  { printf "${YELLOW}[WARN]${RESET} %s%s\n" "${LOG_PREFIX}" "$*"; }
+error() { printf "${RED}[ERROR]${RESET} %s%s\n" "${LOG_PREFIX}" "$*" >&2; }
+ok()    { [[ ${QUIET} -eq 1 ]] || printf "${GREEN}[OK]${RESET} %s%s\n" "${LOG_PREFIX}" "$*"; }
 
 # Ejecuta un comando como root (directo si ya es root, con sudo si no).
 as_root() {
@@ -29,15 +34,42 @@ as_root() {
   fi
 }
 
-# confirm "mensaje" -> 0 si sí, 1 si no
+# has_gum -> 0 si gum está disponible y hay TTY interactiva.
+has_gum() {
+  command -v gum >/dev/null 2>&1 && [[ -t 0 && -t 1 ]]
+}
+
+# confirm "mensaje" -> 0 si sí, 1 si no (default: no).
+# Usa gum si está disponible; si no, cae al prompt bash [s/N].
 confirm() {
   local msg="$1" resp
+  if has_gum; then
+    gum confirm --default=false "${msg}"
+    return $?
+  fi
   while true; do
     read -r -p "${msg} [s/N]: " resp
     case "${resp}" in
       s|S|y|Y) return 0 ;;
       n|N|"")  return 1 ;;
       *)       warn "Respuesta no válida: ${resp}" ;;
+    esac
+  done
+}
+
+# confirm_yes "mensaje" -> 0 si sí, 1 si no (default: sí).
+confirm_yes() {
+  local msg="$1" resp
+  if has_gum; then
+    gum confirm --default=true "${msg}"
+    return $?
+  fi
+  while true; do
+    read -r -p "${msg} [S/n]: " resp
+    case "${resp}" in
+      s|S|y|Y|"") return 0 ;;
+      n|N)        return 1 ;;
+      *)          warn "Respuesta no válida: ${resp}" ;;
     esac
   done
 }

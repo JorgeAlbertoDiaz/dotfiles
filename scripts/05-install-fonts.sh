@@ -192,7 +192,7 @@ select_families_install() {
       [[ -n "${item}" ]] && filtered+=("${item}")
     done
     chosen=("${filtered[@]}")
-    if command -v gum &>/dev/null && confirm "¿Instalar también otra familia personalizada?"; then
+    if confirm "¿Instalar también otra familia personalizada?"; then
       if custom="$(gum input --prompt "Asset de nerd-fonts (ej. Iosevka): " 2>/dev/null)"; then
         [[ -n "${custom}" ]] && chosen+=("${custom}")
       fi
@@ -416,6 +416,8 @@ if [[ ${CONFIG_ONLY} -eq 0 ]]; then
       fi
     done
     install_batch "${assets[@]}"
+  elif ! confirm "¿Querés instalar o añadir alguna Nerd Font?"; then
+    info "Omitiendo instalación de fuentes."
   elif select_families_install; then
     install_batch "${assets[@]}"
   else

@@ -276,7 +276,7 @@ fi
 # los nombres que declara el repo (sin comodines sobre $HOME), así que lo que
 # el usuario tenga fuera de config/home/ no se toca nunca.
 if [[ ${#apps_a_aplicar[@]} -gt 0 ]]; then
-  if confirm "¿Reset de fábrica? Se borran y recrean desde el repo: ${apps_a_aplicar[*]} (s=reset, n=solo copiar)"; then
+  if confirm "¿Reset de fábrica? (Sí: borrar y recrear desde el repo / No: solo copiar) [${apps_a_aplicar[*]}]"; then
     RESET_FABRICA=1
     info "Reset de fábrica activado para: ${apps_a_aplicar[*]}"
   fi

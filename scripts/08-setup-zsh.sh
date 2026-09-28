@@ -4,8 +4,8 @@
 # Uso: 08-setup-zsh.sh [--update] [--quiet]
 #
 #   --update   Fuerza la actualización (git pull --ff-only) de los plugins ya
-#              instalados, sin preguntar. Sin este flag los ofrece uno por
-#              uno y el valor por defecto es no.
+#              instalados, sin preguntar. Sin este flag ofrece actualizarlos
+#              todos en bloque (valor por defecto: no).
 #   --quiet    Silencia los mensajes de progreso (info/ok). Los avisos (warn)
 #              y los errores siempre se muestran.
 #
@@ -72,7 +72,8 @@ update_plugin() {
   ok "Actualizado: ${name}"
 }
 
-# Un destino que ya existe NO se vuelve a clonar: se ofrece actualizar.
+# Un destino que ya existe NO se vuelve a clonar: se registra en INSTALADOS
+# para ofrecer la actualización en bloque más abajo.
 # El clone no lleva '|| true' a propósito; si falla hay que saberlo en lugar
 # de seguir como si el plugin estuviera instalado.
 install_plugin() {
@@ -86,11 +87,8 @@ install_plugin() {
 
   if [[ -d "${dest}" ]]; then
     ok "Ya instalado: ${name}"
-    if [[ ${UPDATE} -eq 1 ]] || confirm "¿Actualizar ${name} con 'git pull --ff-only'?"; then
-      update_plugin "${dest}" "${name}"
-    else
-      info "Se mantiene la versión actual de ${name}."
-    fi
+    # La actualización se ofrece en bloque luego de clonar los faltantes.
+    INSTALADOS+=("${name}")
     return 0
   fi
 
@@ -120,9 +118,22 @@ check_fzf
 info "Directorio de plugins: ${PLUGINS_DIR}"
 mkdir -p "${PLUGINS_DIR}"
 
+INSTALADOS=()
 for entry in "${PLUGINS[@]}"; do
   install_plugin "${entry%%|*}" "${entry##*|}"
 done
+
+# Actualización en bloque: una sola confirmación (default: sí) en vez de un
+# s/N por plugin. --update fuerza sin preguntar.
+if [[ ${#INSTALADOS[@]} -gt 0 ]]; then
+  if [[ ${UPDATE} -eq 1 ]] || confirm_yes "¿Actualizar los ${#INSTALADOS[@]} plugins de zsh (git pull --ff-only)?"; then
+    for name in "${INSTALADOS[@]}"; do
+      update_plugin "${PLUGINS_DIR}/${name}" "${name}"
+    done
+  else
+    info "Se mantiene la versión actual de los plugins."
+  fi
+fi
 
 ok "Resumen de plugins de zsh en ${PLUGINS_DIR}:"
 resumen
