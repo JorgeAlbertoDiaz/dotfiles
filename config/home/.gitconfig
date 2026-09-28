@@ -1,3 +1,51 @@
+# ~/.gitconfig — configuración global de git.
+#
+# Este archivo es la fuente de verdad. scripts/04-setup-dotfiles.sh lo COPIA a
+# $HOME: los cambios hechos directamente en ~/.gitconfig se pisan en la próxima
+# aplicación de dotfiles, así que editá SIEMPRE este archivo.
+
 [user]
-	name = Jorge Alberto Diaz
-	mail = Jorge.Alberto.Diaz@hotmail.com.ar
+	name = Jorge Alberto Díaz
+	email = Jorge.Alberto.Diaz@hotmail.com.ar
+
+[init]
+	# 'main' como rama por defecto en lugar del antiguo 'master'.
+	defaultBranch = main
+
+[core]
+	# Editor para mensajes de commit y rebase interactivo.
+	editor = nvim
+	# Evita problemas de saltos de línea en entornos mixtos (Linux/Windows).
+	autocrlf = input
+
+[color]
+	# Colores en la salida de la terminal.
+	ui = auto
+
+[pull]
+	# Sin merge commits innecesarios: rebasea los commits locales sobre los remotos.
+	rebase = true
+
+[push]
+	# Comportamiento estándar y seguro.
+	default = simple
+	# Crea la rama remota en el primer push (evita escribir --set-upstream).
+	autoSetupRemote = true
+
+[fetch]
+	# Borra referencias a ramas remotas ya eliminadas en el remoto.
+	prune = true
+
+[help]
+	# Autocorrige errores tipográficos leves (ej. 'git statsu' tras 1 segundo).
+	autocorrect = 10
+
+[alias]
+	# Atajos diarios.
+	st = status -sb
+	co = checkout
+	ci = commit
+	br = branch
+
+	# Historial visual (árbol) con colores, ramas, fechas relativas y autores.
+	lg = log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
