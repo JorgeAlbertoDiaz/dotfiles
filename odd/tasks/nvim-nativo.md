@@ -172,8 +172,14 @@ conform.nvim, mason.nvim, nvim-cmp, nvim-treesitter. Más `lazy.nvim` como gesto
       2026-09-28 (S5)**: declarados `php8-posix`, `php-cs-fixer` en
       `dev-php.txt` y `python313-flake8` en `dev-python.txt` (verificados
       existentes en Tumbleweed). phpactor via mason (ver S5), sin composer.
-- [ ] T8 — Proteger el deploy: separar estado mutable de config declarativa y
+- [x] T8 — Proteger el deploy: separar estado mutable de config declarativa y
       neutralizar el `rm -rf` de `aplicar_app()` sobre el directorio de plugins.
+      **Completado 2026-09-28 (S6)**: la separación XDG ya la resuelve el
+      layout — `aplicar_app()` con `reset=1` borra `~/.config/nvim` (declarativo,
+      reinscribible desde el repo); `~/.local/share/nvim` (plugins lazy/mason) y
+      `~/.local/state/nvim` (shada/log) quedan intactos. Verificado: git no
+      versiona `plugged/`/`autoload/`/`session/`/estado mutable y `config/nvim/`
+      solo contiene `init.lua`, `lazy-lock.json` y `lua/`.
 - [ ] T9 — Componente en el menú de `install.sh` + `README.md`.
 - [ ] T10 — `docs/organizacion-nvim.md` y cierre con verificaciones.
 
@@ -276,9 +282,11 @@ Claims que iba a afirmar y resultaron falsos al verificar:
   necesidad de rust-analyzer por ahora. Si Rust vuelve al set, reaparece la
   disyuntiva rustup vs distro; es una línea en T5.
 - **`aplicar_app()` en `scripts/04-setup-dotfiles.sh:104` hace `rm -rf` del destino
-  si `reset=1`**, y en la línea 108 hace overlay con `cp -r`. Con `config/nvim/`
-  presente, el camino `reset=1` **borraría los plugins ya instalados**. T8 lo
-  mitiga desde el lado de nvim.
+  si `reset=1`**, y en la línea 108 hace overlay con `cp -r`. **RESUELTO
+  (2026-09-28, S6)**: el destino es `~/.config/nvim`, que es declarativo; los
+  plugins viven en `~/.local/share/nvim` y el estado en `~/.local/state/nvim`,
+  que el reset no toca. Al re-aplicar el repo, lazy re-instala lo que falte con
+  el lockfile. Sin cambios en `04` (fuera de alcance).
 - **El estado mutable no puede vivir en `config/nvim/`**: si el repo versionara
   `plugged/` o `autoload/`, cada corrida de `04-setup-dotfiles.sh` lo pisaría.
   Neovim 0.12 ya separa `~/.config/nvim` (declarativo) de
@@ -438,9 +446,25 @@ search/info`), no de memoria:
   "[ERROR] The application requires the extension posix" — la extensión es el
   **único** blocker; instalado `php8-posix`, el LSP de PHP arranca.
 
-Próximo paso: **branch `feat/nvim-nativo` creada 2026-09-28** con los commits de
-W1, W2 y T7 (ver *Work units registradas* abajo); queda T8/T9/T10 sobre la rama
-nueva, y el assessment RDD del slice acumulado contra `7fbbabe`.
+## S6. T8 completado — la separación XDG ya neutraliza el reset
+
+**2026-09-28.** Verificado contra el layout real, no de memoria:
+
+- `aplicar_app()` (`04-setup-dotfiles.sh:104-108`): con `reset=1`, borra
+  `~/.config/nvim` y lo recrea con `cp -r config/nvim/.`. Ese directorio es
+  **declarativo al 100%** (verificado: `git ls-files config/nvim/` solo tiene
+  `init.lua`, `lazy-lock.json` y `lua/`).
+- El estado mutable no vive ahí: `stdpath("data")` = `~/.local/share/nvim`
+  (plugins lazy/mason), `stdpath("state")` = `~/.local/state/nvim` (shada/log).
+  Verificado con `nvim --headless --cmd 'lua print(vim.fn.stdpath("data"))'`.
+- **Conclusión**: el escenario que imaginaba T8 ("el reset borraría los plugins
+  ya instalados") no se cumple con el layout declarativo de 0.12; era un residuo
+  del layout de vim-bootstrap (que ponía los plugins en `~/.config/nvim/plugged`).
+  No se toca `04` (fuera de alcance) y no hace falta ningún mecanismo extra.
+  Tras un `reset=1`, lazy re-instala lo que falte usando el lockfile versionado.
+
+Próximo paso: T9 (componente en `install.sh` + README) y T10
+(`docs/organizacion-nvim.md` + cierre).
 
 ## Work units registradas (2026-09-28, rama `feat/nvim-nativo`)
 - `2a14384` — `feat(nvim): base declarativa con lazy.nvim y script de setup` (W1: T1–T3)
