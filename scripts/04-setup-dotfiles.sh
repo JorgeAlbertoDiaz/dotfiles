@@ -7,6 +7,7 @@
 #   ./scripts/04-setup-dotfiles.sh todos      # aplica todo sin preguntar
 #   ./scripts/04-setup-dotfiles.sh sway waybar home
 #   ./scripts/04-setup-dotfiles.sh zsh         # aplica solo ~/.zshrc
+#   ./scripts/04-setup-dotfiles.sh git         # aplica solo ~/.gitconfig
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -130,24 +131,28 @@ aplicar_app() {
 }
 
 # ---------------------------------------------------------------------------
-# Aplica solo la configuración de zsh (~/.zshrc) desde config/home/.
-# Es una acción separada de "home" (que copia todo config/home/) y de cambiar
-# la shell por defecto: aplicar la config no implica cambiar de shell.
+# Aplica un archivo suelto de config/home/ a $HOME (p. ej. .zshrc, .gitconfig).
+# Es una acción separada de "home" (que copia todo config/home/): permite
+# aplicar sólo la config de una herramienta.
 # ---------------------------------------------------------------------------
-aplicar_zsh_config() {
-  local src="${CONFIG_DIR}/home/.zshrc" dest="${HOME_DIR}/.zshrc"
+aplicar_home_file() {
+  local nombre="$1" etiqueta="$2"
+  local src="${CONFIG_DIR}/home/${nombre}" dest="${HOME_DIR}/${nombre}"
   if [[ ! -f "${src}" ]]; then
-    warn "No existe ${src}; no se aplicó la configuración de zsh."
+    warn "No existe ${src}; no se aplicó ${etiqueta}."
     return 0
   fi
   if [[ "${RESET_FABRICA}" == "1" && -e "${dest}" ]]; then
     info "Reset de fábrica: borrando ${dest}"
     rm -f "${dest}"
   fi
-  info "Aplicando configuración de zsh → ${dest}"
+  info "Aplicando ${etiqueta} → ${dest}"
   cp -a "${src}" "${dest}"
-  ok "Aplicado zsh (~/.zshrc)"
+  ok "Aplicado ${etiqueta} (${dest})"
 }
+
+aplicar_zsh_config() { aplicar_home_file ".zshrc" "configuración de zsh"; }
+aplicar_git_config() { aplicar_home_file ".gitconfig" "configuración de git"; }
 
 # ---------------------------------------------------------------------------
 # Selección interactiva de componentes.
@@ -159,7 +164,7 @@ aplicar_zsh_config() {
 SELECCION=()
 
 seleccionar_apps() {
-  local opciones=("Todos" "${apps[@]}" "home" "Configuración de zsh" "(terminar)")
+  local opciones=("Todos" "${apps[@]}" "home" "Configuración de zsh" "Configuración de git" "(terminar)")
   local elegidos=() sel final=false
 
   if command -v gum &>/dev/null; then
@@ -186,6 +191,12 @@ seleccionar_apps() {
           # Valor interno "zsh": aplica config/home/.zshrc a ~/.zshrc.
           if [[ " ${elegidos[*]} " != *" zsh "* ]]; then
             elegidos+=("zsh")
+          fi
+          ;;
+        "Configuración de git")
+          # Valor interno "git": aplica config/home/.gitconfig a ~/.gitconfig.
+          if [[ " ${elegidos[*]} " != *" git "* ]]; then
+            elegidos+=("git")
           fi
           ;;
         "")
@@ -223,8 +234,9 @@ seleccionar_apps() {
         [[ ${index} -ge 0 && ${index} -lt ${#opciones[@]} ]] || continue
         [[ "${opciones[$index]}" == "(terminar)" ]] && continue
         item="${opciones[$index]}"
-        # "Configuración de zsh" se guarda como valor interno "zsh".
+        # "Configuración de zsh"/"git" se guardan como valores internos.
         [[ "${item}" == "Configuración de zsh" ]] && item="zsh"
+        [[ "${item}" == "Configuración de git" ]] && item="git"
         elegidos+=("${item}")
       done
       if [[ ${#elegidos[@]} -eq 0 ]]; then
@@ -268,7 +280,7 @@ if [[ $# -gt 0 ]]; then
   for arg in "$@"; do
     case "${arg}" in
       todos|all) elegidos=("Todos") ;;
-      home|sway|waybar|foot|environment.d|zsh) elegidos+=("${arg}") ;;
+      home|sway|waybar|foot|environment.d|zsh|git) elegidos+=("${arg}") ;;
       *) warn "Componente desconocido, ignorado: ${arg}" ;;
     esac
   done
@@ -281,13 +293,14 @@ fi
 aplicados=()
 RESET_FABRICA=0
 
-# Lista concreta de apps a aplicar (sin "zsh", que es una acción interna).
+# Lista concreta de apps a aplicar ("zsh" y "git" son acciones internas que se
+# resuelven por separado con aplicar_*_config).
 apps_a_aplicar=()
 if [[ " ${elegidos[*]} " == *" Todos "* ]]; then
   apps_a_aplicar=("${apps[@]}" "home")
 else
   for app in "${elegidos[@]}"; do
-    [[ "${app}" == "zsh" ]] && continue
+    [[ "${app}" == "zsh" || "${app}" == "git" ]] && continue
     apps_a_aplicar+=("${app}")
   done
 fi
@@ -322,10 +335,13 @@ else
   done
 fi
 
-# Configuración de zsh: sólo si se eligió explícitamente (CLI o submenú). Con
-# "Todos" o "home" ya viene dentro de config/home/, así que no se repite.
+# Config de zsh/git: sólo si se eligió explícitamente (CLI o submenú). Con
+# "Todos" o "home" ya vienen dentro de config/home/, así que no se repiten.
 if [[ " ${elegidos[*]} " == *" zsh "* ]]; then
   aplicar_zsh_config
+fi
+if [[ " ${elegidos[*]} " == *" git "* ]]; then
+  aplicar_git_config
 fi
 
 # Cambio de shell por defecto: se pregunta sólo si se aplicó la config de zsh
