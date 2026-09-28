@@ -45,6 +45,13 @@ pedido (historial, compinit, flechas, completion) es zsh nativo de todas formas.
 - [x] T4 — Componente "Zsh (plugins)" en `install.sh` → `86e9466`
 - [x] T5 — Actualizar `README.md` → `efb21eb` y `86e9466`
 - [x] T6 — Verificación y cierre → este commit
+- [x] T7 — `LS_COLORS` autosuficiente (`dircolors -b`) EN `.zshrc` → `e04c781`
+- [x] T8 — `bashcompinit` para completions bash (zypper/wofi) → `e04c781`
+- [x] T9 — Substring-search del historial en Ctrl+↑/↓ → `e04c781`
+- [x] T10 — `ZSH_AUTOSUGGEST_STRATEGY=(history completion)` → `e04c781`
+- [x] T11 — `WORDCHARS+=":@"` → `e04c781`
+- [x] T12 — Recorte del completado de git (`compdef -d`) → `e04c781` (no-op verificado: ver abajo)
+- [x] T13 — `04` simétrico: branch `home` honra `reset` y copia subdirectorios → `3c2609f`
 
 ## Work units y assessment RDD
 RDD está `on` (decided by global). Los docs se commitearon junto a su cambio,
@@ -54,10 +61,21 @@ no en un commit aparte de "update docs".
 | --- | --- | --- |
 | `efb21eb` | `.zshrc` + `shell.txt` + nota de copia | **medium** (`executable_change`) |
 | `86e9466` | `08-setup-zsh.sh` + wiring en `install.sh` + docs | deferred (mismo slice) |
+| `e04c781` | `.zshrc`: LS_COLORS, bashcompinit, substring, autosuggest, WORDCHARS, git trim | **high** (acumulado) |
+| `3c2609f` | `04`: `home` simétrico (reset + subdirectorios) | high (acumulado) |
 
 `medium` se difiere por protocolo: el candidato es el PR slice (los commits
 acumulados desde el último boundary revisado), no el commit individual. El
 STATUS preflight corre al cerrar la feature, con `--base-ref main`.
+
+El assessment del slice acumulado (base `main`, `--committed-only`, 7 archivos,
+609 líneas) da **high**: `executable_mode` en `08-setup-zsh.sh`, `process_boundary`
+y `shell_source` en `install.sh`. El protocolo pediría correr el preflight STATUS
+de inmediato, pero la review nativa NO puede ejecutarse en este plan
+(ver "La review nativa no se completó" en Riesgos): el usuario ya decidió
+enviar sin review nativa y ese lineage quedó documentado. Este cierre mantiene
+esa decisión: se registra el tier, no se reabre el ciclo de consentimiento, la
+entrega queda bajo política ordinaria del repo.
 
 Presupuesto de entrega: 185 líneas autorales tras `efb21eb`, 329 tras `86e9466`.
 Por debajo de las ~400 del presupuesto; no aplica `ask-on-risk`.
@@ -211,4 +229,69 @@ el mismo motivo, la separación de ramas posterior no altera ese candidato.
   este código. El usuario decidió enviar sin review nativa, así que **el slice
   no tiene revisión**: la entrega queda bajo política ordinaria del repo y la
   transacción sigue abierta, sin burns de autoridad.
+
+## Cierre de gaps (T7–T13)
+
+Aprobado por el usuario con "Todo, más los opcionales". Todos los hechos
+técnicos fueron verificados empíricamente antes de escribir código:
+
+- **`LS_COLORS` vacío (verificado).** `/etc/zshrc` de openSUSE sólo lo define si
+  existe `~/.dir_colors` o `/etc/DIR_COLORS`; no existe ninguno en esta máquina,
+  así que `zstyle ':completion:*' list-colors` (línea 69 del `.zshrc`) quedaba
+  vacío y el menú de completado sin colores. `dircolors -b` (sin base de datos)
+  exporta su tabla por defecto — verificado. **Ojo de orden**: el bloque
+  `dircolors` debe correr ANTES de la línea 69, porque el `zstyle` se evalúa en
+  el momento de parseo y la primera definición gana.
+- **`bashcompinit` es gratis** (0.45 ms por 10 corridas) y requiere `compinit`
+  antes (su wrapper `complete` llama a `compdef`). Con el orden real del
+  `.zshrc`, `source /usr/share/bash-completion/completions/zypper` no da errores
+  y define `_zypper`. Las completions bash de zypper y wofi se cargan bajo
+  demanda, en el primer TAB.
+- **Substring-search disponible**: `up/down-line-or-history-incremental-
+  pattern-search` existen en este zsh (5.9), expuestos como `builtin autoload
+  -XU`; en `-f` no hay archivo que verificar con `[[ -f ]]`. Foot no expone
+  Ctrl+↑ en terminfo (`infocmp foot` sin `kUP*`): se usa la convención xterm
+  `\e[1;5A`/`\e[1;5B`, a confirmar con una tecla en la terminal real.
+- **`ZSH_AUTOSUGGEST_STRATEGY=(history completion)`** es válida en
+  autosuggestions ≥ 0.7, pero el plugin NO está instalado: la línea queda
+  inerte hasta correr `08-setup-zsh.sh` (guarda del `.zshrc`).
+- **`WORDCHARS` actual** `[*?_-.[]~=/&;!#$%^(){}<>]`; se AGREGAN `:` (tokens tipo
+  PATH) y `@` (user@host) con `+=`, no se pisan.
+- **Recorte de git**: `compdef -d git-<subcmd>` desactiva la completion de ese
+  subcomando de verdad (verificado: `compdef | grep` baja a 0). Aplicar a una
+  lista curada de subcomandos internos que nadie completa a mano.
+- **`04` asimétrico (verificado)**: el branch `home` (líneas 88-98) hace
+  `[[ -f ]] || continue` → saltea subdirectorios, y no mira el flag `reset`
+  (línea 261 lo documenta como intencional, pero el mensaje de confirmación
+  línea 263 promete reset también para `home` cuando está seleccionado). Fix:
+  con `dotglob`+`nullglob`, copiar archivos y subdirectorios, y con
+  `reset=1` borrar primero los destinos declarados por el repo (scoped, sin
+  wildcards en `$HOME`). Actualizar el comentario de la línea 261.
+- **Ojo 04 en testing**: NUNCA correr contra el `$HOME` real; usar
+  `HOME=/tmp/opencode/04sandbox` y una copia del repo (`cp -a scripts config`)
+  en `/tmp/opencode/04repo` para que `SCRIPT_DIR` y `CONFIG_DIR` apunten a la
+  copia. Mirar que `scripts/04-setup-dotfiles.sh` siga en mode `100755`.
+
+### Estado al cierre (verificado, commiteado)
+- **T12 es no-op en esta máquina** (hallazgo del writer, corroborado por el
+  orchestrator): `_comps` registra sólo `git` y `gitk`; no existen `_git-*` en
+  el fpath de zsh 5.9 de openSUSE, y `_git` despacha subcomandos en runtime.
+  `compdef -d git-<cmd>` sobre un nombre no registrado no hace nada. El bloque
+  se mantiene por ser inofensivo y correcto en sistemas que sí registren
+  subcomandos; **no acelera nada acá**. Si se quiere velocidad real de git
+  habría que atacar la completion de archivos (checkout/diff/log), no este
+  bloque.
+- **Ctrl+↑/↓ pendiente de verificación humana**: los widgets están bindeados
+  (`bindkey` muestra 2 binds) pero la secuencia `\e[1;5A`/`\e[1;5B` depende de
+  que foot la emita. Probar una vez en terminal real.
+- **T10 queda inerte**: `ZSH_AUTOSUGGEST_STRATEGY` se define dentro de la
+  guarda, pero el plugin no está instalado — efectiva tras correr
+  `08-setup-zsh.sh`.
+- **Sandbox de 04 superó**: copia aditiva y reset recopiar archivos + un
+  subdirectorio declarado; un archivo local no declarado sobrevive al reset
+  (scoped, sin wildcards); modo `100755` intacto. Los dumps temporales de
+  compinit/ZDOTDIR usados en la verificación se eliminaron; el repo quedó
+  limpio (sin `.zcompdump` commiteado).
+- **LS_COLORS real**: `zsh -ic` contra el `.zshrc` nuevo da tabla de `dircolors`
+  y `zstyle -L list-colors` con 8 entradas (el orden parse-time funcionó).
 
