@@ -1,22 +1,93 @@
 * {
-    font-family: "JetBrainsMono Nerd Font";
-    font-size: 16px;
+	/* Cambia esto por tu Nerd Font favorita */
+	font-family: "FiraCode Nerd Font", "Font Awesome 6 Free", sans-serif;
+	font-size: 14px;
+	border: none;
+	border-radius: 0;
 }
 
 window#waybar {
-    background: rgba(30, 30, 30, 0.95);
+	/* Fondo oscuro grafito clásico de Badwolf */
+	background-color: #1c1c1c;
+	color: #c6c6c6;
+	transition-property: background-color;
+	transition-duration: .5s;
 }
 
+/* Espaciado y estilo general para los módulos */
+#workspaces, #mode, #clock, #custom-weather, #network, #cpu, #memory, #disk, #tray, #custom-notification, #custom-power {
+	padding: 0 10px;
+	margin: 4px 4px;
+	border-radius: 4px;
+	/* Fondo sutilmente más claro para diferenciar del bar */
+	background-color: #262626;
+}
+
+/* --- Workspaces --- */
 #workspaces button {
-    padding: 0 8px;
+	padding: 0 8px;
+	background-color: transparent;
+	color: #857b6f; /* Color inactivo (Gravel) */
+	box-shadow: inset 0 -2px transparent;
+	transition: all 0.2s ease;
 }
 
-#clock,
-#network,
-#cpu,
-#memory,
-#pulseaudio,
-#battery,
-#tray {
-    padding: 0 10px;
+#workspaces button:hover {
+	background: rgba(0, 0, 0, 0.2);
+	color: #f8f6f2;
 }
+
+/* Resaltado del Workspace activo (Naranja Badwolf) */
+#workspaces button.focused {
+	color: #1c1c1c;
+	background-color: #ff9c00;
+	font-weight: bold;
+}
+
+#workspaces button.urgent {
+	background-color: #ff2c4b; /* Rojo Tardis */
+	color: #1c1c1c;
+}
+
+/* --- Acentos específicos por módulo --- */
+#clock {
+	color: #aeee00; /* Verde lima suave */
+}
+
+#custom-weather {
+	color: #f4cf86; /* Amarillo tiza */
+}
+
+#network {
+	color: #0a9dff; /* Azul Tardis */
+}
+
+/* Iconos del sistema (Color unificado para no distraer) */
+#cpu, #memory, #disk {
+	color: #c6c6c6;
+	padding: 0 6px; /* Más pegados entre sí */
+}
+
+#custom-power {
+	color: #1c1c1c;
+	background-color: #ff2c4b; /* Botón de apagado en rojo */
+	border-radius: 4px;
+	margin-right: 8px;
+	padding: 0 12px;
+}
+
+/* Ocultar módulos cuando no hay info */
+#network.disconnected {
+	color: #857b6f;
+}
+
+/* Tooltips */
+tooltip {
+	background: #1c1c1c;
+	border: 1px solid #ff9c00;
+}
+
+tooltip label {
+	color: #c6c6c6;
+}
+
