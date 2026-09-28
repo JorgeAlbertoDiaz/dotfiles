@@ -446,4 +446,14 @@ nueva, y el assessment RDD del slice acumulado contra `7fbbabe`.
 - `2a14384` — `feat(nvim): base declarativa con lazy.nvim y script de setup` (W1: T1–T3)
 - `db2e8aa` — `feat(nvim): LSP nativo, tabla declarativa de idiomas y keymaps` (W2: T4–T6)
 - `1e061c0` — `chore(packages): php8-posix, php-cs-fixer y flake8 para el LSP de nvim` (T7)
+- `7f1200e` — `docs(nvim): referencia podada del init.vim y tracking ODD del cambio` (S1/S2 + este doc)
 - El doc ODD y `docs/referencia/nvim-vim-bootstrap-init.vim` se commitean junto con este registro.
+
+**Assessment RDD del slice (2026-09-28):** `gentle-ai review assess --base-ref 7fbbabe
+--committed-only` → **risk high** (executable_mode + process_boundary + shell_source
+en `scripts/09-setup-nvim.sh`). Preflight STATUS devolvió START de target fresco
+(lineage `review-2955135d2b256e48`). **Consent del candidato: DECLINED por el
+usuario** (`action: declined`, `consent: declined_this_candidate`), candidate-scoped,
+no kill switch. Sin registro de revisión creado; la entrega sigue política ordinaria
+del repo. Los T8–T10 siguientes (que no tocan `scripts/09`) preguntarán de nuevo según
+su propio risk tier.
