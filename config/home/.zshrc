@@ -46,6 +46,23 @@ setopt HIST_VERIFY
 # ---------------------------------------------------------------------------
 setopt auto_cd
 
+# Palabras de Ctrl+W: agrega ":" (tokens tipo PATH) y "@" (user@host).
+WORDCHARS+=":@"
+
+# ---------------------------------------------------------------------------
+# Colores
+# ---------------------------------------------------------------------------
+# /etc/zshrc de openSUSE define LS_COLORS solo si existe ~/.dir_colors o
+# /etc/DIR_COLORS; no existe ninguno acá y el list-colors del completado
+# quedaba sin colores. dircolors sin base exporta la tabla por defecto.
+#
+# Va antes de la sección de autocompletado a propósito: el zstyle de list-colors
+# expande ${(s.:.)LS_COLORS} al momento del parseo y la primera definición
+# gana, así que definir la tabla después dejaría el menú sin color igual.
+if [[ -z ${LS_COLORS:-} ]] && (( $+commands[dircolors] )); then
+  eval "$(dircolors -b)"
+fi
+
 # ---------------------------------------------------------------------------
 # Autocompletado
 # ---------------------------------------------------------------------------
@@ -56,6 +73,21 @@ mkdir -p "${ZSH_CACHE_DIR}" 2>/dev/null
 
 autoload -Uz compinit
 compinit -d "${ZSH_CACHE_DIR}/zcompdump"
+
+# zypper y wofi solo traen completions de bash (rpm -ql zypper →
+# /usr/share/bash-completion/completions/zypper). bashcompinit emula el
+# dispatch bash para que completen en zsh. Cuesta ~0.5 ms; carga la
+# completion en el primer TAB.
+# Tiene que ir DESPUÉS de compinit: su wrapper de "complete" llama a compdef.
+autoload -Uz bashcompinit
+bashcompinit
+
+# El completado de git es de los más lentos: se desactivan subcomandos
+# internos que nadie completa a mano.
+for _git_subcmd in archive daemon fast-export fast-import filter-branch fsck http-fetch http-push imap-send mailinfo merge-base notes receive-pack request-pull send-email shell show-index svn web--browse; do
+  compdef -d "git-${_git_subcmd}" 2>/dev/null || true
+done
+unset _git_subcmd
 
 # Menú navegable con flechas y tabulador.
 zstyle ':completion:*' menu select
@@ -94,6 +126,14 @@ bindkey '\eOA' up-line-or-beginning-search
 bindkey '\e[B'  down-line-or-beginning-search
 bindkey '\eOB' down-line-or-beginning-search
 
+# Substring-search del historial (acepta comodines): Ctrl+↑ / Ctrl+↓.
+# Foot no expone la secuencia en terminfo; se usa la convención xterm.
+autoload -Uz up-line-or-history-incremental-pattern-search down-line-or-history-incremental-pattern-search
+zle -N up-line-or-history-incremental-pattern-search
+zle -N down-line-or-history-incremental-pattern-search
+bindkey '^[[1;5A' up-line-or-history-incremental-pattern-search
+bindkey '^[[1;5B' down-line-or-history-incremental-pattern-search
+
 # Home/End en las tres variantes que usan los terminales actuales: modo
 # aplicación de cursor (\eOH / \eOF), modo normal CSI (\e[H / \e[F) y la
 # variante antigua de xterm (\e[1~ / \e[4~).
@@ -130,6 +170,9 @@ ZSH_PLUGINS_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/zsh/plugins"
 # Sugerencias en línea mientras se escribe (comportamiento tipo fish).
 if [[ -r "${ZSH_PLUGINS_DIR}/zsh-autosuggestions/zsh-autosuggestions.zsh" ]]; then
   ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=242'
+  # Historial primero, completado como respaldo: la sugerencia sale sin tocar
+  # el disco y aun así ofrece lo que no está en el historial.
+  ZSH_AUTOSUGGEST_STRATEGY=(history completion)
   source "${ZSH_PLUGINS_DIR}/zsh-autosuggestions/zsh-autosuggestions.zsh"
 fi
 
