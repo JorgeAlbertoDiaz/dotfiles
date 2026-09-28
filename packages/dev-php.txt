@@ -6,6 +6,9 @@ php8-mbstring
 php8-xmlreader
 php8-zip
 php8-curl
+# php8-posix: requerido por el language server de phpactor (LSP de PHP en nvim)
+php8-posix
+php-cs-fixer
 composer
 # Extensiones de base de datos para PHP (nombres versionados openSUSE)
 php8-mysql

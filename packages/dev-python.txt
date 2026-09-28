@@ -2,3 +2,4 @@
 python313
 python313-pip
 python313-devel
+python313-flake8
