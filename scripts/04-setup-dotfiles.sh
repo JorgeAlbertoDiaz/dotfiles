@@ -83,16 +83,30 @@ verificar_dependencias() {
 # ---------------------------------------------------------------------------
 aplicar_app() {
   local app="$1" reset="$2"
-  local app_dir dest
+  local app_dir dest file
   app_dir="${CONFIG_DIR}/${app}"
   if [[ "${app}" == "home" ]]; then
     dest="${HOME_DIR}"
     if [[ -d "${app_dir}" ]]; then
       info "Aplicando home → ${HOME_DIR}"
-      for file in "${app_dir}"/* "${app_dir}"/.*; do
-        [[ -f "${file}" ]] || continue
+      # dotglob+nullglob: un solo glob cubre los archivos ocultos y los
+      # subdirectorios, y nullglob evita colgar ".", ".." o un literal sin
+      # coincidencia cuando la carpeta está vacía. El patrón anterior
+      # ("${app_dir}"/* "${app_dir}"/.*) se saltaba los directorios por el
+      # [[ -f ]] y los ocultos por el glob sin dotglob.
+      shopt -s dotglob nullglob
+      for file in "${app_dir}"/*; do
+        # El borrado del reset es acotado a los nombres que declara el repo:
+        # se borra cada destino por su nombre, nunca con un comodín sobre
+        # $HOME. El "rm -rf" de config/<app>/home no toca nada fuera de la lista.
+        if [[ "${reset}" == "1" ]]; then
+          rm -rf "${HOME_DIR}/$(basename "${file}")"
+        fi
+        # "cp -a" sobre un directorio crea ${HOME_DIR}/<basename>; sobre un
+        # archivo, lo sobreescribe conservando modo y timestamps.
         cp -a "${file}" "${HOME_DIR}/"
       done
+      shopt -u dotglob nullglob
       ok "Aplicado home"
     fi
     return 0
@@ -258,7 +272,9 @@ else
 fi
 
 # Reset de fábrica: una sola confirmación que borra y recrea los destinos.
-# Solo aplica a .config/<app>; home/ siempre se copia de forma aditiva.
+# Aplica tanto a .config/<app> como a home/; en home/ el borrado es acotado a
+# los nombres que declara el repo (sin comodines sobre $HOME), así que lo que
+# el usuario tenga fuera de config/home/ no se toca nunca.
 if [[ ${#apps_a_aplicar[@]} -gt 0 ]]; then
   if confirm "¿Reset de fábrica? Se borran y recrean desde el repo: ${apps_a_aplicar[*]} (s=reset, n=solo copiar)"; then
     RESET_FABRICA=1
