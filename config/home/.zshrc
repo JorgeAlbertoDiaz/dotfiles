@@ -180,6 +180,8 @@ fi
 # Aliases
 # ---------------------------------------------------------------------------
 # Sistema de archivos
+# Color en ls: la tabla LS_COLORS ya se definió en la sección de colores.
+alias ls='ls --color=auto'
 alias ll='ls -alF'
 alias la='ls -A'
 alias l='ls -CF'
@@ -206,9 +208,29 @@ alias gcam='git commit --all --message'
 #           que git lee como mensaje="-m" y "fix: mensaje" como rutaspec.
 
 # ---------------------------------------------------------------------------
-# Prompt
+# Prompt (con integración nativa de git via vcs_info)
 # ---------------------------------------------------------------------------
-PROMPT='%F{cyan}%n@%m%f %F{green}%~%f %# '
+# vcs_info muestra repo/rama y cambios pendientes dentro del prompt. Requiere
+# PROMPT_SUBST para que ${vcs_info_msg_0_} se expanda en cada render.
+setopt PROMPT_SUBST
+
+autoload -Uz vcs_info
+# Escaneo del estado sucio: * = cambios sin preparar, + = cambios preparados.
+zstyle ':vcs_info:*' check-for-changes true
+zstyle ':vcs_info:*' unstagedstr ' *'
+zstyle ':vcs_info:*' stagedstr ' +'
+# %r = repo, %b = rama, %u/%c = marcas de cambios.
+zstyle ':vcs_info:git:*' formats ' [%F{cyan}%r%f:%F{magenta}%b%f%F{yellow}%u%c%f]'
+# Formato durante merge/rebase (%a = acción en curso).
+zstyle ':vcs_info:git:*' actionformats ' [%F{cyan}%r%f:%F{magenta}%b%f%F{red}|%a%f]'
+
+# add-zsh-hook en vez de definir precmd() a mano: convive con otros hooks
+# precmd (p. ej. el que registra la integración de fzf más abajo).
+autoload -Uz add-zsh-hook
+add-zsh-hook precmd vcs_info
+
+# user@host + ruta + segmento git (solo dentro de un repo) + %/#.
+PROMPT='%F{cyan}%n@%m%f %F{green}%~%f${vcs_info_msg_0_} %# '
 
 # ---------------------------------------------------------------------------
 # zsh-syntax-highlighting — tiene que ser el ÚLTIMO sourceo del archivo
