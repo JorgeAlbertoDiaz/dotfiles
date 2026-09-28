@@ -17,7 +17,9 @@
 #   5. Instala los componentes obligatorios (base, shell) y los opcionales
 #      elegidos, ejecutando los scripts correspondientes en el orden correcto.
 #      "Zsh (plugins)" queda justo antes de "Dotfiles": el shell ya tiene sus
-#      plugins cuando se aplica la configuración.
+#      plugins cuando se aplica la configuración. "Nvim" queda justo después
+#      de "Dotfiles": necesita la configuración ya desplegada en
+#      ~/.config/nvim para que lazy.nvim instale los plugins.
 #
 # Si gum no puede instalarse, usa un flujo bash simple como fallback.
 set -euo pipefail
@@ -39,6 +41,7 @@ COMPONENTES=(
   "Dev Angular/Node"
   "Dev Bases de Datos"
   "Zsh (plugins)"
+  "Nvim"
   "Dotfiles"
 )
 
@@ -128,6 +131,11 @@ run_component() {
       info "Ejecutando: ${SCRIPT_DIR}/scripts/08-setup-zsh.sh (plugins de zsh)"
       "${SCRIPT_DIR}/scripts/08-setup-zsh.sh"
       info "Finalizado: plugins de zsh"
+      ;;
+    "Nvim")
+      info "Ejecutando: ${SCRIPT_DIR}/scripts/09-setup-nvim.sh (plugins y LSP de nvim)"
+      "${SCRIPT_DIR}/scripts/09-setup-nvim.sh"
+      info "Finalizado: plugins y LSP de nvim"
       ;;
     "Dotfiles")
       info "Ejecutando: ${SCRIPT_DIR}/scripts/04-setup-dotfiles.sh (aplicación de dotfiles)"
@@ -285,14 +293,19 @@ elif [[ " ${sel[*]} " == *" Escritorio Sway "* || " ${sel[*]} " == *" Dev Core "
   FONT_AUTO=1
 fi
 
-# Reordenar: las fuentes antes de dotfiles, dotfiles al final
-if [[ " ${sel[*]} " == *" Dotfiles "* ]]; then
+# Reordenar: las fuentes antes de dotfiles, dotfiles al final, nvim después de dotfiles
+if [[ " ${sel[*]} " == *" Dotfiles "* || " ${sel[*]} " == *" Nvim "* ]]; then
   ordered=()
   for item in "${sel[@]}"; do
-    [[ "${item}" == "Dotfiles" ]] && continue
+    [[ "${item}" == "Dotfiles" || "${item}" == "Nvim" ]] && continue
     ordered+=("${item}")
   done
-  ordered+=("Dotfiles")
+  if [[ " ${sel[*]} " == *" Dotfiles "* ]]; then
+    ordered+=("Dotfiles")
+  fi
+  if [[ " ${sel[*]} " == *" Nvim "* ]]; then
+    ordered+=("Nvim")
+  fi
   sel=("${ordered[@]}")
 fi
 

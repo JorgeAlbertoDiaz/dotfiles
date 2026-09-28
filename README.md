@@ -47,6 +47,7 @@ dev, drivers de hardware y dotfiles.
 │   ├── 04-setup-dotfiles.sh # Copia dotfiles a ~/.config/<app> + zsh
 │   ├── 05-install-fonts.sh  # Instala y configura Nerd Fonts por app
 │   ├── 08-setup-zsh.sh      # Instala los plugins de zsh (sin sudo)
+│   ├── 09-setup-nvim.sh     # Instala plugins y LSP de nvim (sin sudo)
 │   └── drivers/              # Controladores por hardware (un script por placa)
 │       ├── drivers-menu.sh   # Submenú: lista y lanza cada driver-*.sh
 │       └── driver-nvidia-gtx1060.sh  # Repo NVIDIA + G06 + GRUB/modprobe
@@ -84,3 +85,9 @@ Más detalles en [docs/index.md](docs/index.md).
   `${XDG_DATA_HOME:-~/.local/share}/zsh/plugins`, sin sudo y con clones
   superficiales. `config/home/.zshrc` los carga comprobando que el archivo sea
   legible, de modo que la shell funciona igual aunque no estén instalados.
+- El componente "Nvim" del instalador ejecuta `scripts/09-setup-nvim.sh` justo
+  después de aplicar los dotfiles, porque necesita la configuración ya desplegada
+  en `~/.config/nvim`. El script instala lazy.nvim y el set de plugins en
+  `${XDG_DATA_HOME:-~/.local/share}/nvim`, sin sudo. Requiere `neovim` instalado
+  (viene en "Dev Core", `packages/dev-core.txt`). La configuración declarativa
+  vive en `config/nvim/` y la despliega `scripts/04-setup-dotfiles.sh`.
