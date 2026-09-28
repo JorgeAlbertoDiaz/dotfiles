@@ -6,6 +6,7 @@
 #   ./scripts/04-setup-dotfiles.sh            # menú interactivo de selección
 #   ./scripts/04-setup-dotfiles.sh todos      # aplica todo sin preguntar
 #   ./scripts/04-setup-dotfiles.sh sway waybar home
+#   ./scripts/04-setup-dotfiles.sh zsh         # aplica solo ~/.zshrc
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -129,6 +130,26 @@ aplicar_app() {
 }
 
 # ---------------------------------------------------------------------------
+# Aplica solo la configuración de zsh (~/.zshrc) desde config/home/.
+# Es una acción separada de "home" (que copia todo config/home/) y de cambiar
+# la shell por defecto: aplicar la config no implica cambiar de shell.
+# ---------------------------------------------------------------------------
+aplicar_zsh_config() {
+  local src="${CONFIG_DIR}/home/.zshrc" dest="${HOME_DIR}/.zshrc"
+  if [[ ! -f "${src}" ]]; then
+    warn "No existe ${src}; no se aplicó la configuración de zsh."
+    return 0
+  fi
+  if [[ "${RESET_FABRICA}" == "1" && -e "${dest}" ]]; then
+    info "Reset de fábrica: borrando ${dest}"
+    rm -f "${dest}"
+  fi
+  info "Aplicando configuración de zsh → ${dest}"
+  cp -a "${src}" "${dest}"
+  ok "Aplicado zsh (~/.zshrc)"
+}
+
+# ---------------------------------------------------------------------------
 # Selección interactiva de componentes.
 # Con gum usa un menú iterativo single-select (como el menú principal, donde
 # flechas + Enter seleccionan directo) hasta elegir "(terminar)" o "Todos".
@@ -138,7 +159,7 @@ aplicar_app() {
 SELECCION=()
 
 seleccionar_apps() {
-  local opciones=("Todos" "${apps[@]}" "home" "Cambiar shell a zsh" "(terminar)")
+  local opciones=("Todos" "${apps[@]}" "home" "Configuración de zsh" "(terminar)")
   local elegidos=() sel final=false
 
   if command -v gum &>/dev/null; then
@@ -161,8 +182,8 @@ seleccionar_apps() {
           elegidos=("Todos")
           final=true
           ;;
-        "Cambiar shell a zsh")
-          # Valor interno "zsh": la shell no es una app de config/.
+        "Configuración de zsh")
+          # Valor interno "zsh": aplica config/home/.zshrc a ~/.zshrc.
           if [[ " ${elegidos[*]} " != *" zsh "* ]]; then
             elegidos+=("zsh")
           fi
@@ -202,8 +223,8 @@ seleccionar_apps() {
         [[ ${index} -ge 0 && ${index} -lt ${#opciones[@]} ]] || continue
         [[ "${opciones[$index]}" == "(terminar)" ]] && continue
         item="${opciones[$index]}"
-        # "Cambiar shell a zsh" se guarda como valor interno "zsh".
-        [[ "${item}" == "Cambiar shell a zsh" ]] && item="zsh"
+        # "Configuración de zsh" se guarda como valor interno "zsh".
+        [[ "${item}" == "Configuración de zsh" ]] && item="zsh"
         elegidos+=("${item}")
       done
       if [[ ${#elegidos[@]} -eq 0 ]]; then
@@ -301,21 +322,32 @@ else
   done
 fi
 
-# zsh como shell por defecto si se eligió "Todos" o la opción "zsh".
-if command -v zsh &>/dev/null &&
-   { [[ " ${elegidos[*]} " == *" Todos "* ]] || [[ " ${elegidos[*]} " == *" zsh "* ]]; }; then
-  zsh_path="$(command -v zsh)"
-  # Shell real de la cuenta (getent passwd), no ${SHELL} de la sesión.
-  shell_actual="$(getent passwd "$(id -un)" | cut -d: -f7)"
-  if [[ "${shell_actual}" != *"/zsh" ]]; then
-    if confirm "¿Cambiar la shell por defecto a zsh?"; then
-      chsh -s "${zsh_path}"
-      ok "Shell por defecto cambiada a ${zsh_path} (se aplicará al reabrir sesión)"
-    else
-      warn "Omitiendo cambio de shell por defecto"
-    fi
+# Configuración de zsh: sólo si se eligió explícitamente (CLI o submenú). Con
+# "Todos" o "home" ya viene dentro de config/home/, así que no se repite.
+if [[ " ${elegidos[*]} " == *" zsh "* ]]; then
+  aplicar_zsh_config
+fi
+
+# Cambio de shell por defecto: se pregunta sólo si se aplicó la config de zsh
+# (opción "zsh", "home" o "Todos") y zsh está instalado pero no es la shell
+# real de la cuenta. Aplicar la config no cambia la shell por sí solo.
+if [[ " ${elegidos[*]} " == *" Todos "* || " ${elegidos[*]} " == *" home "* || " ${elegidos[*]} " == *" zsh "* ]]; then
+  if ! command -v zsh &>/dev/null; then
+    warn "zsh no está instalado; no se puede cambiar la shell por defecto."
   else
-    ok "La shell por defecto ya es zsh"
+    zsh_path="$(command -v zsh)"
+    # Shell real de la cuenta (getent passwd), no ${SHELL} de la sesión.
+    shell_actual="$(getent passwd "$(id -un)" | cut -d: -f7)"
+    if [[ "${shell_actual}" != *"/zsh" ]]; then
+      if confirm "¿Cambiar la shell por defecto a zsh?"; then
+        chsh -s "${zsh_path}"
+        ok "Shell por defecto cambiada a ${zsh_path} (se aplicará al reabrir sesión)"
+      else
+        warn "Omitiendo cambio de shell por defecto"
+      fi
+    else
+      ok "La shell por defecto ya es zsh"
+    fi
   fi
 fi
 
