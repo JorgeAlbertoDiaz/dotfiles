@@ -17,7 +17,6 @@
 set -euo pipefail
 
 PIDFILE="${XDG_RUNTIME_DIR:-/tmp}/swpy-recorder.pid"
-SUBDIR='Screenshots'
 MODO_POR_DEFECTO='full'
 
 # ¿El PID guardado sigue siendo un wf-recorder vivo? Un pidfile obsoleto
@@ -34,23 +33,14 @@ pid_activo() {
   return 0
 }
 
-# Carpeta de destino. Mismo criterio escalonado que downloads_dir() en
-# scripts/common.sh: nada de hardcodear $HOME/Pictures, que no existe en un
-# sistema en español.
+# Carpeta de destino: ~/Videos (capturas de video), con XDG_VIDEOS_DIR si está.
+# Sin subcarpeta: el usuario la eligió como destino directo.
 directorio_destino() {
-  local dir
-  if command -v xdg-user-dir &>/dev/null \
-      && dir="$(xdg-user-dir PICTURES 2>/dev/null)" \
-      && [[ -n "${dir}" && "${dir}" != "${HOME}" ]]; then
-    :
-  elif [[ -n "${XDG_PICTURES_DIR:-}" ]]; then
-    dir="${XDG_PICTURES_DIR}"
-  elif [[ -d "${HOME}/Imágenes" ]]; then
-    dir="${HOME}/Imágenes"
-  else
-    dir="${HOME}/Pictures"
+  local dir="${XDG_VIDEOS_DIR:-}"
+  if [[ -z "${dir}" ]]; then
+    dir="${HOME}/Videos"
   fi
-  printf '%s\n' "${dir}/${SUBDIR}"
+  printf '%s\n' "${dir}"
 }
 
 # Nombre del output donde grabar, por stdout. Escribe el motivo por stderr y
@@ -203,8 +193,10 @@ iniciar() {
   # Una sola invocación, y SIEMPRE con -o: la geometría no le dice a
   # wf-recorder a qué monitor pertenece, así que sin esto vuelve a pedirlo por
   # stdin y muere al instante (que es el bug que se arregla acá).
+  # -a graba ADEMÁS el sonido del sistema (el monitor del sink por defecto); sin
+  # argumento usa el dispositivo de audio por defecto.
   local -a args
-  args=(-o "${salida}")
+  args=(-a -o "${salida}")
   if [[ "${modo}" == 'area' ]]; then
     args+=(-g "${geometria}")
   fi
