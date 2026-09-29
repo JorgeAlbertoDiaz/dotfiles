@@ -15,6 +15,9 @@
 # Índice generado por CodeGraph
 .codegraph/
 
+# Configuración local de Pi / gentle-ai (generada por `gentle-ai sync`)
+.pi/
+
 # Archivos temporales del proyecto
 temps/
 
