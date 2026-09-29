@@ -19,6 +19,54 @@ return {
     priority = 1000,
     config = function()
       vim.cmd.colorscheme("badwolf")
+
+      -- Transparencia compartida con el terminal: badwolf pinta fondos sólidos,
+      -- así que se limpia el background de los grupos base para que el alpha de
+      -- foot se vea a través. Sólo se toca el bg (guibg/ctermbg), nunca el fg.
+      local groups = {
+        "Normal",
+        "NormalNC",
+        "NormalFloat",
+        "FloatBorder",
+        "EndOfBuffer",
+        "SignColumn",
+        "MsgArea",
+        "WinSeparator",
+        "Folded",
+        "FoldColumn",
+        "NeoTreeNormal",
+        "NeoTreeNormalNC",
+        "NeoTreeEndOfBuffer",
+        "NeoTreeWinSeparator",
+        "NeoTreeCursorLine",
+        "NeoTreeSignColumn",
+      }
+      local function clear_bg()
+        for _, group in ipairs(groups) do
+          vim.cmd(("highlight %s guibg=NONE ctermbg=NONE"):format(group))
+        end
+      end
+      clear_bg()
+
+      -- Re-limpiar cuando cambia el colorscheme y cuando neo-tree define sus
+      -- grupos (los crea al cargar, después de este bloque). vim.schedule para
+      -- correr después de los handlers de neo-tree, que se registran más tarde.
+      local aug = vim.api.nvim_create_augroup("badwolf_transparent", { clear = true })
+      vim.api.nvim_create_autocmd("ColorScheme", {
+        group = aug,
+        callback = function()
+          if vim.g.colors_name == "badwolf" then
+            vim.schedule(clear_bg)
+          end
+        end,
+      })
+      vim.api.nvim_create_autocmd("FileType", {
+        group = aug,
+        pattern = "neo-tree",
+        callback = function()
+          vim.schedule(clear_bg)
+        end,
+      })
     end,
   },
 
