@@ -51,6 +51,21 @@ pretty_token() {
   printf '%s' "${token^}"
 }
 
+# Modelo compuesto por varios tokens separados por '-': cada token se pasa por
+# pretty_token y se unen con espacio.
+#   hp-smart-tank-580 -> HP Smart Tank 580
+#   gtx1060           -> GTX 1060
+pretty_model() {
+  local model="$1" out="" tok
+  local -a parts
+  IFS='-' read -ra parts <<< "${model}"
+  for tok in "${parts[@]}"; do
+    [[ -z "${tok}" ]] && continue
+    out+="${out:+ }$(pretty_token "${tok}")"
+  done
+  printf '%s' "${out}"
+}
+
 # driver-<vendor>-<modelo>.sh -> "<Vendor> [marca] <Modelo>"
 pretty_driver_label() {
   local base="${1#driver-}"
@@ -73,7 +88,7 @@ pretty_driver_label() {
 
   local vendor_txt modelo_txt
   vendor_txt="$(pretty_token "${vendor}")"
-  modelo_txt="$(pretty_token "${modelo}")"
+  modelo_txt="$(pretty_model "${modelo}")"
 
   if [[ -n "${marca}" ]]; then
     printf '%s %s %s' "${vendor_txt}" "${marca}" "${modelo_txt}"
