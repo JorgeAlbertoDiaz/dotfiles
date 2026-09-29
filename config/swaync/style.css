@@ -2,8 +2,51 @@
    Misma paleta que nvim / foot / waybar / sway / wofi:
    bg #1c1b1a, surface #242321, fg #f8f6f2,
    blue #0a9dff (tardis), orange #ffa724, muted #857f78,
-   deepgravel #45413b, red #ff2c4b (taffy). */
+   deepgravel #45413b, red #ff2c4b (taffy).
 
+   swaync 0.12+ carga PRIMERO /etc/xdg/swaync/style.css, que define variables en
+   :root y las usa con selectores anidados. Por eso este archivo SOBRESCRIBE las
+   variables (y los @define-color de compatibilidad) en vez de competir por
+   especificidad; las reglas del final afinan detalles puntuales.
+
+   Transparencia: 90% opaco (0.9) en el panel y las notificaciones. */
+
+:root {
+	--cc-bg: rgba(28, 27, 26, 0.9);
+	--noti-border-color: #45413b;
+	--noti-bg: 36, 35, 33; /* rgb de #242321 (el sistema lo usa como rgba())*/
+	--noti-bg-alpha: 0.9;
+	--noti-bg-darker: rgba(28, 27, 26, 0.9);
+	--noti-bg-hover: rgba(69, 65, 59, 0.95);
+	--noti-bg-focus: rgba(69, 65, 59, 0.9);
+	--noti-close-bg: rgba(69, 65, 59, 0.9);
+	--noti-close-bg-hover: rgba(102, 100, 98, 0.95);
+	--text-color: #f8f6f2;
+	--text-color-disabled: #857f78;
+	--bg-selected: #ffa724;
+	--border: 1px solid var(--noti-border-color);
+	--border-radius: 8px;
+	--notification-icon-size: 56px;
+	--font-size-body: 14px;
+	--font-size-summary: 15px;
+}
+
+/* Compatibilidad con versiones/ramas que usan @define-color */
+@define-color cc-bg rgba(28, 27, 26, 0.9);
+@define-color noti-border-color #45413b;
+@define-color noti-bg rgba(36, 35, 33, 0.9);
+@define-color noti-bg-opaque #242321;
+@define-color noti-bg-darker rgba(28, 27, 26, 0.9);
+@define-color noti-bg-hover rgba(69, 65, 59, 0.95);
+@define-color noti-bg-hover-opaque #45413b;
+@define-color noti-bg-focus rgba(69, 65, 59, 0.9);
+@define-color noti-close-bg rgba(69, 65, 59, 0.9);
+@define-color noti-close-bg-hover rgba(102, 100, 98, 0.95);
+@define-color text-color #f8f6f2;
+@define-color text-color-disabled #857f78;
+@define-color bg-selected #ffa724;
+
+/* Fuente en toda la app */
 * {
 	font-family: "JetBrainsMono Nerd Font", "FiraCode Nerd Font", sans-serif;
 	background-clip: padding-box;
@@ -12,51 +55,7 @@
 /* Panel principal: borde naranja, igual que el workspace activo de waybar y el
    borde de la ventana enfocada en sway. */
 .control-center {
-	background: #1c1b1a;
 	border: 2px solid #ffa724;
-	border-radius: 6px;
-	color: #f8f6f2;
-}
-
-/* Etiquetas y títulos */
-.widget-label,
-.widget-title {
-	color: #f8f6f2;
-	font-size: 16px;
-	margin: 15px 15px 5px 15px;
-}
-
-.widget-title > button {
-	background: #242321;
-	color: #f8f6f2;
-	border: 1px solid #45413b;
-	border-radius: 4px;
-	padding: 4px 12px;
-}
-
-.widget-title > button:hover {
-	background: #45413b;
-	color: #ffa724;
-}
-
-/* Grilla de Acceso Rápido */
-.widget-buttons-grid {
-	font-size: 20px;
-	margin: 5px 15px;
-}
-
-.widget-buttons-grid > flowbox > flowboxchild > button {
-	background: #242321;
-	border: 1px solid #45413b;
-	border-radius: 4px;
-	min-height: 45px;
-	margin: 4px;
-	color: #f8f6f2;
-}
-
-.widget-buttons-grid > flowbox > flowboxchild > button:hover {
-	background: #45413b;
-	color: #ffa724;
 }
 
 /* Menubar: toggles fijos y menú desplegable (energía) */
@@ -83,155 +82,12 @@
 	color: #1c1b1a;
 }
 
-/* Control de Volumen */
-.widget-volume {
-	background: #242321;
-	border: 1px solid #45413b;
-	border-radius: 4px;
-	margin: 10px 15px;
-	padding: 10px 15px;
-}
-
-.widget-volume > box > button {
-	background: transparent;
-	border: none;
-	color: #f8f6f2;
-}
-
-scale trough {
-	background-color: #45413b;
-	border-radius: 4px;
-	min-height: 4px;
-}
-
-scale highlight {
+/* Barra de progreso de mpris/volumen en azul tardis */
+progressbar progress {
 	background-color: #0a9dff;
-	border-radius: 4px;
 }
 
-scale slider {
-	background-color: #0a9dff;
-	border-radius: 50%;
-	min-width: 14px;
-	min-height: 14px;
-}
-
-/* Reproductor Multimedia (mpris) */
-.widget-mpris {
-	margin: 10px 15px;
-	padding: 15px;
-	background: #242321;
-	border-radius: 8px;
-	border: 1px solid #45413b;
-}
-
-.widget-mpris-player > box > image {
-	margin-right: 15px;
-}
-
-.widget-mpris-title {
-	font-weight: bold;
-	font-size: 14px;
-	color: #f8f6f2;
-}
-
-.widget-mpris-subtitle {
-	font-size: 12px;
-	color: #857f78;
-}
-
-/* No Molestar (DND) */
-.widget-dnd {
-	margin: 5px 15px 15px 15px;
-	font-size: 14px;
-}
-.widget-dnd > switch {
-	background: #45413b;
-	border-radius: 12px;
-	border: 1px solid #666462;
-}
-
-.widget-dnd > switch:checked {
-	background: #ffa724;
-}
-
-.widget-dnd > switch slider {
-	background: #f8f6f2;
-	border-radius: 50%;
-}
-
-/* Notificaciones: tarjetas separadas (sin fondo de fila) */
-.notification-row {
-	outline: none;
-	margin-bottom: 10px;
-}
-
-.notification {
-	background: #242321;
-	border: 1px solid #45413b;
-	border-radius: 6px;
-	margin: 0px 15px;
-	padding: 15px;
-}
-
-/* Popups flotantes */
-.floating-notifications .notification {
-	background: #242321;
-	border: 1px solid #45413b;
-}
-
-.notification-content {
-	background: transparent;
-}
-
-.notification-default-action {
-	border-radius: 6px;
-}
-
-.notification-action {
-	color: #0a9dff;
-}
-
-.summary {
-	font-weight: bold;
-	color: #f8f6f2;
-}
-
-.body {
-	color: #d9cec3;
-	margin-top: 5px;
-}
-
-.time {
-	color: #857f78;
-	font-size: 11px;
-}
-
-/* Críticas en taffy */
-.critical {
+/* Notificaciones críticas en taffy */
+.notification.critical {
 	border: 1px solid #ff2c4b;
-}
-
-.critical .summary {
-	color: #ff2c4b;
-}
-
-/* Inhibidores (qué bloquea el idle/sleep) */
-.widget-inhibitors {
-	margin: 10px 15px;
-	padding: 15px;
-	background: #242321;
-	border: 1px solid #45413b;
-	border-radius: 8px;
-}
-
-.widget-inhibitors > button {
-	background: #45413b;
-	border: none;
-	border-radius: 4px;
-	color: #f8f6f2;
-}
-
-.widget-inhibitors > button:hover {
-	background: #666462;
 }

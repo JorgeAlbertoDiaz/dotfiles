@@ -20,7 +20,7 @@ window#waybar {
 }
 
 /* Espaciado y estilo general para los módulos */
-#workspaces, #mode, #clock, #custom-weather, #network, #cpu, #memory, #disk, #tray, #custom-notification, #custom-power {
+#workspaces, #mode, #clock, #custom-weather, #network, #cpu, #memory, #disk, #pulseaudio, #tray, #custom-notification, #custom-power {
 	padding: 0 10px;
 	margin: 4px 4px;
 	border-radius: 4px;
@@ -65,6 +65,14 @@ window#waybar {
 
 #network {
 	color: #0a9dff; /* Tardis */
+}
+
+#pulseaudio {
+	color: #f8f6f2;
+}
+
+#pulseaudio.muted {
+	color: #ff2c4b; /* Taffy */
 }
 
 /* Iconos del sistema (muted para no distraer) */

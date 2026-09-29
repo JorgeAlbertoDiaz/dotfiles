@@ -20,6 +20,7 @@
 		"cpu",
 		"memory",
 		"disk",
+		"pulseaudio",
 		"custom/notification",
 		"custom/power"
 	],
@@ -48,8 +49,8 @@
 			"mode-mon-col": 3,
 			"on-scroll": 1,
 			"format": {
-				"months": "<span color='#ff9c00'><b>{}</b></span>",
-				"days": "<span color='#c6c6c6'><b>{}</b></span>",
+				"months": "<span color='#ffa724'><b>{}</b></span>",
+				"days": "<span color='#f8f6f2'><b>{}</b></span>",
 				"today": "<span color='#aeee00'><b><u>{}</u></b></span>"
 			}
 		},
@@ -87,6 +88,16 @@
 		"format": "",
 		"tooltip": true,
 		"tooltip-format": "Disco: {used} / {total}\nLibre: {percentage_free}%"
+	},
+
+	"pulseaudio": {
+		"format": "{icon} {volume}%",
+		"format-muted": "󰝟",
+		"format-icons": ["󰕿", "󰖀", "󰕾"],
+		"scroll-step": 5,
+		"on-click": "pavucontrol",
+		"on-click-right": "pamixer -t",
+		"tooltip-format": "Volumen: {volume}%"
 	},
 
 	"custom/notification": {
