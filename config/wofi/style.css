@@ -1,0 +1,61 @@
+/* ~/.config/wofi/style.css — badwolf (sjl/badwolf)
+   Misma paleta que Neovim/foot/waybar/sway/swaync:
+   bg #1c1b1a, fg #f8f6f2, surface #242321,
+   orange #ffa724 (borde y resaltado), muted #857f78. */
+
+* {
+	font-family: "JetBrainsMono Nerd Font", "FiraCode Nerd Font", sans-serif;
+	font-size: 14px;
+}
+
+window {
+	background-color: #1c1b1a;
+	border: 2px solid #ffa724;
+	border-radius: 6px;
+}
+
+#input {
+	margin: 6px;
+	padding: 8px;
+	border: 1px solid #35322d;
+	border-radius: 4px;
+	background-color: #242321;
+	color: #f8f6f2;
+	caret-color: #ffa724;
+}
+
+#input:focus {
+	border: 1px solid #ffa724;
+}
+
+#inner-box,
+#outer-box {
+	margin: 4px;
+}
+
+#scroll {
+	margin: 0;
+}
+
+#entry {
+	padding: 6px 8px;
+	border-radius: 4px;
+	color: #f8f6f2;
+}
+
+#entry:hover {
+	background-color: #242321;
+}
+
+#entry:selected {
+	background-color: #ffa724;
+	color: #1c1b1a;
+}
+
+#text:selected {
+	color: #1c1b1a;
+}
+
+#img {
+	margin-right: 8px;
+}

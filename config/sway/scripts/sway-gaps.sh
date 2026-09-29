@@ -15,8 +15,9 @@ VALORES_PREDEFINIDOS=(0 4 8 12 16 20)
 
 # Opciones base de wofi (estilo consistente con el launcher del sistema).
 WOFI_OPTS=(--dmenu --insensitive)
-[[ -f /etc/wofi/config ]] && WOFI_OPTS+=(--conf /etc/wofi/config)
-[[ -f /etc/wofi/style.css ]] && WOFI_OPTS+=(--style /etc/wofi/style.css)
+WOFI_CONF_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/wofi"
+[[ -f "${WOFI_CONF_DIR}/config" ]] && WOFI_OPTS+=(--conf "${WOFI_CONF_DIR}/config")
+[[ -f "${WOFI_CONF_DIR}/style.css" ]] && WOFI_OPTS+=(--style "${WOFI_CONF_DIR}/style.css")
 
 cambiar_gaps() {
   local valor="$1"

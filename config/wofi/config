@@ -1,0 +1,17 @@
+# ~/.config/wofi/config — badwolf (sjl/badwolf)
+#
+# Este archivo se despliega con los dotfiles y lo prefieren los scripts de sway
+# sobre /etc/wofi. Los colores viven en style.css.
+width = 40%
+height = 40%
+location = center
+orientation = vertical
+halign = center
+line_wrap = word
+dynamic_lines = true
+matching = fuzzy
+insensitive = true
+allow_images = true
+image_size = 24
+gtk_dark = true
+prompt = Buscar

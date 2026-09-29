@@ -4,6 +4,8 @@ foot
 waybar
 wofi
 swaybg
+# Gestor de fondos (GUI) para sway: elige y aplica el fondo de escritorio
+azote
 swaylock
 swayidle
 SwayNotificationCenter

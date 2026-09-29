@@ -31,11 +31,11 @@ EXEC_ONLY="false"
 USE_GUI="false"
 
 # --- Estilos Wofi (si se usa --gui) ---
-# Vacío = usar /etc/wofi/style.css. Guardamos el override aparte del path por
-# defecto para poder chequear con [[ -f ]] antes de pasárselo a wofi: si un día
-# el style del sistema no está, wofi corre con su estilo por defecto en vez de
-# morir con "no such file". Mismo patrón condicional que dashboard.sh y
-# menu-sway.sh.
+# Vacío = usar el style de ~/.config/wofi (badwolf). Guardamos el override
+# aparte del path por defecto para poder chequear con [[ -f ]] antes de
+# pasárselo a wofi: si el style no está, wofi corre con su estilo por defecto
+# en vez de morir con "no such file". Mismo patrón condicional que dashboard.sh
+# y menu-sway.sh.
 WOFI_STYLE_OVERRIDE=""
 WOFI_WIDTH="900"
 WOFI_HEIGHT="600"
@@ -343,6 +343,7 @@ describe() {
   case "${a}" in
     *'kill'*|*'close'*)               echo "Cerrar ventana" ;;
     *'exec $launcher'*|*wofi*|*dmenu*|*bemenu*) echo "Lanzador de aplicaciones" ;;
+    *azote*)                           echo "Fondo de pantalla" ;;
     *'exec $terminal'*|*alacritty*|*foot*|*kitty*|*wezterm*|*konsole*) echo "Abrir terminal" ;;
     *'what to do'*)                   echo "Menú: bloquear / salir / reiniciar / suspender / apagar" ;;
     *'exec swaylock'*|*lock*)         echo "Bloquear pantalla" ;;
@@ -413,11 +414,12 @@ selection=""
 if [[ "${USE_GUI}" == "true" ]]; then
   if command -v wofi &>/dev/null; then
     # Mismo armado condicional que dashboard.sh/menu-sway.sh: sólo se le pasa
-    # --conf/--style si el archivo existe, así un /etc/wofi incompleto no
+    # --conf/--style si el archivo existe, así un ~/.config/wofi incompleto no
     # rompe el menú (wofi corre con su estilo por defecto).
     WOFI_OPTS=(--dmenu --insensitive)
-    [[ -f /etc/wofi/config ]] && WOFI_OPTS+=(--conf /etc/wofi/config)
-    wofi_style="${WOFI_STYLE_OVERRIDE:-/etc/wofi/style.css}"
+    WOFI_CONF_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/wofi"
+    [[ -f "${WOFI_CONF_DIR}/config" ]] && WOFI_OPTS+=(--conf "${WOFI_CONF_DIR}/config")
+    wofi_style="${WOFI_STYLE_OVERRIDE:-${WOFI_CONF_DIR}/style.css}"
     [[ -f "${wofi_style}" ]] && WOFI_OPTS+=(--style "${wofi_style}")
     selection=$(printf '%s\n' "${display[@]}" | awk -F'\t' '{printf "%-25s | %s\n", $1, $2}' | wofi "${WOFI_OPTS[@]}" --width "${WOFI_WIDTH}" --height "${WOFI_HEIGHT}" --prompt 'Keybindings > ' || true)
   else

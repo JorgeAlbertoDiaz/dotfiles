@@ -1,0 +1,22 @@
+# Configuración de swaylock (bloqueo de pantalla de sway).
+#
+# Este archivo es la fuente de verdad: scripts/04-setup-dotfiles.sh lo copia a
+# ~/.config/swaylock/config, que es la ruta que swaylock lee por defecto (por eso
+# $screenlock en variables-colors.conf es sólo "swaylock").
+#
+# Para cambiar la IMAGEN DE BLOQUEO, editá 'image=' acá y re-aplicá dotfiles.
+
+# Detach from the controlling terminal after locking
+daemonize
+# Do nothing when pressing Enter on an empty password
+ignore-empty-password
+# Show current count of failed authentication attempts
+show-failed-attempts
+# Show the current keyboard layout
+show-keyboard-layout
+# Don't show lines
+line-uses-ring
+# Show caps lock indicator
+indicator-caps-lock
+# Imagen de fondo del bloqueo (por defecto, la misma que el escritorio)
+image=/usr/share/wallpapers/openSUSEdefault/contents/images/default-dark.png
