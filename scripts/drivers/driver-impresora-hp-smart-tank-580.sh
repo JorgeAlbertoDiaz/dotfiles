@@ -78,6 +78,155 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# 2b) Parche: cadena de conversión PDF -> raster en la base MIME de CUPS
+#
+#     CUPS no le manda el PDF a la impresora: el scheduler arma una CADENA de
+#     filtros usando su base MIME (*.types / *.convs) y recién después habla
+#     con el aparato. Para una cola IPP Everywhere sobre una impresora que no
+#     soporta PDF nativo (la Smart Tank ofrece PCL3GUI, JPEG, PCLm, urf y
+#     PWG-raster) esa cadena es:
+#
+#       application/pdf --pdftopdf--> application/vnd.cups-pdf
+#                       --pdftoraster/gstoraster--> image/urf --> impresora
+#
+#     openSUSE construye cups-filters2 con --disable-universal-cups-filter pero
+#     SIN --enable-individual-cups-filters (upstream deja ese flag en "no"),
+#     así que no instala ninguno de los dos juegos de reglas: quedan sólo las de
+#     texto de cupsfilters.convs. Los filtros (pdftopdf, pdftoraster,
+#     gstoraster, bannertopdf) SÍ están instalados; falta el cableado. Sin él
+#     CUPS rechaza el trabajo ANTES de tocar la impresora:
+#
+#       E [..] Returning IPP client-error-document-format-not-supported for
+#              Print-Job (ipp://localhost:631/printers/HP_Smart_Tank_580)
+#
+#     Síntoma típico: la impresora figura, responde al ping y su web interna
+#     imprime, pero desde Firefox/LibreOffice no sale nada y el trabajo
+#     desaparece de la cola.
+#
+#     Se instalan los tres fragmentos VERBATIM del tarball upstream, con su
+#     sha256, en el mismo directorio donde el paquete ya pone cupsfilters.convs.
+#     Es un parche de empaquetado, no de la impresora: cuando openSUSE arregle
+#     el spec, estos archivos se pueden borrar.
+#     Detalle y reporte: docs/referencia/bug-opensuse-cups-filters2-pdf.md
+# ---------------------------------------------------------------------------
+
+# Directorios donde el scheduler busca los *.convs.
+MIME_DIRS=(/usr/share/cups/mime /etc/cups/mime)
+
+# ¿La base MIME ya sabe convertir PDF a raster? La regla que falta es la que
+# declara a pdftoraster; su ausencia es la firma exacta del paquete roto.
+cadena_pdf_presente() {
+  local dir f
+  for dir in "${MIME_DIRS[@]}"; do
+    [[ -d "${dir}" ]] || continue
+    for f in "${dir}"/*.convs; do
+      [[ -f "${f}" ]] || continue        # glob sin coincidencias
+      if grep -q 'pdftoraster' "${f}"; then
+        return 0
+      fi
+    done
+  done
+  return 1
+}
+
+# Fragmentos que openSUSE no empaqueta, con el sha256 del tarball upstream.
+CF2_VERSION="2.0.1"
+declare -A CF2_FRAGMENTOS=(
+  [cupsfilters-individual.convs]="f93f0d376c9e599452e14de9985057db3121d480ac42858c1d0e6d27d10a5fca"
+  [cupsfilters-poppler.convs]="cdd618c0241596c02629827f7396534660ba0244d53cefdc0bc1fdcb61e93809"
+  [cupsfilters-ghostscript.convs]="bcfbd2844af42749d4671496d6f73c82084589c2d7ce08306eaefd51848762ba"
+)
+CF2_URL="https://github.com/OpenPrinting/cups-filters/releases/download/${CF2_VERSION}/cups-filters-${CF2_VERSION}.tar.xz"
+
+# Baja los fragmentos, verifica los 3 sha256 y recién entonces instala.
+# Cualquier fallo deja el sistema como estaba.
+instalar_fragmentos_mime() {
+  local tmpdir tarball f src sum
+  local -a origen=()
+
+  if ! command -v curl &>/dev/null; then
+    warn "curl no está disponible; no se puede bajar el parche."
+    return 1
+  fi
+
+  tmpdir="$(mktemp -d)"
+  tarball="${tmpdir}/cups-filters-${CF2_VERSION}.tar.xz"
+
+  info "Descargando cups-filters ${CF2_VERSION} (upstream)"
+  if ! curl -fsSL --output "${tarball}" "${CF2_URL}"; then
+    warn "No se pudo descargar ${CF2_URL}"
+    rm -rf "${tmpdir}"
+    return 1
+  fi
+
+  if ! tar -xf "${tarball}" -C "${tmpdir}" "cups-filters-${CF2_VERSION}/mime"; then
+    warn "No se pudo extraer mime/ del tarball"
+    rm -rf "${tmpdir}"
+    return 1
+  fi
+
+  for f in "${!CF2_FRAGMENTOS[@]}"; do
+    src="${tmpdir}/cups-filters-${CF2_VERSION}/mime/${f}"
+    if [[ ! -f "${src}" ]]; then
+      warn "El tarball no trae ${f}"
+      rm -rf "${tmpdir}"
+      return 1
+    fi
+    sum="$(sha256sum "${src}" | cut -d' ' -f1)"
+    if [[ "${sum}" != "${CF2_FRAGMENTOS[${f}]}" ]]; then
+      warn "sha256 inesperado en ${f}"
+      warn "  esperado: ${CF2_FRAGMENTOS[${f}]}"
+      warn "  obtenido: ${sum}"
+      rm -rf "${tmpdir}"
+      return 1
+    fi
+    origen+=("${src}")
+  done
+  ok "sha256 de los 3 fragmentos verificado"
+
+  as_root install -o root -g root -m 0644 "${origen[@]}" "${MIME_DIRS[0]}/"
+  rm -rf "${tmpdir}"
+
+  info "Reiniciando CUPS para que relea la base MIME"
+  as_root systemctl restart cups.service
+  return 0
+}
+
+# Detecta -> decide -> actúa, igual que el alta de la cola.
+asegurar_cadena_pdf() {
+  if cadena_pdf_presente; then
+    ok "CUPS ya tiene la conversión PDF -> raster"
+    return 0
+  fi
+
+  warn "CUPS no tiene reglas para convertir PDF: los trabajos de Firefox,"
+  warn "LibreOffice y la página de prueba van a ser RECHAZADOS."
+  info "Parche: instalar los fragmentos MIME que openSUSE no empaqueta."
+  info "Son 3 archivos en ${MIME_DIRS[0]}; ver docs/referencia/bug-opensuse-cups-filters2-pdf.md"
+
+  if ! confirm "¿Aplicar el parche ahora?"; then
+    warn "Sin parche, imprimir desde aplicaciones no va a funcionar."
+    return 0
+  fi
+
+  if ! instalar_fragmentos_mime; then
+    warn "No se pudo aplicar el parche."
+    warn "A mano: bajá ${CF2_URL} e instalá"
+    warn "cupsfilters-{individual,poppler,ghostscript}.convs en ${MIME_DIRS[0]}/"
+    return 1
+  fi
+
+  if cadena_pdf_presente; then
+    ok "Cadena PDF -> raster instalada"
+  else
+    warn "Se copiaron los archivos pero la regla no aparece; revisá ${MIME_DIRS[0]}/"
+  fi
+  return 0
+}
+
+asegurar_cadena_pdf || warn "Se continúa sin el parche de PDF."
+
+# ---------------------------------------------------------------------------
 # 3) Resolver el URI de la impresora
 #    Primero se intenta descubrir por mDNS (lpinfo -v). Si no aparece, o el
 #    usuario prefiere otra cosa, se pide la IP/hostname.
@@ -190,7 +339,20 @@ if confirm "¿Usar la HP Smart Tank 580 como impresora predeterminada?"; then
   ok "Impresora predeterminada: ${PRINTER_NAME}"
 fi
 
+# La cola anuncia application/pdf sólo si el scheduler encontró la cadena de
+# filtros: es el chequeo del lado de CUPS, antes de mandar nada al aparato.
+cola_acepta_pdf() {
+  command -v ipptool &>/dev/null || return 1
+  ipptool -tv "ipp://localhost:631/printers/${PRINTER_NAME}" \
+    get-printer-attributes.test 2>/dev/null | grep -q 'application/pdf'
+}
+
 if confirm "¿Imprimir una página de prueba?"; then
+  if ! cola_acepta_pdf; then
+    warn "La cola '${PRINTER_NAME}' no anuncia application/pdf: CUPS va a"
+    warn "rechazar el trabajo con client-error-document-format-not-supported."
+    warn "Revisá el parche de la sección 2b y: lpstat -l -p ${PRINTER_NAME}"
+  fi
   if lp -d "${PRINTER_NAME}" /usr/share/cups/data/testprint; then
     ok "Página de prueba enviada a ${PRINTER_NAME}"
   else
