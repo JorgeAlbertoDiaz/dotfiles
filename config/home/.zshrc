@@ -208,6 +208,15 @@ alias gcam='git commit --all --message'
 #           que git lee como mensaje="-m" y "fix: mensaje" como rutaspec.
 
 # ---------------------------------------------------------------------------
+# Impresora
+# ---------------------------------------------------------------------------
+# La Epson TM-T20IIIL es una térmica de recibos con cola raw ESC/POS. El alias
+# apunta explícito a esa cola para no depender de la predeterminada (la HP).
+# Sirve para texto plano y para tickets ESC/POS ya armados; NO para PDF ni
+# imágenes (eso requeriría el driver oficial de Epson).
+alias eprint='lp -d Epson_TM_T20IIIL -o raw'
+
+# ---------------------------------------------------------------------------
 # Prompt (con integración nativa de git via vcs_info)
 # ---------------------------------------------------------------------------
 # vcs_info muestra repo/rama y cambios pendientes dentro del prompt. Requiere
