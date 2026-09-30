@@ -17,6 +17,8 @@ brightnessctl
 playerctl
 pavucontrol
 NetworkManager-applet
+# Bluetooth: gestor TUI que abren los botones de swaync (foot -e bluetuith)
+bluetuith
 thunar
 wob
 kanshi
