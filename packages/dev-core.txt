@@ -6,5 +6,6 @@ shellcheck  # lint de scripts shell
 # Herramientas de desarrollo adicionales solicitadas
 ncurses-devel
 git
+git-lfs  # Git Large File Storage (assets grandes en repos de documentacion)
 ctags
 curl

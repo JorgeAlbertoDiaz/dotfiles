@@ -40,6 +40,7 @@ COMPONENTES=(
   "Dev Python"
   "Dev Angular/Node"
   "Dev Bases de Datos"
+  "Docs LaTeX"
   "Zsh (plugins)"
   "Nvim"
   "Dotfiles"
@@ -117,6 +118,10 @@ run_component() {
 "Dev Bases de Datos")
       "${SCRIPT_DIR}/scripts/02-install-packages.sh" dev-db.txt
       info "Finalizado: Dev Bases de Datos"
+      ;;
+"Docs LaTeX")
+      "${SCRIPT_DIR}/scripts/02-install-packages.sh" docs-latex.txt
+      info "Finalizado: Docs LaTeX"
       ;;
     "Zsh (plugins)")
       "${SCRIPT_DIR}/scripts/08-setup-zsh.sh"

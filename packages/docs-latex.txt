@@ -1,0 +1,17 @@
+# Documentación LaTeX (compilar Docs/ con pdflatex + pandoc)
+# texlive-scheme-bookpub trae el esquema base de LaTeX para publicaciones.
+texlive-scheme-bookpub
+texlive-xcharter
+texlive-xcharter-fonts
+texlive-babel-spanish
+texlive-lipsum
+texlive-epstopdf-pkg
+texlive-cancel
+texlive-titlesec
+texlive-subfigure
+texlive-enumitem
+texlive-fancyhdr
+texlive-titling
+texlive-euclideangeometry
+# pandoc-cli: convierte LaTeX/Markdown a HTML (make html)
+pandoc-cli
