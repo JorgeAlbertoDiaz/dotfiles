@@ -15,3 +15,5 @@ texlive-titling
 texlive-euclideangeometry
 # pandoc-cli: convierte LaTeX/Markdown a HTML (make html)
 pandoc-cli
+# plantuml: regenera los diagramas .puml (arrastra un JRE como dependencia)
+plantuml
