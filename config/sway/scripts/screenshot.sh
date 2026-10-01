@@ -2,8 +2,9 @@
 # screenshot.sh — menú de capturas (imagen y video) con wofi.
 #
 # Reemplaza el antiguo "mode" de Sway (que aparecía en waybar, en inglés) por un
-# menú wofi en español. Las capturas de IMAGEN se guardan en ~/Pictures y ADEMÁS
-# se copian al portapapeles; los VIDEO se guardan en ~/Videos (sin portapapeles).
+# menú wofi en español. Las capturas de IMAGEN se guardan en ~/Pictures, se abren
+# en swappy para anotarlas (resaltar, escribir, flechas) y ADEMÁS se copian al
+# portapapeles; los VIDEO se guardan en ~/Videos, sin editor ni portapapeles.
 #
 # Se invoca con $mod+Print (features/screenshots.conf).
 set -euo pipefail
@@ -54,6 +55,26 @@ capturar_imagen() {
     output) grim -o "${valor}" "${archivo}" ;;
     *)      grim -g "${valor}" "${archivo}" ;;
   esac
+
+  # Editor de anotaciones (resaltar, escribir, flechas). Solo imágenes: el video
+  # va por swpy-recorder.sh y no pasa por acá.
+  #
+  # "swappy -o <archivo>" escribe la superficie final AL SALIR sobre el mismo
+  # archivo, así que la captura se edita en el lugar y no quedan duplicados: si
+  # salís con Escape/q sin tocar nada, el archivo queda igual. El botón Save
+  # (Ctrl+s) guarda una copia aparte en el save_dir de swappy (ver
+  # config/swappy/config en el repo).
+  #
+  # Si swappy falta o falla, la captura igual se guarda y se copia.
+  if command -v swappy &>/dev/null; then
+    if ! swappy -f "${archivo}" -o "${archivo}"; then
+      notify-send -i "${archivo}" "Captura" \
+        "El editor (swappy) falló; la captura quedó sin editar" 2>/dev/null || true
+    fi
+  else
+    notify-send -i "${archivo}" "Captura" \
+      "swappy no está instalado; la captura quedó sin editor" 2>/dev/null || true
+  fi
 
   # Guardar Y copiar al portapapeles.
   wl-copy < "${archivo}"

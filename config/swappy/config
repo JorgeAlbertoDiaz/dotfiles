@@ -1,0 +1,16 @@
+[Default]
+# Editor de capturas (swappy) — configuración del repo.
+#
+# El flujo normal NO usa save_dir: screenshot.sh llama a "swappy -o <archivo>",
+# y esa opción escribe la superficie final sobre la captura original al salir
+# del editor. O sea: la captura se edita en el lugar, sin duplicados.
+#
+# save_dir es entonces solo para el botón Save (Ctrl+s) del editor, cuando
+# querés guardar una COPIA aparte sin pisar la original.
+#
+# Sin esta clave, swappy guardaría en $HOME/Desktop (que en este sistema no
+# existe, así que además lo crearía).
+save_dir=$HOME/Pictures/Screenshots
+
+# Nombre de esa copia: se distingue de las capturas, que son captura_<tipo>_*.png
+save_filename_format=captura_editada_%Y%m%d_%H%M%S.png
