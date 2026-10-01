@@ -21,6 +21,15 @@ source "${SCRIPT_DIR}/../common.sh"
 # que esa rama publica para la generación GP106.
 NVIDIA_REPO_URL="https://download.nvidia.com/opensuse/tumbleweed"
 
+# Clave con la que NVIDIA firma los metadatos de ese repositorio. Sin ella en el
+# keyring de rpm, zypper la pide por pantalla a mitad de una instalación (y en
+# una ejecución sin TTY directamente invalida el repo).
+# La huella es la que publica NVIDIA en la propia URL de la clave;
+# NVIDIA_KEY_RPM es el nombre del paquete de clave que crea rpm al importarla.
+NVIDIA_KEY_URL="${NVIDIA_REPO_URL}/repodata/repomd.xml.key"
+NVIDIA_KEY_FPR="2FB0 3195 DECD 4949 2BD1 C17A B1D0 D788 DB27 FD5A"
+NVIDIA_KEY_RPM="gpg-pubkey-db27fd5a-62589a51"
+
 # Paquetes para la GeForce GTX 1060 3 GB (GP106).
 #   nvidia-driver-G06-kmp-default → módulo de kernel propietario (rama G06)
 #   nvidia-gl-G06                → userspace OpenGL/GLX de NVIDIA
@@ -37,6 +46,58 @@ NVIDIA_PKGS=(
 #     que reejecutar el script no duplica entradas en zypper.
 # ---------------------------------------------------------------------------
 
+# Deja la clave de firma del repo NVIDIA en el keyring de rpm, verificando la
+# huella ANTES de confiar en ella. Es lo que evita el prompt interactivo de
+# zypper: si el usuario contesta "r" (o no hay TTY), el repo queda inválido y la
+# instalación entera se cae por un repositorio de terceros.
+# Si la huella no coincide NO se importa nada: si NVIDIA rota la clave, hay que
+# actualizar NVIDIA_KEY_FPR a mano, a propósito.
+asegurar_clave_nvidia() {
+  local tmpdir gnupg keyfile fpr
+
+  if rpm -q "${NVIDIA_KEY_RPM}" &>/dev/null; then
+    ok "Clave de firma de NVIDIA ya importada"
+    return 0
+  fi
+
+  if ! command -v gpg &>/dev/null; then
+    warn "gpg no está instalado; no se puede verificar la huella de la clave."
+    return 1
+  fi
+
+  tmpdir="$(mktemp -d)"
+  gnupg="${tmpdir}/gnupg"
+  keyfile="${tmpdir}/nvidia.key"
+  mkdir -p "${gnupg}"        # gpg exige que GNUPGHOME ya exista
+
+  info "Descargando la clave de firma de NVIDIA"
+  if ! curl -fsSL --output "${keyfile}" "${NVIDIA_KEY_URL}"; then
+    warn "No se pudo descargar ${NVIDIA_KEY_URL}"
+    rm -rf "${tmpdir}"
+    return 1
+  fi
+
+  # --show-keys es de sólo lectura (no importa) y con un GNUPGHOME temporal no
+  # toca el keyring del usuario antes de haber verificado la huella.
+  fpr="$(GNUPGHOME="${gnupg}" gpg --show-keys --with-colons --with-fingerprint "${keyfile}" 2>/dev/null \
+        | awk -F: '$1 == "fpr" { print $10; exit }' \
+        | sed -E 's/(.{4})/\1 /g; s/ $//')"
+
+  if [[ "${fpr}" != "${NVIDIA_KEY_FPR}" ]]; then
+    warn "La huella de la clave de NVIDIA no coincide: NO se importa."
+    warn "  esperada: ${NVIDIA_KEY_FPR}"
+    warn "  obtenida: ${fpr:-desconocida}"
+    rm -rf "${tmpdir}"
+    return 1
+  fi
+  ok "Huella de la clave de NVIDIA verificada"
+
+  as_root rpm --import "${keyfile}"
+  rm -rf "${tmpdir}"
+  ok "Clave de firma de NVIDIA importada"
+  return 0
+}
+
 if zypper repos | grep -qiE 'nvidia'; then
   ok "Repositorio nvidia ya configurado"
 else
@@ -44,9 +105,18 @@ else
   as_root zypper addrepo --refresh "${NVIDIA_REPO_URL}" nvidia
 fi
 
+asegurar_clave_nvidia \
+  || warn "La clave no quedó verificada; zypper podría pedirla o rechazar el repo."
+
 info "Actualizando la cache de repositorios..."
-as_root zypper refresh
-ok "Repositorios actualizados"
+# Tolerante a propósito: que un repo de terceros no refresque no debe tumbar la
+# instalación completa (antes este refresh sin control cortaba todo el install.sh).
+if as_root zypper refresh; then
+  ok "Repositorios actualizados"
+else
+  warn "Algún repositorio no se pudo actualizar; se continúa con el resto."
+  warn "Si es el de NVIDIA: sudo zypper modifyrepo --disable nvidia"
+fi
 
 # ---------------------------------------------------------------------------
 # 2) Controladores propietarios NVIDIA
