@@ -37,11 +37,11 @@
         "actions": [
           {
             "label": "󰤨",
-            "command": "foot -e nmtui"
+            "command": "~/.config/sway/scripts/terminal.sh nmtui"
           },
           {
             "label": "󰂯",
-            "command": "foot -e bluetuith"
+            "command": "~/.config/sway/scripts/terminal.sh bluetuith"
           },
           {
             "label": "󰂚",
@@ -89,15 +89,15 @@
         },
         {
           "label": "",
-          "command": "foot -e nmtui"
+          "command": "~/.config/sway/scripts/terminal.sh nmtui"
         },
         {
           "label": "",
-          "command": "foot -e bluetuith"
+          "command": "~/.config/sway/scripts/terminal.sh bluetuith"
         },
         {
           "label": "",
-          "command": "foot -e htop"
+          "command": "~/.config/sway/scripts/terminal.sh htop"
         }
       ]
     },

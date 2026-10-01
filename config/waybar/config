@@ -54,7 +54,7 @@
 				"today": "<span color='#aeee00'><b><u>{}</u></b></span>"
 			}
 		},
-		"on-click": "wezterm -e calcurse"
+		"on-click": "~/.config/sway/scripts/terminal.sh calcurse"
 	},
 
 	"tray": {
@@ -69,7 +69,7 @@
 		"tooltip-format-wifi": "Red: {essid}\nSeñal: {signalStrength}%\n↓ {bandwidthDownBits} | ↑ {bandwidthUpBits}",
 		"tooltip-format-ethernet": "Ethernet conectado\n↓ {bandwidthDownBits} | ↑ {bandwidthUpBits}",
 		"tooltip-format-disconnected": "Desconectado",
-		"on-click": "wezterm -e nmtui"
+		"on-click": "~/.config/sway/scripts/terminal.sh nmtui"
 	},
 
 	"cpu": {
