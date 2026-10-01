@@ -1,7 +1,12 @@
 * {
-	/* Cambia esto por tu Nerd Font favorita */
-	font-family: "FiraCode Nerd Font", "Font Awesome 6 Free", sans-serif;
-	font-size: 14px;
+	/* Cambia esto por tu Nerd Font favorita.
+	   El ORDEN importa: GTK usa la primera familia que exista en el sistema, y
+	   "Font Awesome 6 Free" es una fuente de ICONOS cuyos glifos de / : ° í están
+	   vacíos: si queda primera, esos caracteres desaparecen de la barra (la fecha
+	   se veía "01102026 0835"). Va primero la fuente de texto, como en wofi y
+	   swaync; los íconos Nerd Font los aporta la propia fuente de texto. */
+	font-family: "JetBrainsMono Nerd Font", "FiraCode Nerd Font", sans-serif;
+	font-size: 16px;
 	border: none;
 	border-radius: 0;
 }

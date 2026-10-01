@@ -47,6 +47,8 @@ wezterm
 # Gestores de archivos CLI
 yazi
 ranger
+# Calendario/agenda TUI: lo abre el reloj de waybar (wezterm -e calcurse)
+calcurse
 # Tematización GTK para Sway (iconos, cursores, temas oscuros)
 nwg-look
 # Thunar no trae plugins en openSUSE (no existen en repo-oss ni repo-non-oss),

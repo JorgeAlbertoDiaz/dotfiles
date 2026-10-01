@@ -37,7 +37,7 @@
 		"format": "{} Tafí Viejo",
 		"tooltip": true,
 		"interval": 3600,
-		"exec": "curl -s 'https://wttr.in/Tafi%20Viejo?format=%c+%t&m'",
+		"exec": "curl -s 'https://wttr.in/Tafi%20Viejo?format=%c+%t+%p+%w&m'",
 		"exec-if": "ping wttr.in -c1"
 	},
 
