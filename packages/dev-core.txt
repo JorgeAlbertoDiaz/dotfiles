@@ -3,6 +3,7 @@ gcc
 make
 neovim
 shellcheck  # lint de scripts shell
+graphviz  # generación de diagramas (dot), usado por varios docs/tools
 # Herramientas de desarrollo adicionales solicitadas
 ncurses-devel
 git
