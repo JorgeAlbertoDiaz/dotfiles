@@ -41,6 +41,8 @@ mpv
 zathura
 zathura-plugin-pdf-poppler
 evince
+# Editor de textos ligero (por defecto para .txt)
+mousepad
 # Terminales alternativas (foot ya está en la lista)
 alacritty
 wezterm

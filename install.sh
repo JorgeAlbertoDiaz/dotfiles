@@ -138,6 +138,9 @@ run_component() {
       else
         "${SCRIPT_DIR}/scripts/04-setup-dotfiles.sh"
       fi
+      # Aplicaciones por defecto (PDF → zathura, imágenes → imv, texto → mousepad).
+      # Se ejecuta siempre junto con dotfiles porque es config de usuario.
+      "${SCRIPT_DIR}/scripts/10-setup-mime-apps.sh"
       info "Finalizado: aplicación de dotfiles"
       ;;
     *)
