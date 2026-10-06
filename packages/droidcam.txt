@@ -1,0 +1,9 @@
+# DroidCam: usa el celular como cámara web (WiFi o USB)
+# https://www.dev47apps.com/
+droidcam       # interfaz gráfica GTK
+droidcam-cli   # interfaz de línea de comandos
+v4l2loopback-kmp-default  # módulo del kernel para cámara virtual
+v4l2loopback-autoload     # carga automática del módulo
+v4l2loopback-utils        # utilidades v4l2loopback (v4l2loopback-ctl)
+android-tools             # adb para conexión USB
+guvcview      # visor de cámara web V4L2 (ver feed local sin navegador)

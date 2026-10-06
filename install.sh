@@ -44,6 +44,7 @@ COMPONENTES=(
   "Zsh (plugins)"
   "Nvim"
   "Dotfiles"
+  "DroidCam"
 )
 
 # ---------------------------------------------------------------------------
@@ -130,6 +131,10 @@ run_component() {
     "Nvim")
       "${SCRIPT_DIR}/scripts/09-setup-nvim.sh"
       info "Finalizado: plugins y LSP de nvim"
+      ;;
+    "DroidCam")
+      "${SCRIPT_DIR}/scripts/11-setup-droidcam.sh"
+      info "Finalizado: DroidCam"
       ;;
     "Dotfiles")
       # En instalación completa, 04 aplica todo sin preguntar su submenú.

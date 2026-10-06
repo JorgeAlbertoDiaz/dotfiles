@@ -37,6 +37,8 @@ imv
 swayimg
 # Reproducción de video
 mpv
+# Streaming y grabación de pantalla
+obs-studio
 # Visores de PDF
 zathura
 zathura-plugin-pdf-poppler
