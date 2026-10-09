@@ -14,12 +14,35 @@ return {
     -- lazy.nvim no siempre tiene la función autoload disponible en build.
     build = "cd app && npm install",
     config = function()
+      -- Initial preview theme. The preview server re-reads this variable on every
+      -- render, so flipping it and opening a preview again is enough to switch.
+      vim.g.mkdp_theme = "dark"
+
+      -- Toggle the preview background between dark and light. The theme is
+      -- re-read the next time a preview is opened (or reopened with <A-p>).
+      _G.toggle_markdown_theme = function()
+        local next = vim.g.mkdp_theme == "dark" and "light" or "dark"
+        vim.g.mkdp_theme = next
+        vim.notify(
+          "Markdown preview theme: " .. next .. " (reopen preview to apply)",
+          vim.log.levels.INFO
+        )
+      end
+
       -- Alt + p toggles the browser preview while editing a markdown file.
       vim.keymap.set(
         "n",
         "<A-p>",
         "<Plug>MarkdownPreviewToggle",
         { silent = true, desc = "Toggle Markdown preview in browser" }
+      )
+
+      -- Alt + b toggles the preview background between dark and light.
+      vim.keymap.set(
+        "n",
+        "<A-b>",
+        "<cmd>lua toggle_markdown_theme()<cr>",
+        { silent = true, desc = "Toggle Markdown preview background (dark/light)" }
       )
     end,
   },
