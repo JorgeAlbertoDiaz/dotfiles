@@ -1,0 +1,277 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+rastertoescpos — CUPS filter: PDF (stdin) -> ESC/POS bitmap -> stdout.
+
+Targets an Epson TM-T20III thermal receipt printer (203 dpi, 80 mm roll,
+auto-cutter). The queue's backend (socket://...) delivers stdout to the
+printer, so this filter only has to turn the document into raw ESC/POS bytes.
+
+Pipeline (standard tools only, no python-escpos dependency):
+  1. Read the PDF from stdin.
+  2. Measure the first page with pdfinfo (poppler) and rasterize it with
+     Ghostscript to a 1-bit PBM (pbmraw) whose width is exactly 640 px
+     (80 mm). The height is derived proportionally from the page aspect
+     ratio, so A4/Letter documents shrink to the 80 mm roll instead of
+     overflowing.
+  3. Emit ESC/POS commands:
+       ESC @                  reset
+       GS v 0 ...             raster bit-image, one band at a time
+       ESC J 80               feed 80/203 inch = 10 mm (the cut margin)
+       GS V 0                 full cut (auto-cutter)
+       ESC @                  reset again (clean state)
+
+The 10 mm cut margin is exactly what the raw queue was missing: it cut at
+the end of the last printed band, so the trailing text ended up on the
+*next* ticket. `ESC J 80` feeds blank paper before the cut.
+
+CUPS argv = [printer, job-id, user, title, copies, options]; document on
+stdin. We ignore argv and write the byte stream to stdout.
+"""
+
+import os
+import re
+import subprocess
+import sys
+import tempfile
+
+# --- Tunables ---------------------------------------------------------------
+# 80 mm at 203 dpi, rounded to a multiple of 8 for clean byte alignment. Default are 640px but 576px fit better.
+WIDTH_PX = 576
+# Feed before auto-cut, in ESC J units (1/203 inch each). 80 == 10 mm.
+CUT_FEED_DOTS = 80
+# Raster band height in rows (kept well below the GS v 0 65535-row cap).
+BAND_HEIGHT = 1000
+# Darkness threshold (0-255 grayscale) for binarization. PGM: 255=white,
+# 0=black. A pixel DARKER than this value (g < threshold) is printed. Higher
+# = darker. 128 is the plain 50% threshold; 150-175 darkens anti-aliased
+# edges so text/images no longer look grey. Tune here.
+DARKNESS_THRESHOLD = 130
+
+# ESC/POS control bytes.
+ESC = b"\x1b"
+GS = b"\x1d"
+
+
+def measure_page_size(pdf_path: str):
+    """Return (width_pts, height_pts) of the first page, or None.
+
+    Uses pdfinfo from poppler; falls back to 227x842 (80 mm x A4 height) if
+    the PDF cannot be measured, so a malformed input still prints.
+    """
+    try:
+        proc = subprocess.run(["pdfinfo", pdf_path], capture_output=True, check=False)
+        if proc.returncode != 0:
+            return None
+        out = proc.stdout.decode("utf-8", "replace")
+        m = re.search(r"Page size:\s+([\d.]+) x ([\d.]+) pts", out)
+        if m:
+            return float(m.group(1)), float(m.group(2))
+    except FileNotFoundError:
+        pass
+    return None
+
+
+def rasterize_pdf_to_pgm(pdf_bytes: bytes) -> bytes:
+    """Convert PDF bytes to a P5 (binary PGM) grayscale via Ghostscript.
+
+    The horizontal resolution is chosen so the page width maps to exactly
+    WIDTH_PX; the vertical resolution matches. Binarization to 1-bit happens
+    later in Python so we control the darkness threshold and dithering.
+    """
+    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+        tmp.write(pdf_bytes)
+        pdf_path = tmp.name
+
+    try:
+        size = measure_page_size(pdf_path)
+        if size is None:
+            # Fallback: 80 mm wide, A4-ish height.
+            width_pts, height_pts = 227.0, 842.0
+        else:
+            width_pts, height_pts = size
+
+        # Resolution so that width_pts maps to WIDTH_PX (203 dpi nominal).
+        dpi = WIDTH_PX / (width_pts / 72.0)
+
+        gs_cmd = [
+            "gs",
+            "-dSAFER",
+            "-dBATCH",
+            "-dNOPAUSE",
+            "-dQUIET",
+            "-dUseCropBox",
+            "-sDEVICE=pgmraw",
+            f"-r{dpi:.2f}x{dpi:.2f}",
+            "-sOutputFile=-",
+            pdf_path,
+        ]
+        proc = subprocess.run(gs_cmd, capture_output=True, check=False)
+        if proc.returncode != 0:
+            raise RuntimeError("gs failed: " + proc.stderr.decode("utf-8", "replace"))
+        return proc.stdout
+    finally:
+        os.unlink(pdf_path)
+
+
+def parse_pgm_header(pgm: bytes):
+    """Return (width, height, maxval, body_offset) for a P5 PGM."""
+    i = 0
+    n = len(pgm)
+
+    def next_token():
+        nonlocal i
+        while i < n:
+            c = pgm[i : i + 1]
+            if c == b"#":
+                while i < n and pgm[i : i + 1] != b"\n":
+                    i += 1
+            elif c in (b" ", b"\t", b"\n", b"\r"):
+                i += 1
+            else:
+                break
+        start = i
+        while i < n and pgm[i : i + 1] not in (b" ", b"\t", b"\n", b"\r", b"#"):
+            i += 1
+        return pgm[start:i]
+
+    magic = next_token()
+    if magic != b"P5":
+        raise RuntimeError(f"Unsupported PGM magic: {magic!r}")
+    width = int(next_token())
+    height = int(next_token())
+    maxval = int(next_token())
+    while i < n and pgm[i : i + 1] in (b" ", b"\t", b"\n", b"\r"):
+        i += 1
+    return width, height, maxval, i
+
+
+def binarize_grayscale(gray: bytes, threshold: int, maxval: int) -> bytes:
+    """Convert grayscale bytes to packed 1-bit rows using a threshold.
+
+    PGM semantics: 255 = white, 0 = black. A pixel DARKER than `threshold`
+    (g < threshold) becomes a printed dot (bit 1); lighter becomes paper (bit 0).
+        A higher threshold darkens the output. Rows are packed MSB-first into bytes
+    of width WIDTH_PX // 8.
+    """
+    row_bytes = WIDTH_PX // 8
+    out = bytearray()
+    acc = 0
+    bitpos = 7  # MSB first
+    for g in gray:
+        if g < threshold:
+            acc |= 1 << bitpos
+        bitpos -= 1
+        if bitpos < 0:
+            out.append(acc)
+            acc = 0
+            bitpos = 7
+    # Flush a partial last byte (width is a multiple of 8, so normally none).
+    if bitpos != 7:
+        out.append(acc)
+    return bytes(out)
+
+
+def emit_raster_band(row_bytes: bytes, height: int) -> bytes:
+    """Emit one GS v 0 raster bit-image command for `height` rows."""
+    width_bytes = WIDTH_PX // 8
+    xL = width_bytes & 0xFF
+    xH = (width_bytes >> 8) & 0xFF
+    yL = height & 0xFF
+    yH = (height >> 8) & 0xFF
+    # m = 0: normal density. Then xL xH yL yH, then the packed rows.
+    header = GS + b"v0" + bytes([0, xL, xH, yL, yH])
+    return header + row_bytes
+
+
+def trim_blank_rows(body: bytes, row_bytes: int, height: int):
+    """Drop fully-blank rows from top and bottom (auto-cut).
+
+    Returns (trimmed_body, new_height). A 'blank' row is all zero bytes.
+    This removes the A4/Letter page's trailing whitespace so the printer cuts
+    right after the content instead of feeding an empty 21 cm tail.
+    """
+    rows = [body[i : i + row_bytes] for i in range(0, height * row_bytes, row_bytes)]
+    rows = [r for r in rows if len(r) == row_bytes]
+
+    # Bottom trim: drop trailing fully-blank rows.
+    bottom = len(rows)
+    while bottom > 0 and rows[bottom - 1] == b"\x00" * row_bytes:
+        bottom -= 1
+
+    # Top trim: drop leading fully-blank rows (smallest useful amount).
+    top = 0
+    while top < bottom and rows[top] == b"\x00" * row_bytes:
+        top += 1
+
+    trimmed = b"".join(rows[top:bottom])
+    return trimmed, bottom - top
+
+
+def main() -> int:
+    pdf_bytes = sys.stdin.buffer.read()
+    if not pdf_bytes:
+        sys.stderr.write("rastertoescpos: empty input\n")
+        return 1
+
+    try:
+        pgm = rasterize_pdf_to_pgm(pdf_bytes)
+    except RuntimeError as exc:
+        sys.stderr.write(f"rastertoescpos: {exc}\n")
+        return 1
+
+    try:
+        width, height, maxval, body_offset = parse_pgm_header(pgm)
+    except (RuntimeError, ValueError) as exc:
+        sys.stderr.write(f"rastertoescpos: bad PGM header: {exc}\n")
+        return 1
+
+    if width != WIDTH_PX:
+        sys.stderr.write(f"rastertoescpos: raster width {width} != {WIDTH_PX}\n")
+        return 1
+
+    gray = pgm[body_offset:]
+    row_bytes = WIDTH_PX // 8
+
+    # Binarize grayscale to 1-bit with a darkness threshold. maxval is 255 for
+    # pgmraw. A pixel at/above the threshold becomes black (1). A lower
+    # threshold renders darker.
+    threshold = int(maxval * (DARKNESS_THRESHOLD / 255.0))
+    body = binarize_grayscale(gray, threshold, maxval)
+
+    # Auto-cut: trim the fully-blank rows top and bottom so the printer cuts
+    # right after the content, not after the empty A4/Letter page tail.
+    body, height = trim_blank_rows(body, row_bytes, height)
+
+    if height == 0:
+        # Nothing to print (blank page); still feed + cut so the job completes.
+        sys.stderr.write("rastertoescpos: blank page after trim\n")
+        height = 1
+        body = b"\x00" * row_bytes
+
+    out = bytearray()
+    out += ESC + b"@"  # reset / initialize printer
+
+    # A whole receipt (even a long one) fits well under the GS v 0 65535-row
+    # limit after trimming, so emit it in a single command: faster than many
+    # small bands and it avoids the per-band protocol overhead that made it
+    # sound like a dot-matrix printer.
+    out += emit_raster_band(body, height)
+
+    # Cut margin + auto-cut in one atomic command.
+    #
+    # GS V 66 n  = feed n dots (1/203 inch each on the TM-T20) then full cut.
+    # The feed happens as part of the cut command, so the printer drains the
+    # raster buffer BEFORE cutting. The previous ESC J n + GS V 0 sequence
+    # could cut while the raster (especially with images) was still printing,
+    # chopping the last ~10 mm of content. 80 dots == 10 mm.
+    out += GS + b"V" + bytes([66, CUT_FEED_DOTS])
+    out += ESC + b"@"  # reset for clean state after cut
+
+    sys.stdout.buffer.write(bytes(out))
+    sys.stdout.buffer.flush()
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

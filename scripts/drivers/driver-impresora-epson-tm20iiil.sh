@@ -3,10 +3,12 @@
 # térmica de recibos Epson TM-T20IIIL conectada por CABLE DIRECTO (RJ45) a la
 # PC, en su propio enlace (no pasa por el router).
 #
-# La TM-T20IIIL es ESC/POS y NO soporta IPP (el puerto 631 está cerrado). Por
-# eso la cola de CUPS es "raw": CUPS entrega los bytes ESC/POS tal cual los
-# manda la aplicación (típicamente un sistema de punto de venta). No requiere
-# driver de fabricante ni paquetes extra.
+# La TM-T20IIIL es ESC/POS y NO soporta IPP (el puerto 631 está cerrado). No
+# hay driver de fabricante en Tumbleweed, así que este script instala un PPD
+# propio + un filtro (rastertoescpos) que convierten PDF a ESC/POS y agregan
+# el avance de 10 mm antes del corte automático. Esto reemplaza la cola "raw"
+# anterior, que cortaba sin margen y no ofrecía tamaño de papel a Chromium/
+# Firefox (por eso el botón de imprimir aparecía desactivado).
 #
 # Red: la impresora conserva su IP fija 192.168.192.168/24 (DHCP apagado) y la
 # PC toma 192.168.192.1/24 en la interfaz cableada. Se administra con
@@ -96,7 +98,52 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 4) Cola CUPS raw (ESC/POS), idempotente
+# 3.5) Filtro + PPD del driver
+#      El filtro convierte PDF a ESC/POS (raster + avance de corte); el PPD
+#      declara el tamaño de rollo 80 mm y engancha el filtro. Ambos viven en
+#      el repo (scripts/drivers/) y se copian a sus rutas de CUPS.
+# ---------------------------------------------------------------------------
+FILTER_SRC="${SCRIPT_DIR}/rastertoescpos"
+FILTER_DST="/usr/lib/cups/filter/rastertoescpos"
+PPD_SRC="${SCRIPT_DIR}/Epson-TM-T20III.ppd"
+PPD_DST="/usr/share/cups/model/Epson-TM-T20III.ppd"
+
+asegurar_filtro() {
+  if [[ ! -f "${FILTER_SRC}" ]]; then
+    warn "No se encontró ${FILTER_SRC}; se omite el filtro."
+    return 1
+  fi
+  if [[ -f "${FILTER_DST}" ]] && cmp -s "${FILTER_SRC}" "${FILTER_DST}"; then
+    ok "Filtro rastertoescpos ya instalado y al día"
+  else
+    info "Instalando filtro rastertoescpos en ${FILTER_DST}"
+    as_root install -o root -g root -m 0755 "${FILTER_SRC}" "${FILTER_DST}"
+    ok "Filtro instalado"
+  fi
+  return 0
+}
+
+asegurar_ppd() {
+  if [[ ! -f "${PPD_SRC}" ]]; then
+    warn "No se encontró ${PPD_SRC}; se omite el PPD."
+    return 1
+  fi
+  if [[ -f "${PPD_DST}" ]] && cmp -s "${PPD_SRC}" "${PPD_DST}"; then
+    ok "PPD TM-T20III ya instalado y al día"
+  else
+    info "Instalando PPD en ${PPD_DST}"
+    as_root install -o root -g root -m 0644 "${PPD_SRC}" "${PPD_DST}"
+    ok "PPD instalado"
+  fi
+  return 0
+}
+
+filtro_ok=1; ppd_ok=1
+asegurar_filtro || filtro_ok=0
+asegurar_ppd || ppd_ok=0
+
+# ---------------------------------------------------------------------------
+# 4) Cola CUPS con driver (PPD + filtro), idempotente
 #     Si la cola ya existe y apunta al URI correcto, no se llama a lpadmin.
 # ---------------------------------------------------------------------------
 uri_actual_cola() {
@@ -105,27 +152,46 @@ uri_actual_cola() {
 }
 
 alta_cola() {
-  info "Configurando '${PRINTER_NAME}' -> ${PRINTER_URI} (raw ESC/POS)"
-  if as_root lpadmin -p "${PRINTER_NAME}" -E -v "${PRINTER_URI}" -m raw; then
-    ok "Cola '${PRINTER_NAME}' configurada (raw ESC/POS)"
+  if [[ ${ppd_ok} -eq 0 ]]; then
+    warn "Sin PPD instalado; no se puede dar de alta la cola con driver."
+    return 1
+  fi
+  info "Configurando '${PRINTER_NAME}' -> ${PRINTER_URI} (PPD + filtro ESC/POS)"
+  if as_root lpadmin -p "${PRINTER_NAME}" -E -v "${PRINTER_URI}" -i "${PPD_DST}"; then
+    ok "Cola '${PRINTER_NAME}' configurada (driver ESC/POS con corte)"
     return 0
   fi
   warn "lpadmin falló para ${PRINTER_URI}."
   return 1
 }
 
+# ¿La cola ya usa un driver (PPD) en vez de raw? Se mira printer-make-and-model
+# vía lpoptions, que NO requiere leer el .ppd (root:lp 640, ilegible por el
+# usuario normal). Una cola raw reporta exactamente "Local Raw Printer".
+# Falso => hay que reconfigurar con el PPD + filtro.
+cola_usa_driver() {
+  local mm
+  mm="$(LC_ALL=C lpoptions -p "${PRINTER_NAME}" 2>/dev/null \
+        | tr ' ' '\n' | sed -n "s/^printer-make-and-model='//p" | head -n1)" || true
+  [[ -n "${mm}" && "${mm}" != "Local" ]]
+}
+
 if lpstat -p "${PRINTER_NAME}" &>/dev/null; then
   uri_actual="$(uri_actual_cola || true)"
-  if [[ "${uri_actual}" == "${PRINTER_URI}" ]]; then
-    ok "La cola '${PRINTER_NAME}' ya apunta a ${PRINTER_URI}; no se toca."
-  elif confirm "La cola '${PRINTER_NAME}' apunta a '${uri_actual:-desconocido}'. ¿Actualizarla a ${PRINTER_URI}?"; then
+  if [[ "${uri_actual}" == "${PRINTER_URI}" ]] && cola_usa_driver; then
+    ok "La cola '${PRINTER_NAME}' ya apunta a ${PRINTER_URI} y usa el driver ESC/POS; no se toca."
+  elif [[ "${uri_actual}" == "${PRINTER_URI}" ]] && ! cola_usa_driver; then
+    warn "La cola '${PRINTER_NAME}' apunta al URI correcto pero NO usa el driver"
+    warn "(posiblemente quedó como raw). Se reconfigura con el PPD + filtro."
+    alta_cola || exit 1
+  elif confirm "La cola '${PRINTER_NAME}' apunta a '${uri_actual:-desconocido}'. ¿Actualizarla a ${PRINTER_URI} con el driver?"; then
     alta_cola || exit 1
   else
     info "Se conserva la cola existente."
   fi
 else
   info "La cola '${PRINTER_NAME}' no está agregada todavía."
-  if confirm "¿Agregar '${PRINTER_NAME}' (${PRINTER_URI}, raw ESC/POS)?"; then
+  if confirm "¿Agregar '${PRINTER_NAME}' (${PRINTER_URI}, driver ESC/POS)?"; then
     alta_cola || exit 1
   else
     warn "Alta cancelada; la impresora queda sin configurar."
@@ -134,12 +200,24 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 5) Ticket de prueba ESC/POS (opcional)
+# 5) Ticket de prueba (PDF -> ESC/POS, opcional)
 # ---------------------------------------------------------------------------
-if confirm "¿Imprimir un ticket de prueba?"; then
-  tmp="$(mktemp)"
-  printf '\033@\033a\001== Epson TM-T20IIIL ==\n\033a\000Prueba desde Linux\nIP: %s\n\n\n\035V\001' "${PRINTER_IP}" > "${tmp}"
-  if lp -d "${PRINTER_NAME}" -o raw "${tmp}"; then
+if confirm "¿Imprimir un ticket de prueba (PDF -> ESC/POS)?"; then
+  tmp="$(mktemp --suffix=.pdf)"
+  # PDF válido de una línea, generado con ghostscript (con xref correcto),
+  # no con printf crudo: un PDF sin xref hace fallar a pdftopdf (etapa previa
+  # al filtro) con "file is damaged". Cadena completa:
+  #   PDF -> pdftopdf -> application/vnd.cups-pdf -> rastertoescpos -> ESC/POS.
+  printf '%%!PS\n/Courier findfont 16 scalefont setfont\n10 100 moveto\n(Prueba TM-T20III via filtro) show\nshowpage\n' > "${tmp}.ps"
+  if command -v gs &>/dev/null; then
+    gs -dSAFER -dBATCH -dNOPAUSE -dQUIET -sDEVICE=pdfwrite \
+       -sPAPERSIZE=custom -dDEVICEWIDTHPOINTS=227 -dDEVICEHEIGHTPOINTS=300 \
+       -sOutputFile="${tmp}" "${tmp}.ps" 2>/dev/null
+  else
+    mv "${tmp}.ps" "${tmp}"
+  fi
+  rm -f "${tmp}.ps"
+  if lp -d "${PRINTER_NAME}" "${tmp}"; then
     ok "Ticket de prueba enviado a ${PRINTER_NAME}"
   else
     warn "No se pudo enviar el ticket de prueba."

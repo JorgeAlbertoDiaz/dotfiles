@@ -1,0 +1,57 @@
+*PPD-Adobe: "4.3"
+*%
+*% Epson TM-T20III thermal receipt printer (ESC/POS), 80 mm roll, auto-cutter.
+*%
+*% CUPS PPD that turns the queue from a raw pass-through into a real driver:
+*% the rastertoescpos filter converts PDF into ESC/POS raster bytes and appends
+*% the 10 mm feed + auto-cut, then the socket backend delivers those bytes to
+*% the printer at 192.168.192.168:9100.
+*%
+*% This is what fixes the two symptoms the raw queue had:
+*%   * Chromium/Firefox had no MediaSize to offer, so the print button was
+*%     disabled / the paper-size list was empty. This PPD declares Roll80mm.
+*%   * The raw queue cut right after the last band, leaving the trailing line
+*%     on the next ticket. The filter feeds 10 mm before cutting.
+*%
+*FormatVersion:	"4.3"
+*FileVersion:	"1.0"
+*LanguageVersion: English
+*LanguageEncoding: ISOLatin1
+*PCFileName:	"EPSONTM.PPD"
+*Manufacturer:	"Epson"
+*Product:	"(TM-T20III Receipt Printer)"
+*cupsVersion:	1.0
+*cupsManualCopies: True
+*cupsModelNumber:  2
+*cupsFilter: "application/vnd.cups-pdf 0 rastertoescpos"
+*ModelName:     "Epson TM-T20III"
+*ShortNickName: "Epson TM-T20III (80mm)"
+*NickName:      "Epson TM-T20III Receipt, 80mm roll, ESC/POS"
+*PSVersion:	"(3010.000) 0"
+*LanguageLevel:	"2"
+*ColorDevice:	False
+*DefaultColorSpace: Gray
+*TTRasterizer:	Type42
+*Throughput:	"30"
+
+*OpenUI *PageSize/Media Size: PickOne
+*OrderDependency: 40 AnySetup *PageSize
+*DefaultPageSize: Roll80mm
+*PageSize Roll80mm/80mm receipt roll: "<</PageSize[227 842]/ImagingBBox null>>setpagedevice"
+*CloseUI: *PageSize
+
+*% The printer is monochrome and only ever reports "ready"/printer default
+*% states; no HWMargins or resolution beyond what the filter hard-codes (203dpi).
+*DefaultResolution: 203dpi
+
+*% Standard boilerplate so CUPS treats this as a valid single-page-size queue.
+*OpenUI *PageRegion/Media Size: PickOne
+*OrderDependency: 40 AnySetup *PageRegion
+*DefaultPageRegion: Roll80mm
+*PageRegion Roll80mm/80mm receipt roll: "<</PageSize[227 842]/ImagingBBox null>>setpagedevice"
+*CloseUI: *PageRegion
+
+*DefaultImageableArea: Roll80mm
+*ImageableArea Roll80mm/80mm receipt roll: "0 0 227 842"
+*DefaultPaperDimension: Roll80mm
+*PaperDimension Roll80mm/80mm receipt roll: "227 842"

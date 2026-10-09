@@ -24,3 +24,8 @@ temps/
 # Carpeta para archivos internos NO versionados
 # Archivos generados durante la ejecución, cachés locales y WIP sin commitear.
 temp/
+
+# Python
+__pycache__/
+*.pyc
+
