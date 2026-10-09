@@ -193,4 +193,28 @@ return {
       require("neo-tree").setup(opts)
     end,
   },
+
+  -- which-key.nvim: popup that lists the available mappings after a prefix
+  -- key (<leader>, g, ...) is pressed and held. It is discovery UI, not a new
+  -- mapping: it shows only entries that carry a `desc`, which is why keeping
+  -- `desc` everywhere else in this repo matters.
+  --
+  -- Loaded on VeryLazy, the plugin's own recommendation: the first actual
+  -- keystroke is already a prefix wait, so there is no point loading it any
+  -- earlier. delay(400) keeps it from flashing while typing fast.
+  {
+    "folke/which-key.nvim",
+    event = "VeryLazy",
+    config = function()
+      require("which-key").setup({
+        -- delay in ms before the popup shows; 0 once the plugin loaded so
+        -- the window appears instantly on the next prefix. `delay` is a
+        -- top-level option, NOT a member of `spec` (which-key v3 rejects a
+        -- `spec.delay` field as an invalid field, hence it lives here).
+        delay = function(ctx)
+          return ctx.plugin and 0 or 400
+        end,
+      })
+    end,
+  },
 }
