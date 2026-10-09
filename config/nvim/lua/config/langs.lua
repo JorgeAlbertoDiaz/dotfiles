@@ -28,6 +28,9 @@
 --   fmt    conform.nvim formatters.
 --   ts     tree-sitter parser. Defaults to the table key, which is correct for
 --          every entry below; set it only when the parser is named differently.
+--   ts_extra  additional tree-sitter parsers this entry needs that are not
+--          filetypes themselves (blade requires php_only). install() does not
+--          resolve parser `requires` automatically, so name them here.
 
 local langs = {
   html = {
@@ -100,6 +103,34 @@ local langs = {
     ft = { "markdown" },
     lint = {},
     fmt = {},
+  },
+  -- json: no LSP, linter or formatter either. Added for a single consumer:
+  -- laravel.nvim (lua/plugins/laravel.lua) requires the `json` tree-sitter
+  -- parser for its composer.json introspection, and the parser is declared
+  -- here rather than hard-coded in the plugin spec because this table is the
+  -- only place a language/parser is named.
+  json = {
+    ft = { "json" },
+    lint = {},
+    fmt = {},
+  },
+  -- blade: Laravel's template filetype. The filetype itself is detected by
+  -- Neovim natively (vim/filetype.lua maps '%.blade%.php$' to 'blade'); this
+  -- entry only adds the tree-sitter parser for real highlighting. No LSP,
+  -- linter or formatter: blade is PHP with directives, and phpactor already
+  -- serves PHP.
+  --
+  -- The `blade` parser declares `php_only` as a `requires` dependency. The
+  -- nvim-treesitter install() call this config uses does NOT resolve
+  -- `requires` automatically (it passes dependencies = true to
+  -- norm_languages), so php_only must be named here or `blade` fails to
+  -- build. ts_extra is the way this table declares parser-only extras that
+  -- are not themselves filetypes.
+  blade = {
+    ft = { "blade" },
+    lint = {},
+    fmt = {},
+    ts_extra = { "php_only" },
   },
 }
 
@@ -204,6 +235,12 @@ function M.parsers()
   local out = {}
   for name, entry in pairs(langs) do
     out[#out + 1] = entry.ts or name
+    -- A parser may require other parsers that are not themselves filetypes
+    -- (blade requires php_only). install() does not resolve `requires`, so
+    -- these are declared as ts_extra on the entry and named here explicitly.
+    for _, extra in ipairs(entry.ts_extra or {}) do
+      out[#out + 1] = extra
+    end
   end
   return sorted_unique(out)
 end
