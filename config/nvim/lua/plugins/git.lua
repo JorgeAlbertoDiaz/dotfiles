@@ -10,6 +10,11 @@ return {
   -- The keymaps are the reference's, verbatim and in the same order.
   {
     "tpope/vim-fugitive",
+    -- :GBrowse resuelve el remoto (github.com, gitlab, ...) a una URL de
+    -- navegador a través de los browse handlers. Fugitive no trae ninguno
+    -- propio: los registra vim-rhubarb (GitHub/GitLab/Bitbucket/Codeberg).
+    -- Sin él, :GBrowse falla con "no GBrowse handler installed".
+    dependencies = { "tpope/vim-rhubarb" },
     keys = {
       { "<leader>ga", "<cmd>Gwrite<cr>", desc = "Git: stage and commit (write)" },
       { "<leader>gc", "<cmd>Git commit --verbose<cr>", desc = "Git: commit" },
@@ -20,6 +25,8 @@ return {
       { "<leader>gd", "<cmd>Gvdiffsplit<cr>", desc = "Git: diff against the index" },
       { "<leader>gr", "<cmd>GRemove<cr>", desc = "Git: remove hunks" },
       -- :GBrowse opens the current file (and line) in the repo's web UI.
+      -- La URL se abre con el navegador por defecto del sistema (xdg-open),
+      -- no con uno fijado acá: si el sistema usa Firefox, abre Firefox.
       { "<leader>o", "<cmd>GBrowse<cr>", desc = "Git: open the file in the browser" },
     },
   },

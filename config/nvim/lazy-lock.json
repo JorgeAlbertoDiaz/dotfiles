@@ -77,5 +77,9 @@
   "vim-fugitive": {
     "branch": "master",
     "commit": "3b753cf8c6a4dcde6edee8827d464ba9b8c4a6f0"
+  },
+  "vim-rhubarb": {
+    "branch": "master",
+    "commit": "5496d7c94581c4c9ad7430357449bb57fc59f501"
   }
 }
