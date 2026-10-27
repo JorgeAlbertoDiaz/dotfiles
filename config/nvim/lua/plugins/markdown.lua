@@ -18,6 +18,25 @@ return {
       -- render, so flipping it and opening a preview again is enough to switch.
       vim.g.mkdp_theme = "dark"
 
+      -- How the preview URL reaches a browser. Left alone, the plugin spawns
+      -- xdg-open from its Node process, which only reports the failure when
+      -- the binary itself is missing. A shell with no display -- a detached
+      -- terminal server started from a tty -- makes xdg-open fall back to text
+      -- browsers and exit 0, so the preview never opens and nothing is said
+      -- about it. config.browser decides between xdg-open and the desktop
+      -- portal, and notifies with the URL when neither works.
+      --
+      -- The plugin calls the opener by name from its Node process, so it has
+      -- to be a real Vimscript function. The `v:lua.name` form is an expression
+      -- prefix, and nvim_call_function rejects it with E117, which the plugin
+      -- reports as an unhandled rejection instead of opening anything.
+      vim.cmd([[
+        function! MarkdownPreviewOpenUrl(url) abort
+          call luaeval('require("config.browser").url(_A)', a:url)
+        endfunction
+      ]])
+      vim.g.mkdp_browserfunc = "MarkdownPreviewOpenUrl"
+
       -- Toggle the preview background between dark and light. The theme is
       -- re-read the next time a preview is opened (or reopened with <A-p>).
       _G.toggle_markdown_theme = function()
