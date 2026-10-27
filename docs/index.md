@@ -8,6 +8,7 @@
 - [Requisitos](#requisitos)
 - [Instalación](#instalación)
 - [Diagramas](#diagramas)
+- [Referencia](#referencia)
 - [Ruta de desarrollo](#ruta-de-desarrollo)
 
 ## Arquitectura del proyecto
@@ -126,6 +127,16 @@ Los diagramas se definen con **Mermaid** en archivos `/docs/assets/*.mmd`
 
 Para visualizarlos localmente: abrir el `.mmd` en Obsidian, VS Code (con la
 extensión habitual de Mermaid) o Typora.
+
+## Referencia
+
+Notas de hallazgos de openSUSE: bugs o límites de hardware documentados para
+no volver a investigarlos.
+
+| Nota | Tema |
+|---|---|
+| [bug-opensuse-cups-filters2-pdf.md](./referencia/bug-opensuse-cups-filters2-pdf.md) | `cups-filters2` no instala las reglas MIME de conversión de PDF |
+| [miracast-ath9k-no-viable.md](./referencia/miracast-ath9k-no-viable.md) | Miracast no es viable con el adaptador `ath9k` AR9287 |
 
 ## Ruta de desarrollo
 
