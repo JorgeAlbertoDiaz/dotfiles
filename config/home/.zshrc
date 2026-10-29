@@ -12,6 +12,33 @@ export EDITOR="nvim"
 export VISUAL="nvim"
 
 # ---------------------------------------------------------------------------
+# Entorno y PATH
+# ---------------------------------------------------------------------------
+# Va en este archivo y NO en ~/.profile: zsh sólo lee ~/.zshrc, y los
+# terminales que abre sway no son shells de login. Si estas rutas no están
+# acá, brew, pi y gentle-ai desaparecen de la sesión.
+#
+#   ~/.gentle-ai/bin  wrapper de opencode que instala gentle-ai (agrega
+#                     OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS); va antes que
+#                     ~/.opencode/bin para que gane el wrapper
+#   ~/.pi/agent/bin   launcher de la instalación administrada de pi
+#   ~/.local/bin      symlinks que instalan pi y gentle-shell
+#   ~/.opencode/bin   opencode
+#
+# Se exporta antes de compinit porque "brew shellenv" además agrega la ruta de
+# completions a fpath; compinit tiene que verla ya cargada.
+# "typeset -U" descarta duplicados: /etc/profile ya agrega ~/.local/bin en los
+# shells de login y sin esto PATH se llena de repetidos.
+typeset -U path PATH
+export PATH="${HOME}/.gentle-ai/bin:${HOME}/.pi/agent/bin:${HOME}/.local/bin:${HOME}/.opencode/bin:${PATH}"
+
+# Homebrew: brew, gentle-ai y engram viven en /home/linuxbrew/.linuxbrew.
+# La guarda mantiene el arranque del shell aunque brew no esté instalado.
+if [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
+  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv zsh)"
+fi
+
+# ---------------------------------------------------------------------------
 # Historial
 # ---------------------------------------------------------------------------
 HISTFILE="${HOME}/.zsh_history"

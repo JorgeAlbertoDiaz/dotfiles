@@ -71,7 +71,7 @@ config/
 ├── sway/                      # config + config.d/ (+ customize.sh) → ~/.config/sway
 ├── foot/                      # foot.ini (+ customize.sh) → ~/.config/foot
 ├── waybar/                    # config, style.css (+ customize.sh) → ~/.config/waybar
-└── environment.d/             # nvidia.conf → ~/.config/environment.d
+└── environment.d/             # chromium.conf, nvidia.conf, path.conf → ~/.config/environment.d
 ```
 
 ## Requisitos

@@ -12,8 +12,18 @@
 
 test -s ~/.alias && . ~/.alias || true
 
-# opencode
-export PATH=/home/jorge/.opencode/bin:$PATH
+# ---------------------------------------------------------------------------
+# Entorno y PATH
+# ---------------------------------------------------------------------------
+# Mismas rutas que ~/.zshrc (que es el shell por defecto): si acá faltan, un
+# bash interactivo se queda sin brew, pi y gentle-ai.
+export PATH="${HOME}/.gentle-ai/bin:${HOME}/.pi/agent/bin:${HOME}/.local/bin:${HOME}/.opencode/bin:${PATH}"
+
+# Homebrew: brew, gentle-ai y engram viven en /home/linuxbrew/.linuxbrew.
+# La guarda mantiene el arranque del shell aunque brew no esté instalado.
+if [ -x /home/linuxbrew/.linuxbrew/bin/brew ]; then
+  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"
+fi
 
 export EDITOR="nvim"
 export VISUAL="nvim"
