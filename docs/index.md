@@ -136,6 +136,7 @@ no volver a investigarlos.
 | Nota | Tema |
 |---|---|
 | [bug-opensuse-cups-filters2-pdf.md](./referencia/bug-opensuse-cups-filters2-pdf.md) | `cups-filters2` no instala las reglas MIME de conversión de PDF |
+| [hibernacion-opensuse-lvm.md](./referencia/hibernacion-opensuse-lvm.md) | Hibernación con swap sobre LVM: qué falta y cómo verificarlo |
 | [miracast-ath9k-no-viable.md](./referencia/miracast-ath9k-no-viable.md) | Miracast no es viable con el adaptador `ath9k` AR9287 |
 
 ## Ruta de desarrollo
