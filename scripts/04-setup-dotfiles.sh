@@ -8,6 +8,21 @@
 #   ./scripts/04-setup-dotfiles.sh sway waybar home
 #   ./scripts/04-setup-dotfiles.sh zsh         # aplica solo ~/.zshrc
 #   ./scripts/04-setup-dotfiles.sh git         # aplica solo ~/.gitconfig
+#
+# Despliegue y limpieza acotada
+# -----------------------------
+# El repo es la fuente de verdad: en cada corrida se recorre config/ y se
+# calcula, sin listas a mano, exactamente qué archivos despliega cada app.
+# Ese conjunto se guarda como inventario en
+#   ${XDG_STATE_HOME:-~/.local/state}/dotfiles/desplegado.tsv
+# y la limpieza borra solo entradas del inventario anterior que el repo ya no
+# declara. Nunca hace "rm -rf" de un directorio del usuario: como mucho rmdir
+# de directorios que quedaron vacíos, con tope en las bases XDG. El resto de
+# $HOME (binarios propios, datos de apps, configuraciones ajenas) no se toca.
+#
+# Los destinos bajo ~/.local/share/ y ~/.local/state/ son datos mutables de
+# una aplicación (los escribe la app, no el repo): se siembran si faltan y
+# nunca se pisan ni se podan.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -81,53 +96,221 @@ verificar_dependencias() {
 }
 
 # ---------------------------------------------------------------------------
-# Copia una app de config/ a ~/.config/<app> (excepto home/, que va a $HOME).
+# Inventario y despliegue acotado.
 # ---------------------------------------------------------------------------
-aplicar_app() {
-  local app="$1" reset="$2"
-  local app_dir dest file
-  app_dir="${CONFIG_DIR}/${app}"
+STATE_DIR="${XDG_STATE_HOME:-${HOME_DIR}/.local/state}/dotfiles"
+MANIFEST="${STATE_DIR}/desplegado.tsv"
+
+# Rutas (relativas a $HOME) que el repo despliega para una app o para home.
+# Se calculan con find en cada corrida: agregar o quitar un archivo del repo
+# alcanza para que el despliegue y la poda lo reflejen.
+rutas_gestionadas() {
+  local app="$1" base
   if [[ "${app}" == "home" ]]; then
-    dest="${HOME_DIR}"
-    if [[ -d "${app_dir}" ]]; then
-      info "Aplicando home → ${HOME_DIR}"
-      # dotglob+nullglob: un solo glob cubre los archivos ocultos y los
-      # subdirectorios, y nullglob evita colgar ".", ".." o un literal sin
-      # coincidencia cuando la carpeta está vacía. El patrón anterior
-      # ("${app_dir}"/* "${app_dir}"/.*) se saltaba los directorios por el
-      # [[ -f ]] y los ocultos por el glob sin dotglob.
-      shopt -s dotglob nullglob
-      for file in "${app_dir}"/*; do
-        # El borrado del reset es acotado a los nombres que declara el repo:
-        # se borra cada destino por su nombre, nunca con un comodín sobre
-        # $HOME. El "rm -rf" de config/<app>/home no toca nada fuera de la lista.
-        if [[ "${reset}" == "1" ]]; then
-          rm -rf "${HOME_DIR}/$(basename "${file}")"
-        fi
-        # "cp -a" sobre un directorio crea ${HOME_DIR}/<basename>; sobre un
-        # archivo, lo sobreescribe conservando modo y timestamps.
-        cp -a "${file}" "${HOME_DIR}/"
-      done
-      shopt -u dotglob nullglob
-      ok "Aplicado home"
-    fi
+    base="${CONFIG_DIR}/home"
+    [[ -d "${base}" ]] || return 0
+    ( cd "${base}" && find . -mindepth 1 \( -type f -o -type l \) -printf '%P\n' )
+  else
+    base="${CONFIG_DIR}/${app}"
+    [[ -d "${base}" ]] || return 0
+    ( cd "${base}" && find . -mindepth 1 \( -type f -o -type l \) -printf ".config/${app}/%P\n" )
+  fi
+}
+
+# Directorios del repo, para recrear también los que estén vacíos.
+directorios_gestionados() {
+  local app="$1" base
+  if [[ "${app}" == "home" ]]; then
+    base="${CONFIG_DIR}/home"
+    [[ -d "${base}" ]] || return 0
+    ( cd "${base}" && find . -mindepth 1 -type d -printf '%P\n' )
+  else
+    base="${CONFIG_DIR}/${app}"
+    [[ -d "${base}" ]] || return 0
+    ( cd "${base}" && find . -mindepth 1 -type d -printf ".config/${app}/%P\n" )
+  fi
+}
+
+# Inventario nuevo (origen<TAB>ruta) de la selección, en un solo flujo.
+inventario_de_seleccion() {
+  local app rel
+  for app in "$@"; do
+    while IFS= read -r rel; do
+      printf '%s\t%s\n' "${app}" "${rel}"
+    done < <(rutas_gestionadas "${app}")
+  done
+}
+
+# Una ruta del inventario solo puede ser relativa a $HOME y sin componentes
+# "..", "." ni vacíos: si el archivo se corrompe o lo editan a mano, la poda
+# no puede salirse del home del usuario.
+ruta_valida() {
+  local rel="$1"
+  [[ -n "${rel}" ]] || return 1
+  [[ "${rel}" != /* ]] || return 1
+  case "/${rel}/" in
+    *"/../"*|*"/./"*|*"//"*) return 1 ;;
+  esac
+  return 0
+}
+
+# Los datos de una app (no config) se siembran pero no se pisan: la app los
+# escribe en tiempo de ejecución y perderlos no es reconstruible.
+es_dato_de_app() {
+  case "$1" in
+    .local/share/*|.local/state/*) return 0 ;;
+  esac
+  return 1
+}
+
+# Ruta de origen en el repo para una entrada del inventario.
+origen_en_repo() {
+  local origen="$1" rel="$2"
+  if [[ "${origen}" == "home" ]]; then
+    printf '%s/%s\n' "${CONFIG_DIR}/home" "${rel}"
+  else
+    printf '%s/%s/%s\n' "${CONFIG_DIR}" "${origen}" "${rel#.config/"${origen}"/}"
+  fi
+}
+
+desplegar_archivo() {
+  local origen="$1" rel="$2" src abs
+  if ! ruta_valida "${rel}"; then
+    warn "Ruta insegura en el inventario; se ignora: ${rel}"
+    return 0
+  fi
+  src="$(origen_en_repo "${origen}" "${rel}")"
+  abs="${HOME_DIR}/${rel}"
+
+  if es_dato_de_app "${rel}" && { [[ -e "${abs}" ]] || [[ -L "${abs}" ]]; }; then
+    info "Se conserva (dato de la app): ${rel}"
     return 0
   fi
 
-  dest="${HOME_DIR}/.config/${app}"
-  if [[ "${reset}" == "1" && -d "${dest}" ]]; then
-    info "Reset de fábrica: borrando ${dest} y recreándolo desde el repo"
-    rm -rf "${dest}"
+  mkdir -p -- "$(dirname -- "${abs}")"
+  if [[ -d "${abs}" && ! -L "${abs}" ]]; then
+    # Un archivo gestionado no reemplaza un directorio con contenido ajeno.
+    if ! rmdir -- "${abs}" 2>/dev/null; then
+      warn "Se esperaba un archivo y hay un directorio con contenido; se omite: ${rel}"
+      return 0
+    fi
   fi
-  info "Aplicando ${app} → ~/.config/${app}"
-  mkdir -p "${dest}"
-  cp -r "${app_dir}/." "${dest}/"
-  # Garantiza que los scripts se copien ejecutables: cp conserva los modos al
-  # crear archivos, pero un destino preexistente mantendría los suyos.
-  if [[ -d "${dest}/scripts" ]]; then
-    find "${dest}/scripts" -type f -name '*.sh' -exec chmod +x {} +
+  # rm del destino antes de copiar: si es un enlace simbólico, se reemplaza el
+  # enlace (no se escribe a través de él) y el modo queda el del repo.
+  rm -f -- "${abs}"
+  cp -a -- "${src}" "${abs}"
+}
+
+podar_directorios_vacios() {
+  local dir abs
+  dir="$(dirname -- "$1")"
+  while [[ "${dir}" != "." ]]; do
+    case "${dir}" in
+      .config|.local|.local/share|.local/state|.local/bin) break ;;
+    esac
+    abs="${HOME_DIR}/${dir}"
+    [[ -d "${abs}" && ! -L "${abs}" ]] || break
+    rmdir -- "${abs}" 2>/dev/null || break
+    info "Directorio vacío eliminado: ${dir}"
+    dir="$(dirname -- "${dir}")"
+  done
+}
+
+borrar_gestionado() {
+  local rel="$1" abs
+  if ! ruta_valida "${rel}"; then
+    warn "Ruta insegura en el inventario; se ignora: ${rel}"
+    return 0
   fi
-  ok "Aplicado ${app}"
+  # Los datos de apps no se podan nunca: el repo solo los sembró.
+  if es_dato_de_app "${rel}"; then
+    info "Se conserva (dato de la app): ${rel}"
+    return 0
+  fi
+  abs="${HOME_DIR}/${rel}"
+  if [[ -L "${abs}" || -f "${abs}" ]]; then
+    rm -f -- "${abs}"
+    info "Eliminado (el repo ya no lo despliega): ${rel}"
+    podar_directorios_vacios "${rel}"
+  elif [[ -d "${abs}" ]]; then
+    warn "El repo ya no despliega ${rel} y ahora es un directorio; no se borra."
+  fi
+}
+
+aplicar_app() {
+  local app="$1" rel
+  if [[ "${app}" == "home" ]]; then
+    info "Aplicando home → ${HOME_DIR}"
+  else
+    info "Aplicando ${app} → ~/.config/${app}"
+  fi
+
+  while IFS= read -r rel; do
+    mkdir -p -- "${HOME_DIR}/${rel}"
+  done < <(directorios_gestionados "${app}")
+
+  while IFS= read -r rel; do
+    desplegar_archivo "${app}" "${rel}"
+  done < <(rutas_gestionadas "${app}")
+
+  if [[ "${app}" == "home" ]]; then
+    ok "Aplicado home"
+  else
+    ok "Aplicado ${app}"
+  fi
+}
+
+# Poda: solo entradas del inventario cuyo origen está en la selección actual y
+# que el repo ya no declara. Lo que no salió de config/ nunca se considera.
+podar_obsoletos() {
+  local origen rel
+  [[ -f "${MANIFEST}" ]] || return 0
+  while IFS=$'\t' read -r origen rel; do
+    [[ -z "${origen}" || -z "${rel}" ]] && continue
+    seleccionado "${origen}" || continue
+    if grep -Fxq -- "${origen}"$'\t'"${rel}" "${inventario_nuevo}"; then
+      continue
+    fi
+    borrar_gestionado "${rel}"
+  done < <(leer_inventario)
+}
+
+leer_inventario() {
+  [[ -f "${MANIFEST}" ]] || return 0
+  grep -v '^#' "${MANIFEST}" || true
+}
+
+seleccionado() {
+  local origen="$1" app
+  for app in "${apps_a_aplicar[@]}"; do
+    [[ "${app}" == "${origen}" ]] && return 0
+  done
+  # Con "Todos" también se limpia una app que ya no existe en config/: nada
+  # de lo que desplegó sigue siendo reconstruible por el repo.
+  if [[ ${MODO_TODOS} -eq 1 ]]; then
+    [[ "${origen}" == "home" ]] && return 0
+    case "${origen}" in
+      */*|..|.) return 1 ;;
+    esac
+    [[ ! -d "${CONFIG_DIR}/${origen}" ]] && return 0
+  fi
+  return 1
+}
+
+escribir_inventario() {
+  local tmp="${MANIFEST}.tmp.$$"
+  mkdir -p -- "${STATE_DIR}"
+  {
+    printf '# Inventario de scripts/04-setup-dotfiles.sh.\n'
+    printf '# Formato: origen<TAB>ruta relativa al home del usuario. No editar a mano.\n'
+    while IFS=$'\t' read -r origen rel; do
+      [[ -z "${origen}" || -z "${rel}" ]] && continue
+      seleccionado "${origen}" && continue
+      printf '%s\t%s\n' "${origen}" "${rel}"
+    done < <(leer_inventario)
+    sort -u "${inventario_nuevo}"
+  } > "${tmp}"
+  mv -f -- "${tmp}" "${MANIFEST}"
 }
 
 # ---------------------------------------------------------------------------
@@ -142,12 +325,9 @@ aplicar_home_file() {
     warn "No existe ${src}; no se aplicó ${etiqueta}."
     return 0
   fi
-  if [[ "${RESET_FABRICA}" == "1" && -e "${dest}" ]]; then
-    info "Reset de fábrica: borrando ${dest}"
-    rm -f "${dest}"
-  fi
   info "Aplicando ${etiqueta} → ${dest}"
-  cp -a "${src}" "${dest}"
+  desplegar_archivo "home" "${nombre}"
+  printf 'home\t%s\n' "${nombre}" >> "${inventario_nuevo}"
   ok "Aplicado ${etiqueta} (${dest})"
 }
 
@@ -290,13 +470,12 @@ else
   elegidos=("${SELECCION[@]}")
 fi
 
-aplicados=()
-RESET_FABRICA=0
-
 # Lista concreta de apps a aplicar ("zsh" y "git" son acciones internas que se
 # resuelven por separado con aplicar_*_config).
 apps_a_aplicar=()
+MODO_TODOS=0
 if [[ " ${elegidos[*]} " == *" Todos "* ]]; then
+  MODO_TODOS=1
   apps_a_aplicar=("${apps[@]}" "home")
 else
   for app in "${elegidos[@]}"; do
@@ -305,33 +484,23 @@ else
   done
 fi
 
-# Reset de fábrica: una sola confirmación que borra y recrea los destinos.
-# Aplica tanto a .config/<app> como a home/; en home/ el borrado es acotado a
-# los nombres que declara el repo (sin comodines sobre $HOME), así que lo que
-# el usuario tenga fuera de config/home/ no se toca nunca.
-if [[ ${#apps_a_aplicar[@]} -gt 0 ]]; then
-  if confirm "¿Reset de fábrica? (Sí: borrar y recrear desde el repo / No: solo copiar) [${apps_a_aplicar[*]}]"; then
-    RESET_FABRICA=1
-    info "Reset de fábrica activado para: ${apps_a_aplicar[*]}"
-  fi
-fi
+# ---------------------------------------------------------------------------
+# Aplicación: inventario nuevo → despliegue → poda acotada → inventario.
+# ---------------------------------------------------------------------------
+inventario_nuevo="$(mktemp "${TMPDIR:-/tmp}/dotfiles-inventario.XXXXXX")"
+trap 'rm -f -- "${inventario_nuevo}"' EXIT
 
-aplicar_apps() {
-  local app
-  for app in "$@"; do
-    aplicar_app "${app}" "${RESET_FABRICA}"
-    aplicados+=("${app}")
-  done
-}
+inventario_de_seleccion "${apps_a_aplicar[@]}" | sort -u > "${inventario_nuevo}"
 
 if [[ " ${elegidos[*]} " == *" Todos "* ]]; then
   verificar_dependencias "todos"
-  aplicar_apps "${apps_a_aplicar[@]}"
+  for app in "${apps_a_aplicar[@]}"; do
+    aplicar_app "${app}"
+  done
 else
   for app in "${apps_a_aplicar[@]}"; do
     verificar_dependencias "${app}"
-    aplicar_app "${app}" "${RESET_FABRICA}"
-    aplicados+=("${app}")
+    aplicar_app "${app}"
   done
 fi
 
@@ -367,8 +536,13 @@ if [[ " ${elegidos[*]} " == *" Todos "* || " ${elegidos[*]} " == *" home "* || "
   fi
 fi
 
-for app in "${aplicados[@]}"; do
+podar_obsoletos
+escribir_inventario
+
+for app in "${apps_a_aplicar[@]}"; do
   [[ "${app}" == "sway" ]] && recargar_sway
 done
 
-ok "Dotfiles aplicados"
+gestionados="$(grep -vc '^#' "${MANIFEST}" || true)"
+ok "Dotfiles aplicados (${gestionados} archivos en el inventario: ${MANIFEST})"
+info "Solo se despliega lo declarado en config/; el resto de \$HOME no se modifica."

@@ -32,8 +32,10 @@
 #   ~/.config/nvim/lazy-lock.json
 #                         lockfile. Ojo: vive en el DIRECTORIO DE CONFIG, no
 #                         junto a los plugins, porque lazy lo escribe en
-#                         stdpath("config"). Por eso 04-setup-dotfiles.sh con
-#                         reset=1 lo borra y se regenera en el próximo update.
+#                         stdpath("config"). Por eso 04-setup-dotfiles.sh lo
+#                         despliega desde el repo (la versión versionada pisa
+#                         la local) y, si el repo no lo tuviera, lazy lo
+#                         regenera en el próximo update.
 #
 # Por qué no usa "nvim -u config/nvim/init.lua":
 #   Con -u <ruta>, Neovim SÍ ejecuta ese archivo pero NO agrega su directorio
@@ -52,7 +54,7 @@
 #   una rama". Acá las actualizaciones pasan por lazy, no por git.
 #
 # Nunca escribe dentro de ~/.config/nvim: es el directorio que
-# 04-setup-dotfiles.sh borra con reset=1.
+# 04-setup-dotfiles.sh despliega desde el repo.
 # No usa sudo: todo queda en el espacio del usuario.
 set -euo pipefail
 
