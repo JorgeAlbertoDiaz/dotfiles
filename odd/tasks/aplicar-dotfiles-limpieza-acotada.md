@@ -60,3 +60,24 @@ Riesgo alto: el commit `999238a` es la unidad que native review debe poder tomar
 
 - L1 (pedido original, verbatim): «Paso nuevamente, al aplicar los dotfiles perdi datos por ejemplo herdr ya no se reconoce como comando, ademas vi que el instalador trataba de borrar directorios como los contenedores de podman y otras configuraciones que despues no se pueden recuperar, habra que rediseñar los scripts para que la limpieza solo toque (borre y ponga nuevamente) solo las cosas que este proyecto reconstruye, mejor si es de alguna manera dinámica sino cada vez que actualizo algo, por ejemplo dotfiles tengo que recomponer comandos, variables de entorno, reconstruir contenedores, etc»
 - L2 (evidencia del orquestador): `~/.local/bin` no existe; `~/.config`, `~/.config/sway`, `~/.config/foot`, `~/.config/i3` con mtime del último apply; `podman ps -a` sin contenedores (imágenes sí). Compatible con el `rm -rf ~/.local` del reset.
+
+## Verificación independiente (gentle-ai-verify)
+
+- **PASS** en S1-S5, sin hallazgos bloqueantes.
+- `bash -n` OK y `shellcheck -x -e SC1091` sin hallazgos en `04` y el spec.
+- Spec: 32 pasos, 0 fallos (luego 40 con los casos de enlace/conflicto agregados en `c4adb53`).
+- Sandbox adversarial propio: poda del archivo obsoleto, 5/5 rutas ajenas intactas por sha256, segunda corrida idempotente.
+- Sin `rm -rf` en `04`: solo `rm -f` de un archivo/enlace y `rmdir` de directorios vacíos.
+- Enlace de destino hacia fuera de `$HOME`: se reemplaza, no se escribe a través.
+- Observaciones no bloqueantes: (1) un inventario forjado a mano puede borrar un archivo relativo dentro de `$HOME` — el modelo de amenaza está acotado al home y el manifiesto es de máquina; (2) el ejemplo de datos de app refería a Handy, que aún está en WIP sin commitear — se generalizó en el doc; (3) la frase preexistente del README sobre `customize.sh` sigue inexacta, fuera de alcance.
+
+## Estado del review nativo
+
+`assess` devolvió `nativeRisk: unassessable`: hay archivos untracked del WIP de Handy y los managed assets de gentle-ai están desactualizados (`managed_assets_outdated`). No se inició review nativo: `reviewDue` no se pudo determinar y la verificación ya la cubrió el verificador independiente. El `continuation` del stop pide `gentle-ai sync --agent pi` (mantenimiento del entorno, fuera de este cambio) y el WIP de Handy necesita su propio review cuando se commitee.
+
+## Commits
+
+- `3c6d2ec` test: spec de limpieza acotada.
+- `999238a` fix: limpieza acotada (unidad de riesgo alto, sola).
+- `5b567a5` docs: despliegue y limpieza acotada.
+- `c4adb53` test: enlaces y conflictos de tipo.
