@@ -238,5 +238,57 @@ assert_contenido "${WORK}/absoluto.txt" "absoluto" \
   "ignora una ruta absoluta en el inventario"
 
 # ---------------------------------------------------------------------------
+# Caso 8 — un destino que es enlace a fuera de $HOME se reemplaza, no se
+# escribe a través de él.
+# ---------------------------------------------------------------------------
+crear_fixture
+printf 'OUTSIDE\n' > "${WORK}/outside.txt"
+ln -s "${WORK}/outside.txt" "${FAKE_HOME}/.bashrc"
+if aplicar home >/dev/null; then
+  pasa "aplicar home con destino enlazado sale 0"
+else
+  falla "aplicar home con destino enlazado sale 0"
+fi
+if [[ -L "${FAKE_HOME}/.bashrc" ]]; then
+  falla "reemplaza el enlace en el destino (sigue siendo symlink)"
+else
+  pasa "reemplaza el enlace en el destino (symlink → archivo)"
+fi
+assert_contenido "${FAKE_HOME}/.bashrc" "bashrc" \
+  "escribe el archivo del repo en el destino"
+assert_contenido "${WORK}/outside.txt" "OUTSIDE" \
+  "no escribe a través del enlace"
+
+# ---------------------------------------------------------------------------
+# Caso 9 — un archivo declarado no reemplaza un directorio con contenido ajeno.
+# ---------------------------------------------------------------------------
+crear_fixture
+mkdir -p "${FAKE_HOME}/.config/appconf/conf.ini/keep-dir"
+printf 'keep\n' > "${FAKE_HOME}/.config/appconf/conf.ini/keep-dir/k.txt"
+if aplicar todos >/dev/null; then
+  pasa "aplicar con conflicto archivo/directorio sale 0"
+else
+  falla "aplicar con conflicto archivo/directorio sale 0"
+fi
+assert_contenido "${FAKE_HOME}/.config/appconf/conf.ini/keep-dir/k.txt" "keep" \
+  "no reemplaza por un archivo un directorio con contenido ajeno"
+
+# ---------------------------------------------------------------------------
+# Caso 10 — un dato de app que es enlace tampoco se pisa.
+# ---------------------------------------------------------------------------
+crear_fixture
+rm -f "${FAKE_HOME}/.local/share/appa/settings.json"
+printf 'REAL\n' > "${WORK}/real-settings"
+ln -s "${WORK}/real-settings" "${FAKE_HOME}/.local/share/appa/settings.json"
+aplicar todos >/dev/null
+assert_contenido "${WORK}/real-settings" "REAL" \
+  "no escribe a través de un dato de app enlazado"
+if [[ -L "${FAKE_HOME}/.local/share/appa/settings.json" ]]; then
+  pasa "conserva el enlace del dato de app"
+else
+  falla "conserva el enlace del dato de app (lo reemplazó)"
+fi
+
+# ---------------------------------------------------------------------------
 printf '\n%d pasos, %d fallos\n' "${pasos}" "${fallos}"
 [[ ${fallos} -eq 0 ]]
