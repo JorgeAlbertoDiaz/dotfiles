@@ -60,7 +60,7 @@ opt.shell = (shell ~= nil and shell ~= "") and shell or "/bin/sh"
 -- Display
 opt.ruler = true
 opt.number = true
-opt.background = "dark"
+opt.background = require("config.theme").current()
 opt.wildmenu = true
 opt.laststatus = 2
 

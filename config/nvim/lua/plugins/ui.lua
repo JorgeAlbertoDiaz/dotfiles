@@ -18,8 +18,10 @@ return {
     lazy = false,
     priority = 1000,
     config = function()
-      vim.cmd.colorscheme("badwolf")
-
+      -- El colorscheme NO se aplica acá: lo aplica lazy con la opción
+      -- `colorscheme` de init.lua, que ahora depende del tema del escritorio
+      -- (badwolf en oscuro, dayfox en claro). Este bloque sólo deja listo el
+      -- ajuste de transparencia para cuando badwolf esté activo.
       -- Transparencia compartida con el terminal: badwolf pinta fondos sólidos,
       -- así que se limpia el background de los grupos base para que el alpha de
       -- foot se vea a través. Sólo se toca el bg (guibg/ctermbg), nunca el fg.
@@ -67,6 +69,35 @@ return {
           vim.schedule(clear_bg)
         end,
       })
+    end,
+  },
+
+  -- nightfox: variante CLARA del tema del escritorio. badwolf es sólo oscuro y
+  -- no responde a 'background', así que el lado claro necesita otro esquema:
+  -- `dayfox` (fondo cálido, acentos naranjas) es el que mejor acompaña la
+  -- paleta rust-light. En oscuro dayfox no se aplica; sólo queda disponible
+  -- para el toggle, que decide config/theme.lua.
+  {
+    "EdenEast/nightfox.nvim",
+    lazy = false,
+    priority = 900,
+    config = function()
+      local theme = require("config.theme")
+
+      -- El fondo de dayfox (crema) no coincide con el del terminal en modo
+      -- claro (#e1e1db, el bg del tema rust): sin esto la ventana de nvim se
+      -- ve como un parche más claro sobre el terminal. Se pisa SÓLO Normal
+      -- (bg/fg), dejando intactos los colores de sintaxis de dayfox.
+      local function match_terminal()
+        if vim.g.colors_name ~= "dayfox" then
+          return
+        end
+        local light = theme.palette.light
+        vim.api.nvim_set_hl(0, "Normal", { bg = light.background, fg = light.foreground })
+      end
+
+      local aug = vim.api.nvim_create_augroup("dayfox_terminal_bg", { clear = true })
+      vim.api.nvim_create_autocmd("ColorScheme", { group = aug, callback = match_terminal })
     end,
   },
 
