@@ -46,7 +46,7 @@ S12. Los dos scripts nuevos de test se ejecutan sin root, sin red y sin flatpak 
 - [x] T1 (S2, S3, S4, S5, S6, S7, S10) `scripts/02b-install-flatpak.sh`: flags `--all|--apps|--list|--help`, selección gum/confirm, detección de ya instaladas, validaciones. Spec propio (test-first). → `3e8cbde` (33 pasos, 0 fallos)
 - [x] T2 (S1, S8, S9) `install.sh`: entrada en el menú principal, componente `Aplicaciones Flatpak` en `COMPONENTES`, rama en `run_component` (`--all` en instalación completa, selección a mano), quitar la pregunta global. Spec de integración del menú (test-first). → `d10fbdf` (15 pasos, 0 fallos)
 - [x] T3 (S11) Docs: `docs/index.md` + `README.md`. → `87bac73`
-- [ ] T4 Verificación: specs, `bash -n`, `shellcheck`, verificador independiente (toca el instalador = riesgo item 5). → en curso
+- [x] T4 Verificación: specs, `bash -n`, `shellcheck`, verificador independiente (toca el instalador = riesgo item 5). → `c22e0fe`: 37 + 15 + 40 pasos en verde, shellcheck limpio en lo nuevo, probes reales sin instalar, verificador con S1-S12 cumpliendo y su bloqueante corregido.
 
 ## Log
 
