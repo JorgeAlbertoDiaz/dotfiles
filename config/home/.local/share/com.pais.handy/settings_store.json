@@ -1,0 +1,16 @@
+{
+  "settings": {
+    "settings_schema_version": 2,
+    "app_language": "es-ES",
+    "selected_language": "es",
+    "translate_to_english": false,
+    "selected_model": "handy-computer/whisper-large-v3-gguf/whisper-large-v3-Q5_K_M.gguf",
+    "paste_method": "ctrl_v",
+    "typing_tool": "auto",
+    "clipboard_handling": "dont_modify",
+    "start_hidden": false,
+    "show_tray_icon": true,
+    "vad_enabled": true,
+    "onboarding_completed": false
+  }
+}

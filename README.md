@@ -44,7 +44,7 @@ dev, drivers de hardware y dotfiles.
 │   ├── 00-xdg-dirs.sh       # Verifica/crea directorios XDG y descargas
 │   ├── 01-install-gum.sh    # Instala gum (zypper + fallback GitHub)
 │   ├── 02-install-packages.sh  # Recorre packages/*.txt e instala con zypper
-│   ├── 04-setup-dotfiles.sh # Copia dotfiles a ~/.config/<app> + zsh
+│   ├── 04-setup-dotfiles.sh # Despliega config/ y home/ con inventario acotado
 │   ├── 05-install-fonts.sh  # Instala y configura Nerd Fonts por app
 │   ├── 08-setup-zsh.sh      # Instala los plugins de zsh (sin sudo)
 │   ├── 09-setup-nvim.sh     # Instala plugins y LSP de nvim (sin sudo)
@@ -68,6 +68,11 @@ Más detalles en [docs/index.md](docs/index.md).
   `scripts/04-setup-dotfiles.sh`. `home/` se copia a `$HOME`. Los
   `customize.sh` son herramientas del repo y no se copian; se ejecutan desde
   `05-install-fonts.sh` para configurar la fuente por app.
+- `scripts/04-setup-dotfiles.sh` calcula en cada corrida qué archivos despliega
+  `config/` y guarda ese inventario en `~/.local/state/dotfiles/desplegado.tsv`.
+  La limpieza borra solo lo que el repo dejó de declarar: nunca hace `rm -rf`
+  de directorios del usuario ni toca binarios propios, datos de apps o
+  configuraciones ajenas. Detalle en [docs/aplicar-dotfiles.md](docs/aplicar-dotfiles.md).
 - Los controladores de hardware viven en `scripts/drivers/`, un
   `driver-<vendor>-<modelo>.sh` autocontenido por placa. El submenú
   `drivers-menu.sh` los descubre solo, así que agregar una GPU nueva no

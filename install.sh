@@ -45,8 +45,8 @@ COMPONENTES=(
   "Nvim"
   "Dotfiles"
   "DroidCam"
+  "Dictado por voz (Handy)"
 )
-
 # ---------------------------------------------------------------------------
 # 1) Verificación de sistema y directorios base
 # ---------------------------------------------------------------------------
@@ -135,6 +135,14 @@ run_component() {
     "DroidCam")
       "${SCRIPT_DIR}/scripts/11-setup-droidcam.sh"
       info "Finalizado: DroidCam"
+      ;;
+    "Dictado por voz (Handy)")
+      # Handy vive fuera de los repos de openSUSE: primero sus dependencias
+      # (webkit2gtk, capa GTK, inyectores de teclado) y después el RPM
+      # pinneado de GitHub con sus ajustes por defecto.
+      "${SCRIPT_DIR}/scripts/02-install-packages.sh" handy.txt
+      "${SCRIPT_DIR}/scripts/12-setup-handy.sh"
+      info "Finalizado: dictado por voz (Handy)"
       ;;
     "Dotfiles")
       # En instalación completa, 04 aplica todo sin preguntar su submenú.

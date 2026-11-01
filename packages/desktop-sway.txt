@@ -12,6 +12,8 @@ SwayNotificationCenter
 wl-clipboard
 grim
 slurp
+# Selector de color Wayland (wlroots): click en un píxel, copia el hex
+hyprpicker
 xwayland
 brightnessctl
 playerctl
