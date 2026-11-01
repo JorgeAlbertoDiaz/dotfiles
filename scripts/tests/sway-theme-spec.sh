@@ -381,5 +381,45 @@ else
   falla "foot sin foot.ini deja un aviso en stderr (stderr: '${ERROR}')"
 fi
 
+# ---------------------------------------------------------------------------
+# Caso 13 — apply también valida los payloads antes de tocar enlaces.
+#
+# El autostart y el despliegue usan `apply`: si un archivo de tema desapareció,
+# apply no puede dejar style.css apuntando a la nada (el escritorio quedaría sin
+# CSS hasta el próximo toggle).
+# ---------------------------------------------------------------------------
+crear_fixture
+correr dark --no-reload
+# El estado dice "light" (lo que apply va a re-aplicar) y le falta el payload;
+# el enlace vivo sigue apuntando a dark, que está completo.
+printf 'light\n' > "${STATE_HOME}/dotfiles/tema"
+rm -f "${CONFIG}/waybar/themes/light.css"
+correr apply --no-reload
+assert_igual "${CODIGO}" "1" "apply con payload faltante sale 1"
+assert_stderr_contiene "${CONFIG}/waybar/themes/light.css" \
+  "apply con payload faltante nombra el archivo en stderr"
+assert_enlace "${CONFIG}/waybar/style.css" "themes/dark.css" \
+  "apply con payload faltante no reescribe el enlace vivo"
+assert_resuelve "${CONFIG}/waybar/style.css" \
+  "apply con payload faltante deja el enlace vivo resoluble"
+
+# ---------------------------------------------------------------------------
+# Caso 14 — foot.ini no escribible: aviso, no aborto a mitad del apply.
+# ---------------------------------------------------------------------------
+crear_fixture
+# Se quita el permiso de escritura al DIRECTORIO: `sed -i` crea un temporal y
+# renombra, así que con el archivo sólo (chmod 444) el reemplazo igual funciona.
+chmod 555 "${CONFIG}/foot"
+correr light --no-reload
+chmod 755 "${CONFIG}/foot"
+assert_igual "${CODIGO}" "0" "foot.ini no escribible no aborta el apply"
+assert_enlace "${CONFIG}/waybar/style.css" "themes/light.css" \
+  "foot.ini no escribible igual deja el tema aplicado"
+if [[ "${ERROR}" == *"foot.ini"* ]]; then
+  pasa "foot.ini no escribible deja un aviso"
+else
+  falla "foot.ini no escribible deja un aviso (stderr: '${ERROR}')"
+fi
+
 printf '\n%d pasos, %d fallos\n' "${pasos}" "${fallos}"
 [[ ${fallos} -eq 0 ]]

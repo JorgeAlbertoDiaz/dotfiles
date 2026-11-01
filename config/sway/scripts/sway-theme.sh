@@ -138,10 +138,15 @@ configurar_foot() {
     aviso "aviso: no existe ${ini}; foot no cambia de tema"
     return 0
   fi
+  # Best-effort como el resto del apply: si foot.ini no se puede escribir (otro
+  # dueño, FS de sólo lectura) se avisa y el tema sigue; abortar acá dejaría el
+  # escritorio a medio tema porque los enlaces ya se cambiaron.
   if grep -q '^initial-color-theme=' "${ini}"; then
-    sed -i "s/^initial-color-theme=.*/initial-color-theme=${tema}/" "${ini}"
+    sed -i "s/^initial-color-theme=.*/initial-color-theme=${tema}/" "${ini}" \
+      || aviso "aviso: no se pudo escribir initial-color-theme en ${ini}"
   else
-    sed -i "/^\[main\]$/a initial-color-theme=${tema}" "${ini}"
+    sed -i "/^\[main\]$/a initial-color-theme=${tema}" "${ini}" \
+      || aviso "aviso: no se pudo insertar initial-color-theme en ${ini}"
   fi
 }
 
@@ -283,6 +288,10 @@ case "${ACCION}" in
     ;;
   apply)
     tema="$(tema_actual)"
+    # Mismo chequeo que dark/light/toggle: el autostart y el despliegue usan
+    # apply, y un payload ausente dejaría style.css apuntando a la nada (sin
+    # CSS hasta el próximo toggle). Falla antes de tocar nada.
+    verificar_tema "${tema}" || exit 1
     escribir_estado "${tema}"
     aplicar "${tema}"
     aviso "Tema ${tema} reaplicado."

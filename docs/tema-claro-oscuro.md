@@ -147,6 +147,10 @@ dentro de `~/.config/<app>`.
 - nvim cambia en vivo sólo si la instancia expone un socket en
   `${XDG_RUNTIME_DIR}/nvim.<pid>.0` (el valor por defecto). Si no hay socket, la
   instancia conserva el tema con el que arrancó.
+- Los formatos de los módulos de waybar (`format`, `tooltip-format`) no evalúan
+  variables de CSS, así que no pueden cambiar de color con el tema: el
+  calendario del reloj hereda el color del módulo y el punto de notificaciones
+  usa un rojo medio (`#c9513a`) legible sobre los dos fondos.
 - El fondo de pantalla no forma parte del tema: lo maneja azote/swaybg y
   `swaylock-current.sh` reutiliza la imagen elegida ahí.
 - Aplicar los dotfiles resetea los enlaces al tema por defecto; por eso

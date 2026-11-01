@@ -46,9 +46,9 @@
 			"mode-mon-col": 3,
 			"on-scroll": 1,
 			"format": {
-				"months": "<span color='#ffa724'><b>{}</b></span>",
-				"days": "<span color='#f8f6f2'><b>{}</b></span>",
-				"today": "<span color='#aeee00'><b><u>{}</u></b></span>"
+				"months": "<b>{}</b>",
+				"days": "{}",
+				"today": "<b><u>{}</u></b>"
 			}
 		},
 		"on-click": "~/.config/sway/scripts/terminal.sh calcurse"
@@ -101,13 +101,13 @@
 		"tooltip": false,
 		"format": "{icon}",
 		"format-icons": {
-			"notification": "󰂚<span foreground='#ff2c4b'><sup></sup></span>",
+			"notification": "󰂚<span foreground='#c9513a'><sup></sup></span>",
 			"none": "󰂚",
-			"dnd-notification": "󰂛<span foreground='#ff2c4b'><sup></sup></span>",
+			"dnd-notification": "󰂛<span foreground='#c9513a'><sup></sup></span>",
 			"dnd-none": "󰂛",
-			"inhibited-notification": "󰂚<span foreground='#ff2c4b'><sup></sup></span>",
+			"inhibited-notification": "󰂚<span foreground='#c9513a'><sup></sup></span>",
 			"inhibited-none": "󰂚",
-			"dnd-inhibited-notification": "󰂛<span foreground='#ff2c4b'><sup></sup></span>",
+			"dnd-inhibited-notification": "󰂛<span foreground='#c9513a'><sup></sup></span>",
 			"dnd-inhibited-none": "󰂛"
 		},
 		"return-type": "json",
