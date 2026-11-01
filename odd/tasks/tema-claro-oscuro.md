@@ -128,3 +128,22 @@ L5 (hallazgos de exploración, sesión de hoy):
 - `gsettings set org.gnome.desktop.interface gtk-theme Adwaita[-dark]` + `color-scheme prefer-[dark|light]` es lo que hace que GTK3 y libadwaita acompañen.
 - `sed -i` sobre un enlace simbólico lo reemplaza por un archivo regular: `customize.sh` de waybar tiene que editar `themes/*.css`, no `style.css`.
 - nvim: `badwolf` es solo oscuro; para claro se suma `EdenEast/nightfox` (`dayfox`), y el estado se lee de `$XDG_STATE_HOME/dotfiles/tema`.
+
+L6 (slices entregados, para que cada commit se revise solo):
+- `fff085c` — T2a: waybar + documento de feature + cobertura del mecanismo de enlaces en el spec del despliegue (527 líneas autoradas: el doc y el test del mecanismo van con la primera app que los usa).
+- `e937d53` — T2b: swaync + wofi.
+- `5c80d80` — T3a: paleta de sway en `config/sway/themes/` + foot con las dos paletas.
+- `8d4f221` — T3b: swaylock + wob + nvim (`config/theme.lua`, dayfox en claro, `apply()` como único camino).
+- Pendiente: T4 (script + spec), T5 (cableado), T6 (docs). El resto del feature se corta por unidad funcional, no por app, porque script y cableado no se pueden separar sin dejar un commit que no funciona.
+
+L7 (hallazgos de implementación):
+- `lazy.setup({ colorscheme = ... })` NO aplicaba el colorscheme en headless: el tema se aplica con `require("config.theme").apply()` después de `lazy.setup`, que además es el mismo camino que usa el toggle en vivo (`nvim --server ... --remote-expr`). Verificado: `state=light → colors=dayfox, Normal.bg=#e1e1db`; `state=dark → colors=badwolf, Normal.bg=nil` (transparencia intacta).
+- `config/nvim/lazy-lock.json` lo reescribió lazy en su formato y agregó las entradas que faltaban (nightfox, laravel.nvim, markdown-preview.nvim, nvim-nio, which-key.nvim). Ningún commit de plugin existente cambió.
+- swaync pasa de `exec_always` a `exec`: con `exec_always`, cada `reload` (y el toggle hace reload) reiniciaba el panel en vez de recargar su CSS con `-rs`.
+
+L8 (T4 entregado por `gentle-ai-worker`, revisado por el padre):
+- RED: spec antes del script, falla por ausencia del script (exit 2). GREEN: 75 pasos, 0 fallos. `shellcheck` sin avisos en los dos archivos.
+- Decisión del worker que el contrato no fijaba: `sesion_sway` acepta SWAYSOCK no vacío (en vez de exigir `-S`) para que el caso de test con SWAYSOCK como archivo regular sea observable; se acepta, es más tolerante en la sesión real.
+- Decisión del worker: logs separados `gsettings.log` y `reload.log` en el fixture (con un solo log, "gsettings tiene exactamente 2 entradas" y "reload vacío" son incompatibles). Se acepta.
+- Caso 10 extra: inserción de `initial-color-theme` cuando foot.ini no tiene la línea. Se acepta (rama del contrato que no estaba en la lista de casos).
+- Revisado por el padre: verificación previa de los seis payloads antes de escribir estado, enlaces relativos con `ln -sfn`, `sed` de una sola línea en foot.ini, gsettings tolerante, `recargar()` enteramente best-effort, stdout reservado a `status`.

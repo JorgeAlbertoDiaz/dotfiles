@@ -434,6 +434,39 @@ seleccionar_apps() {
 }
 
 # ---------------------------------------------------------------------------
+# Re-aplica el tema claro/oscuro persistido después de desplegar.
+#
+# Los enlaces de tema (style.css, sway/themes/current.conf, swaylock/config,
+# wob.ini) viven dentro de config/: el despliegue los copia apuntando al tema
+# por defecto (oscuro), así que sin este paso una corrida de dotfiles borraría
+# la elección del usuario. El script del tema es idempotente y no recarga nada
+# acá (--no-reload): la recarga se pregunta al final, como siempre.
+# ---------------------------------------------------------------------------
+aplicar_tema_persistido() {
+  local app lleva_tema=0
+  local tema_script="${HOME_DIR}/.config/sway/scripts/sway-theme.sh"
+
+  for app in "${apps_a_aplicar[@]}"; do
+    case "${app}" in
+      sway|waybar|swaync|wofi|foot|swaylock|wob) lleva_tema=1 ;;
+    esac
+  done
+  [[ ${lleva_tema} -eq 1 ]] || return 0
+
+  if [[ ! -x "${tema_script}" ]]; then
+    warn "No se aplicó el tema claro/oscuro: falta ${tema_script}"
+    return 0
+  fi
+
+  info "Re-aplicando el tema claro/oscuro persistido"
+  if "${tema_script}" apply --no-reload --quiet; then
+    ok "Tema aplicado: $("${tema_script}" status)"
+  else
+    warn "El tema claro/oscuro no se pudo re-aplicar; el escritorio queda con el tema por defecto."
+  fi
+}
+
+# ---------------------------------------------------------------------------
 # Recarga la config de sway si hay una sesión activa.
 # ---------------------------------------------------------------------------
 recargar_sway() {
@@ -538,6 +571,7 @@ fi
 
 podar_obsoletos
 escribir_inventario
+aplicar_tema_persistido
 
 for app in "${apps_a_aplicar[@]}"; do
   [[ "${app}" == "sway" ]] && recargar_sway

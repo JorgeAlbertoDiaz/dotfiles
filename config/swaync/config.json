@@ -48,6 +48,10 @@
             "command": "swaync-client -d -sw"
           },
           {
+            "label": "󰸌",
+            "command": "~/.config/sway/scripts/sway-theme.sh toggle"
+          },
+          {
             "label": "󰄄",
             "command": "grim -g \"$(slurp)\" - | swappy -f -"
           }
