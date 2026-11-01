@@ -42,10 +42,10 @@ S12. Los dos scripts nuevos de test se ejecutan sin root, sin red y sin flatpak 
 
 ## Tasks
 
-- [ ] T1 (S2, S3, S4, S5, S6, S7, S10) `scripts/02b-install-flatpak.sh`: flags `--all|--apps|--list|--help`, selección gum/confirm, detección de ya instaladas, validaciones. Spec propio (test-first).
-- [ ] T2 (S1, S8, S9) `install.sh`: entrada en el menú principal, componente `Aplicaciones Flatpak` en `COMPONENTES`, rama en `run_component` (`--all` en instalación completa, selección a mano), quitar la pregunta global. Spec de integración del menú (test-first).
-- [ ] T3 (S11) Docs: `docs/index.md` + `README.md`.
-- [ ] T4 Verificación: specs, `bash -n`, `shellcheck`, verificador independiente (toca el instalador = riesgo item 5).
+- [x] T1 (S2, S3, S4, S5, S6, S7, S10) `scripts/02b-install-flatpak.sh`: flags `--all|--apps|--list|--help`, selección gum/confirm, detección de ya instaladas, validaciones. Spec propio (test-first). → `3e8cbde` (33 pasos, 0 fallos)
+- [x] T2 (S1, S8, S9) `install.sh`: entrada en el menú principal, componente `Aplicaciones Flatpak` en `COMPONENTES`, rama en `run_component` (`--all` en instalación completa, selección a mano), quitar la pregunta global. Spec de integración del menú (test-first). → `d10fbdf` (15 pasos, 0 fallos)
+- [x] T3 (S11) Docs: `docs/index.md` + `README.md`. → `87bac73`
+- [ ] T4 Verificación: specs, `bash -n`, `shellcheck`, verificador independiente (toca el instalador = riesgo item 5). → en curso
 
 ## Log
 
@@ -58,3 +58,16 @@ L2 (hallazgos de exploración):
 - `scripts/02b-install-flatpak.sh` no acepta flags; verifica flatpak, registra flathub y recorre el archivo completo.
 - Patrón de selección múltiple ya usado en el repo: `gum choose --no-limit --height 12` + `mapfile` filtrando el elemento vacío (`scripts/05-install-fonts.sh`).
 - `flatpak` está en `packages/base.txt`, así que cualquier componente corre después de tenerlo.
+
+L3 (slices entregados, para que cada commit se revise solo):
+- `03ea798` — documento de feature (S1-S12) y hallazgos de exploración.
+- `d10fbdf` — `install.sh`: menú, componente, rama de `run_component` y baja de la pregunta global.
+- `3e8cbde` — `02b-install-flatpak.sh` con flags + su spec.
+- `87bac73` — docs (`docs/index.md`, `README.md`).
+- El orden de commits deja dos estados intermedios funcionales a propósito: el menú usa `02b` sin argumentos (que instala el catálogo completo) hasta que llega el commit con las flags.
+
+L4 (verificación propia):
+- Specs: `02b-install-flatpak-spec.sh` 33 pasos, `install-flatpak-menu-spec.sh` 15 pasos, `04-setup-dotfiles-spec.sh` 40 pasos; los tres en 0 fallos.
+- `bash -n` limpio en `install.sh` y los dos specs. `shellcheck -S warning` limpio en lo nuevo de este feature y en `02b`; en `install.sh` queda el `SC2034` de `REPO_DIR`, preexistente en `main` (verificado: dos coincidencias idénticas en `git show main:install.sh`), no tocado por este cambio.
+- Probes reales que no instalan nada: `--list` imprime los cuatro appids (exit 0); `--apps com.getpostman.Postman` (ya instalada) omite y sale 0 sin registrar flathub; `--apps org.ejemplo.NoExiste` sale 1 nombrando el appid; sin TTY sale 2 con el uso.
+- Nota de entorno: el caso interactivo del spec usa `script` (util-linux) para simular TTY y se saltea con exit 2 si falta.
