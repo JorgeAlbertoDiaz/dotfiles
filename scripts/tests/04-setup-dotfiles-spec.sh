@@ -46,6 +46,16 @@ assert_ejecutable() {
   if [[ -x "$1" ]]; then pasa "$2"; else falla "$2 ($1 no es ejecutable)"; fi
 }
 
+assert_enlace() {
+  local real=""
+  if [[ -L "$1" ]]; then real="$(readlink "$1")"; fi
+  if [[ "${real}" == "$2" ]]; then
+    pasa "$3"
+  else
+    falla "$3 (enlace: '${real}', esperado '${2}')"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # Fixture: repo mínimo + HOME con datos que el repo NO reconstruye.
 # ---------------------------------------------------------------------------
@@ -65,11 +75,17 @@ crear_fixture() {
 
   # config/ del repo de prueba.
   mkdir -p "${REPO}/config/appconf/sub" \
+           "${REPO}/config/appconf/themes" \
            "${REPO}/config/environment.d" \
            "${REPO}/config/home/.local/bin" \
            "${REPO}/config/home/.local/share/appa"
   printf 'conf v1\n' > "${REPO}/config/appconf/conf.ini"
   printf 'nested\n'  > "${REPO}/config/appconf/sub/nested.conf"
+  # Tema claro/oscuro: un archivo real por tema y un enlace al activo. El
+  # despliegue tiene que copiar el enlace COMO enlace (no el contenido).
+  printf 'tema oscuro\n' > "${REPO}/config/appconf/themes/dark.css"
+  printf 'tema claro\n'  > "${REPO}/config/appconf/themes/light.css"
+  ln -s themes/dark.css "${REPO}/config/appconf/style.css"
   printf '10-repo\n' > "${REPO}/config/environment.d/10-repo.conf"
   printf 'bashrc\n'  > "${REPO}/config/home/.bashrc"
   printf 'tool\n'    > "${REPO}/config/home/.local/bin/repo-tool"
@@ -132,6 +148,12 @@ assert_contenido "${FAKE_HOME}/.bashrc" "bashrc" \
   "despliega dotfiles de home"
 assert_ejecutable "${FAKE_HOME}/.local/bin/repo-tool" \
   "despliega binarios gestionados conservando el modo"
+assert_enlace "${FAKE_HOME}/.config/appconf/style.css" "themes/dark.css" \
+  "despliega el enlace del tema activo como enlace relativo"
+assert_contenido "${FAKE_HOME}/.config/appconf/style.css" "tema oscuro" \
+  "el enlace desplegado resuelve al archivo del tema"
+assert_contenido "${FAKE_HOME}/.config/appconf/themes/light.css" "tema claro" \
+  "despliega el tema no activo junto al enlace"
 
 assert_contenido "${FAKE_HOME}/.local/bin/herdr" "herdr-bin" \
   "conserva binarios de usuario (~/.local/bin/herdr)"
