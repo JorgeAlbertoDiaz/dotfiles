@@ -289,6 +289,10 @@ assert_contiene "${RELOAD_LOG}" "pkill -USR2 -x foot" \
   "claro recarga foot con SIGUSR2"
 assert_contiene "${RELOAD_LOG}" "swaync-client -rs" \
   "recarga swaync con swaync-client -rs"
+assert_contiene "${RELOAD_LOG}" "pkill -x wob" \
+  "la recarga limpia el OSD apilado de reloads viejos"
+assert_contiene "${RELOAD_LOG}" "pgrep -x tail" \
+  "la recarga busca los tail huérfanos del FIFO de wob"
 assert_contiene "${RELOAD_LOG}" "swaymsg reload" \
   "recarga sway con swaymsg reload"
 assert_contiene "${RELOAD_LOG}" "notify-send Tema Modo claro" \
@@ -339,5 +343,43 @@ assert_linea "${CONFIG}/foot/foot.ini" "font=JetBrainsMono Nerd Font:size=12" \
   "foot.ini sin la línea conserva font= intacta"
 
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Caso 11 — una app que no está desplegada se saltea, no rompe el tema.
+#
+# El escritorio puede tener sólo sway+waybar aplicados: el toggle tiene que
+# cambiar lo que existe y no fallar por las apps ausentes (si no, el autostart
+# re-aplicaría un tema a medias en cada inicio).
+# ---------------------------------------------------------------------------
+crear_fixture
+rm -rf "${CONFIG}/wob"
+correr light --no-reload
+assert_igual "${CODIGO}" "0" "app no desplegada (wob) no hace fallar el tema"
+assert_igual "$(cat "${STATE_HOME}/dotfiles/tema" 2>/dev/null || true)" "light" \
+  "app no desplegada igual escribe el estado"
+assert_enlace "${CONFIG}/waybar/style.css" "themes/light.css" \
+  "app no desplegada no impide aplicar las demás"
+assert_enlace "${CONFIG}/sway/themes/current.conf" "light.conf" \
+  "app no desplegada aplica sway igual"
+if [[ ! -e "${CONFIG}/wob" ]]; then
+  pasa "app no desplegada no se crea de la nada"
+else
+  falla "app no desplegada no se crea de la nada (existe ${CONFIG}/wob)"
+fi
+
+# ---------------------------------------------------------------------------
+# Caso 12 — foot sin foot.ini: se saltea con aviso, el resto se aplica.
+# ---------------------------------------------------------------------------
+crear_fixture
+rm -f "${CONFIG}/foot/foot.ini"
+correr light --no-reload
+assert_igual "${CODIGO}" "0" "foot sin foot.ini no hace fallar el tema"
+assert_enlace "${CONFIG}/waybar/style.css" "themes/light.css" \
+  "foot sin foot.ini no impide aplicar los enlaces"
+if [[ "${ERROR}" == *"foot"* ]]; then
+  pasa "foot sin foot.ini deja un aviso en stderr"
+else
+  falla "foot sin foot.ini deja un aviso en stderr (stderr: '${ERROR}')"
+fi
+
 printf '\n%d pasos, %d fallos\n' "${pasos}" "${fallos}"
 [[ ${fallos} -eq 0 ]]

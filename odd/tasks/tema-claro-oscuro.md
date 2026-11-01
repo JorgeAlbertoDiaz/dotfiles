@@ -147,3 +147,9 @@ L8 (T4 entregado por `gentle-ai-worker`, revisado por el padre):
 - Decisión del worker: logs separados `gsettings.log` y `reload.log` en el fixture (con un solo log, "gsettings tiene exactamente 2 entradas" y "reload vacío" son incompatibles). Se acepta.
 - Caso 10 extra: inserción de `initial-color-theme` cuando foot.ini no tiene la línea. Se acepta (rama del contrato que no estaba en la lista de casos).
 - Revisado por el padre: verificación previa de los seis payloads antes de escribir estado, enlaces relativos con `ln -sfn`, `sed` de una sola línea en foot.ini, gsettings tolerante, `recargar()` enteramente best-effort, stdout reservado a `status`.
+
+L9 (defectos que encontró el despliegue real, corregidos con test-first):
+- `~/.config/wob/` no existía (el CLI de `04-setup-dotfiles.sh` sólo aceptaba `home|sway|waybar|foot|environment.d|zsh|git`), y `ln` abortaba el `apply` a la mitad: los enlaces quedaban a medio cambiar y gsettings/foot sin aplicar. El spec nuevo cubre el caso "app no desplegada se saltea" y "foot sin foot.ini se saltea con aviso" (RED 4 fallos → GREEN).
+- El CLI del despliegue no reconocía swaync/wofi/swaylock/wob/nvim: la lista estaba escrita a mano. Ahora cualquier subdirectorio de `config/` se acepta por nombre, con caso propio en el spec del despliegue (RED 3 fallos → GREEN).
+- `swaymsg reload` no mata los procesos de `exec_always` (sway 1.12): se midieron **5 pares `tail|wob`** apilados compitiendo por el mismo FIFO, cada uno con el `wob.ini` de un tema distinto. Se agregó guard `pgrep -x wob` en autostart y limpieza del par en el toggle. Verificado en la sesión: 3 reloads seguidos dejan exactamente 1 wob.
+- Ojo con `pkill -f "tail -f ..."`: se mata a sí mismo cuando el patrón viaja en la línea de comando del shell que lo invoca (pasó durante la verificación). La limpieza busca `pgrep -x tail` y confirma el FIFO en `/proc/<pid>/cmdline`.

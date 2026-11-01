@@ -65,25 +65,41 @@ tema_actual() {
 }
 
 # Los temas son archivos reales del repo y el enlace activo apunta a uno. Se
-# comprueba que TODOS existen ANTES de escribir nada: si falta uno, dejar el
+# comprueba que existan ANTES de escribir nada: si falta uno, dejar el
 # escritorio con un enlace roto y a medio tema sería peor que no cambiar nada.
-verificar_tema() {
+#
+# Cada app participa con un enlace; el payload es su archivo de tema. Formato
+# de la tabla: <app>|<enlace relativo a CONFIG_HOME>|<payload relativo>.
+enlaces_de_tema() {
   local tema="$1"
-  local archivos=(
-    "${CONFIG_HOME}/waybar/themes/${tema}.css"
-    "${CONFIG_HOME}/swaync/themes/${tema}.css"
-    "${CONFIG_HOME}/wofi/themes/${tema}.css"
-    "${CONFIG_HOME}/sway/themes/${tema}.conf"
-    "${CONFIG_HOME}/swaylock/themes/${tema}.conf"
-    "${CONFIG_HOME}/wob/themes/${tema}.ini"
-  )
-  local f
-  for f in "${archivos[@]}"; do
-    if [[ ! -f "${f}" ]]; then
-      printf 'ERROR: falta el archivo de tema %s\n' "${f}" >&2
+  printf '%s\n' \
+    "waybar|waybar/style.css|waybar/themes/${tema}.css" \
+    "swaync|swaync/style.css|swaync/themes/${tema}.css" \
+    "wofi|wofi/style.css|wofi/themes/${tema}.css" \
+    "sway|sway/themes/current.conf|sway/themes/${tema}.conf" \
+    "swaylock|swaylock/config|swaylock/themes/${tema}.conf" \
+    "wob|wob/wob.ini|wob/themes/${tema}.ini"
+}
+
+# Una app está desplegada cuando existe su directorio en $CONFIG_HOME. Las que
+# no están se saltean: un escritorio puede tener sólo sway+waybar aplicados y el
+# tema tiene que cambiar lo que existe en vez de fallar por lo que falta (el
+# autostart re-aplica el tema en cada inicio, así que un fallo acá dejaría el
+# tema a medias en cada login).
+app_desplegada() {
+  [[ -d "${CONFIG_HOME}/$1" ]]
+}
+
+verificar_tema() {
+  local tema="$1" app="" enlace="" payload=""
+  while IFS='|' read -r app enlace payload; do
+    [[ -n "${app}" ]] || continue
+    app_desplegada "${app}" || continue
+    if [[ ! -f "${CONFIG_HOME}/${payload}" ]]; then
+      printf 'ERROR: falta el archivo de tema %s\n' "${CONFIG_HOME}/${payload}" >&2
       return 1
     fi
-  done
+  done < <(enlaces_de_tema "${tema}")
 }
 
 escribir_estado() {
@@ -94,15 +110,21 @@ escribir_estado() {
 
 # Enlaces RELATIVOS: siguen siendo válidos aunque $CONFIG_HOME se mueva, y
 # apuntan al archivo de tema del repo sin duplicar contenido. `-n` evita que
-# ln siga un enlace existente hacia un directorio.
+# ln siga un enlace existente hacia un directorio. El target se calcula
+# quitando el prefijo del directorio del enlace (waybar/style.css ->
+# themes/dark.css), para no repetir a mano las seis rutas.
 aplicar_enlaces() {
-  local tema="$1"
-  ln -sfn "themes/${tema}.css" "${CONFIG_HOME}/waybar/style.css"
-  ln -sfn "themes/${tema}.css" "${CONFIG_HOME}/swaync/style.css"
-  ln -sfn "themes/${tema}.css" "${CONFIG_HOME}/wofi/style.css"
-  ln -sfn "${tema}.conf" "${CONFIG_HOME}/sway/themes/current.conf"
-  ln -sfn "themes/${tema}.conf" "${CONFIG_HOME}/swaylock/config"
-  ln -sfn "themes/${tema}.ini" "${CONFIG_HOME}/wob/wob.ini"
+  local tema="$1" app="" enlace="" payload="" dir="" target=""
+  while IFS='|' read -r app enlace payload; do
+    [[ -n "${app}" ]] || continue
+    if ! app_desplegada "${app}"; then
+      aviso "aviso: ${app} no está desplegada; se saltea"
+      continue
+    fi
+    dir="$(dirname "${enlace}")"
+    target="${payload#"${dir}"/}"
+    ln -sfn "${target}" "${CONFIG_HOME}/${enlace}"
+  done < <(enlaces_de_tema "${tema}")
 }
 
 # foot no usa enlace: [colors-dark] y [colors-light] conviven en foot.ini y solo
@@ -166,6 +188,22 @@ recargar_nvim() {
   done
 }
 
+# Mata los `tail -f` que quedaron leyendo el FIFO de wob. Se buscan por nombre
+# de proceso EXACTO (`pgrep -x tail`) y se confirma el FIFO en
+# /proc/<pid>/cmdline: `pkill -f "tail -f ..."` es tentador pero puede matar
+# cualquier proceso cuya línea de comando contenga el patrón (se midió: se mata
+# a sí mismo cuando el patrón viaja en la línea del shell que lo invoca).
+limpiar_tails_fifo() {
+  [[ -n "${SWAYSOCK:-}" ]] || return 0
+  local pid cmdline
+  for pid in $(pgrep -x tail 2>/dev/null || true); do
+    cmdline="$(tr '\0' ' ' < "/proc/${pid}/cmdline" 2>/dev/null || true)"
+    if [[ "${cmdline}" == *"${SWAYSOCK}.wob"* ]]; then
+      kill "${pid}" 2>/dev/null || true
+    fi
+  done
+}
+
 # Recarga las apps YA abiertas. Todo es best-effort: el tema ya quedó aplicado y
 # un fallo aquí no debe deshacerlo, así que cada paso tolera errores.
 recargar() {
@@ -185,6 +223,13 @@ recargar() {
 
   # sway relee client.* con reload, solo si hay sesión.
   if pgrep -x sway >/dev/null 2>&1 && sesion_sway; then
+    # wob: el OSD del tema se levanta desde el exec_always del autostart, pero
+    # sway NO mata los procesos de exec_always al recargar. Sin limpiar, cada
+    # reload deja un par tail|wob más leyendo el mismo FIFO y el OSD muestra
+    # colores de temas distintos (o ninguno). Se matan los pares y el reload
+    # levanta uno nuevo, ya con el wob.ini del tema activo.
+    pkill -x wob >/dev/null 2>&1 || true
+    limpiar_tails_fifo
     swaymsg reload >/dev/null 2>&1 || true
   fi
 
