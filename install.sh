@@ -12,6 +12,7 @@
 #      - Conectar a red WiFi (scripts/06-network-wifi.sh)
 #      - Configurar red — estática/DHCP (scripts/07-network-config.sh)
 #      - Instalar fuentes Nerd Fonts (scripts/05-install-fonts.sh)
+#      - Instalar aplicaciones Flatpak (scripts/02b-install-flatpak.sh)
 #      - Aplicar dotfiles al sistema (scripts/04-setup-dotfiles.sh)
 #      - Salir
 #   5. Instala los componentes obligatorios (base, shell) y los opcionales
@@ -20,6 +21,9 @@
 #      plugins cuando se aplica la configuración. "Nvim" queda justo después
 #      de "Dotfiles": necesita la configuración ya desplegada en
 #      ~/.config/nvim para que lazy.nvim instale los plugins.
+#      "Aplicaciones Flatpak" es un componente más: en instalación completa
+#      instala todo el catálogo (--all) y elegido a mano abre la selección
+#      interactiva de apps.
 #
 # Si gum no puede instalarse, usa un flujo bash simple como fallback.
 set -euo pipefail
@@ -46,6 +50,7 @@ COMPONENTES=(
   "Dotfiles"
   "DroidCam"
   "Dictado por voz (Handy)"
+  "Aplicaciones Flatpak"
 )
 # ---------------------------------------------------------------------------
 # 1) Verificación de sistema y directorios base
@@ -144,6 +149,16 @@ run_component() {
       "${SCRIPT_DIR}/scripts/12-setup-handy.sh"
       info "Finalizado: dictado por voz (Handy)"
       ;;
+    "Aplicaciones Flatpak")
+      # En instalación completa se instala todo el catálogo; elegido a mano,
+      # se abre la selección interactiva de apps.
+      if [[ ${DOTFILES_TODOS} -eq 1 ]]; then
+        "${SCRIPT_DIR}/scripts/02b-install-flatpak.sh" --all
+      else
+        "${SCRIPT_DIR}/scripts/02b-install-flatpak.sh"
+      fi
+      info "Finalizado: aplicaciones Flatpak"
+      ;;
     "Dotfiles")
       # En instalación completa, 04 aplica todo sin preguntar su submenú.
       if [[ ${DOTFILES_TODOS} -eq 1 ]]; then
@@ -177,10 +192,11 @@ while true; do
       "Conectar a red WiFi"
       "Configurar red (estática/DHCP)"
       "Instalar fuentes Nerd Fonts"
+      "Instalar aplicaciones Flatpak"
       "Aplicar dotfiles al sistema"
       "Salir"
     )
-    if ! opcion_main="$(gum choose --height 7 "${OPCIONES_MENU[@]}")"; then
+    if ! opcion_main="$(gum choose --height 8 "${OPCIONES_MENU[@]}")"; then
       warn "Ninguna opción seleccionada."
       exit 1
     fi
@@ -193,6 +209,7 @@ while true; do
       "Conectar a red WiFi" \
       "Configurar red (estática/DHCP)" \
       "Instalar fuentes Nerd Fonts" \
+      "Instalar aplicaciones Flatpak" \
       "Aplicar dotfiles al sistema" \
       "Salir"; do
       [[ -n "${opcion_main}" ]] && break
@@ -219,6 +236,10 @@ while true; do
       ;;
     "Instalar fuentes Nerd Fonts")
       "${SCRIPT_DIR}/scripts/05-install-fonts.sh"
+      continue
+      ;;
+    "Instalar aplicaciones Flatpak")
+      "${SCRIPT_DIR}/scripts/02b-install-flatpak.sh"
       continue
       ;;
     "Aplicar dotfiles al sistema")
@@ -328,22 +349,10 @@ info "Instalando componentes obligatorios (base, shell)..."
 run_component base
 run_component shell
 
-# ---------------------------------------------------------------------------
-# Flatpak: paso opt-in tras la instalación de paquetes base/shell
-#     (02b comprueba que flatpak esté instalado antes de tocar flathub)
-# ---------------------------------------------------------------------------
-FLATPAK_MSG="¿Instalar aplicaciones Flatpak (Thunderbird, DBeaver, Postman, OnlyOffice)?"
-INSTALAR_FLATPAK=0
-if command -v gum &>/dev/null; then
-  gum confirm --default=false "${FLATPAK_MSG}" && INSTALAR_FLATPAK=1
-else
-  confirm "${FLATPAK_MSG}" && INSTALAR_FLATPAK=1
-fi
-if [[ ${INSTALAR_FLATPAK} -eq 1 ]]; then
-  "${SCRIPT_DIR}/scripts/02b-install-flatpak.sh"
-else
-  warn "Omitiendo la instalación de aplicaciones Flatpak"
-fi
+# La instalación de Flatpak es ahora el componente "Aplicaciones Flatpak"
+# (menú y COMPONENTES): aquí no hay pregunta global, así que existe un único
+# camino y nada que se desincronice. Base/shell ya quedaron instalados antes,
+# con lo que flatpak está disponible cuando el componente se ejecuta.
 
 # Fuentes automáticas: se ejecutan cuando no se eligieron explícitamente
 FONT_AUTO_DONE=0
