@@ -83,13 +83,13 @@ S14. Documentación: `docs/tema-claro-oscuro.md` explica la paleta, el estado, c
 
 ## Tasks
 
-- [ ] T1 (S11) Crear el documento, la rama y el esqueleto de `config/sway/themes/` + enlaces `themes/current.conf`.
-- [ ] T2 (S8, S11, S12) Mover la paleta de los CSS de waybar/swaync/wofi a `themes/dark.css` y `themes/light.css`, dejar `style.css` como enlace al tema por defecto y adaptar `customize.sh` de waybar. — commit 1
-- [ ] T3 (S1, S2, S3, S4) Separar la paleta de sway a `config/sway/themes/{dark,light}.conf`, agregar `[colors-light]` a foot, temas de swaylock y wob, y `theme.lua` + `dayfox` en nvim. — commit 2
-- [ ] T4 (S5, S6, S7, S8, S9, S10, S11) `config/sway/scripts/sway-theme.sh` (toggle/dark/light/status/apply) con tests ejecutables primero (RED) y luego implementación (GREEN). — commit 3
-- [ ] T5 (S5, S6, S13) Cablear: atajo `$mod+Shift+t`, botón en el menubar de swaync, `autostart.conf` (quitar el forzado de `Adwaita-dark`, aplicar tema) y hook en `scripts/04-setup-dotfiles.sh`. — commit 3
-- [ ] T6 (S14) Documentar y enlazar (`docs/tema-claro-oscuro.md`, `docs/index.md`, `README.md`, `docs/organizacion-sway.md`). — commit 4
-- [ ] T7 Verificación: spec en verde, `bash -n`, `shellcheck` (si está), aplicar dotfiles sobre el sistema y probar el toggle en la sesión real.
+- [x] T1 (S11) Crear el documento, la rama y el esqueleto de `config/sway/themes/` + enlaces `themes/current.conf`. → en `fff085c`
+- [x] T2 (S8, S11, S12) Mover la paleta de los CSS de waybar/swaync/wofi a `themes/dark.css` y `themes/light.css`, dejar `style.css` como enlace al tema por defecto y adaptar `customize.sh` de waybar. → `fff085c` (waybar), `e937d53` (swaync + wofi)
+- [x] T3 (S1, S2, S3, S4) Separar la paleta de sway a `config/sway/themes/{dark,light}.conf`, agregar `[colors-light]` a foot, temas de swaylock y wob, y `theme.lua` + `dayfox` en nvim. → `5c80d80` (sway + foot), `8d4f221` (swaylock + wob + nvim)
+- [x] T4 (S5, S6, S7, S8, S9, S10, S11) `config/sway/scripts/sway-theme.sh` (toggle/dark/light/status/apply) con tests ejecutables primero (RED) y luego implementación (GREEN). → `c14c694`, corregido en `f0023fe` (85 pasos, 0 fallos)
+- [x] T5 (S5, S6, S13) Cablear: atajo `$mod+Shift+t`, botón en el menubar de swaync, `autostart.conf` (quitar el forzado de `Adwaita-dark`, aplicar tema) y hook en `scripts/04-setup-dotfiles.sh`. → `daa2382`
+- [x] T6 (S14) Documentar y enlazar (`docs/tema-claro-oscuro.md`, `docs/index.md`, `README.md`, `docs/organizacion-sway.md`). → `a571bd1`
+- [x] T7 Verificación: spec en verde, `bash -n`, `shellcheck` (si está), aplicar dotfiles sobre el sistema y probar el toggle en la sesión real. → `f0023fe` y `fc7256e`; 85 + 48 pasos en verde; toggle real light→dark verificado (enlaces, foot.ini, gsettings, swaync vivo, un solo wob)
 
 ## Log
 
