@@ -1,0 +1,19 @@
+# ============================================================================
+#  Configuración de i3 — punto de entrada gestionado por el repo de dotfiles
+# ============================================================================
+# i3 no tiene configuración propia en esta máquina: corre con la que trae el
+# paquete en /etc/i3/config. En vez de duplicar ese archivo (que se
+# desactualizaría con cada actualización de openSUSE), este punto de entrada
+# lo hereda y agrega sólo los ajustes del repo en config.d/.
+#
+# Las rutas relativas de los include se resuelven desde ~/.config/i3/.
+# Validar sin arrancar i3:  i3 -C -c ~/.config/i3/config
+#
+# Referencia completa: man 5 i3 / https://i3wm.org/docs/userguide.html
+
+# Base del sistema (atajos y arranque por defecto del paquete i3)
+include /etc/i3/config
+
+# Ajustes propios del repo (se cargan después: pueden usar las variables que
+# defina /etc/i3/config y sobreescribir atajos si hiciera falta)
+include config.d/*.conf

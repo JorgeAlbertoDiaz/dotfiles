@@ -68,7 +68,9 @@ fuente (familia y tamaño) sobre los archivos del repo.
 ```text
 config/
 ├── home/                      # .bashrc, .zshrc, .gitconfig, .inputrc, .profile → $HOME
+│                              # (.local/share/com.pais.handy/ → ajustes de Handy)
 ├── sway/                      # config + config.d/ (+ customize.sh) → ~/.config/sway
+├── i3/                        # config + config.d/ (hereda /etc/i3/config) → ~/.config/i3
 ├── foot/                      # foot.ini (+ customize.sh) → ~/.config/foot
 ├── waybar/                    # config, style.css (+ customize.sh) → ~/.config/waybar
 └── environment.d/             # chromium.conf, nvidia.conf, path.conf → ~/.config/environment.d
@@ -120,6 +122,26 @@ falta, fontconfig usará un fallback (p. ej. DejaVu Sans Mono).
 > `fc-match "JetBrainsMono Nerd Font"` (debe devolver la Nerd Font, no Adwaita)
 > y con `fc-list :charset=f057f family` (glifo de volumen, sin cobertura ⇒
 > falta la fuente).
+
+### Componente `Dictado por voz (Handy)`
+
+Dictado offline con atajos en sway e i3: se aprieta `Super+Shift+d`, se habla
+y el texto aparece en la ventana enfocada. `scripts/12-setup-handy.sh`
+instala el RPM oficial de [Handy](https://github.com/cjpais/Handy) (pinneado
+por versión y SHA-256, porque no está en los repos de openSUSE) y despliega
+los ajustes por defecto: español fijado, modelo Whisper Large v3 y pegado por
+portapapeles.
+
+| Entorno | Atajo | Archivo |
+|---|---|---|
+| sway | `Super+Shift+d` | `config/sway/keybindings/applications.conf` |
+| i3 | `Super+Shift+d` | `config/i3/config.d/60-handy.conf` |
+| sway/i3 | arranque oculto en bandeja | `config/sway/features/autostart.conf`, `config/i3/config.d/60-handy.conf` |
+
+`config/i3/config` es un punto de entrada nuevo que hereda `/etc/i3/config`
+con `include` y suma sólo `config.d/`: así el repo no duplica lo que trae el
+paquete i3. Detalle completo, ajustes versionados y verificación sin GUI en
+[handy.md](./handy.md).
 
 > 💡 Si `gum` no pudiera instalarse (p. ej. sin red), `install.sh` usa un
 > flujo de confirmación simple con bash.

@@ -1,0 +1,15 @@
+# Dictado por voz offline (Handy) — dependencias del RPM oficial.
+#
+# Handy NO está en los repos de openSUSE: el RPM se baja de GitHub Releases y
+# lo instala scripts/12-setup-handy.sh. Acá van sólo sus dependencias, sacadas
+# de `rpm -qpR Handy-0.9.8-1.x86_64.rpm`.
+libwebkit2gtk-4_1-0
+libappindicator3-1
+libgtk-layer-shell0
+libgtk-3-0
+compatlibopenblas_pthreads0
+# Inyección del texto en la ventana enfocada.
+# xdotool: X11 (i3). wtype: Wayland (sway). wl-clipboard: portapapeles en sway.
+xdotool
+wtype
+wl-clipboard
