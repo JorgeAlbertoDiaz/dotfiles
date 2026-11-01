@@ -105,7 +105,7 @@ if [[ \$# -ge 3 && "\$1" == "list" && "\$2" == "--app" && "\$3" == "--columns=ap
   [[ -f "${INSTALADAS}" ]] && cat "${INSTALADAS}"
   exit 0
 fi
-printf '%s' "\$(basename "\$0")" >> "${LOG}"
+printf '%s' "\${0##*/}" >> "${LOG}"
 for a in "\$@"; do printf ' %s' "\${a}" >> "${LOG}"; done
 printf '\n' >> "${LOG}"
 exit 0
@@ -114,7 +114,7 @@ EOF
   cat > "${STUBS}/gum" <<EOF
 #!/usr/bin/env bash
 set -uo pipefail
-printf '%s' "\$(basename "\$0")" >> "${LOG}"
+printf '%s' "\${0##*/}" >> "${LOG}"
 for a in "\$@"; do printf ' %s' "\${a}" >> "${LOG}"; done
 printf '\n' >> "${LOG}"
 if [[ "\$1" == "choose" ]]; then
@@ -174,10 +174,16 @@ run_flatpak() {
 }
 
 # Corre el script bajo un PTY (para que [[ -t 0 && -t 1 ]] sea verdadero).
+# run_flatpak_pty permite elegir el PATH (con o sin gum) y alimentar respuestas
+# por stdin, que es como el fallback de `confirm` lee las preguntas.
+run_flatpak_pty() {
+  local path_env="$1" respuestas="${2:-}" cmd
+  cmd="cd '${WORK}' && PATH='${path_env}' timeout 60 bash '${REPO}/scripts/02b-install-flatpak.sh'"
+  printf '%s' "${respuestas}" | script -qec "${cmd}" "${PTY_OUT}" >/dev/null 2>&1
+}
+
 run_flatpak_interactivo() {
-  local cmd
-  cmd="cd '${WORK}' && PATH='${STUBS}:${PATH}' timeout 60 bash '${REPO}/scripts/02b-install-flatpak.sh'"
-  script -qec "${cmd}" "${PTY_OUT}" >/dev/null 2>&1
+  run_flatpak_pty "${STUBS}:${PATH}"
 }
 
 crear_fixture
@@ -323,5 +329,30 @@ assert_sin_log "interactivo sin selección no registra flathub ni instala"
 assert_contiene "${PTY_OUT}" "No se seleccionó" "interactivo sin selección avisa"
 
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Caso 13 — sin gum pero CON TTY: se pregunta app por app (S2).
+#
+# Sin gum no hay menú, pero negarse a hacer nada rompería el instalador: su
+# selección de componentes sin gum usa confirmaciones, y abortar acá con exit 2
+# terminaría la instalación entera. Se pregunta una por una; las ya instaladas
+# ni se preguntan.
+# ---------------------------------------------------------------------------
+nueva_corrida
+# Catálogo: DBeaver, Postman, Thunderbird, OnlyOffice. Se acepta sólo Postman.
+run_flatpak_pty "${MIN_BIN_NO_GUM}" $'n\ns\nn\nn\n'
+rc=$?
+[[ ${rc} -eq 0 ]] && pasa "sin gum con TTY pregunta app por app y sale 0" || falla "sin gum con TTY sale 0 (exit ${rc})"
+assert_log "$(log_esperado com.getpostman.Postman)" \
+  "sin gum instala sólo las confirmadas, en orden del catálogo"
+
+# Sin gum, una ya instalada no se pregunta ni se reinstala.
+nueva_corrida
+printf 'com.getpostman.Postman\n' > "${INSTALADAS}"
+run_flatpak_pty "${MIN_BIN_NO_GUM}" $'s\nn\nn\n'
+rc=$?
+[[ ${rc} -eq 0 ]] && pasa "sin gum con una ya instalada sale 0" || falla "sin gum con una ya instalada sale 0 (exit ${rc})"
+assert_log "$(log_esperado io.dbeaver.DBeaverCommunity)" \
+  "sin gum no reinstala la ya instalada"
+
 printf '\n%d pasos, %d fallos\n' "${pasos}" "${fallos}"
 [[ ${fallos} -eq 0 ]]

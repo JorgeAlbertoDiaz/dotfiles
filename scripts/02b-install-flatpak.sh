@@ -192,12 +192,15 @@ case "${MODO}" in
     done
     ;;
   *)
-    # Modo interactivo (MODO vacío): requiere gum Y TTY.
-    if ! command -v gum &>/dev/null || ! [[ -t 0 && -t 1 ]]; then
-      error "Sin TTY o sin gum no se puede elegir; usá --all o --apps."
+    # Modo interactivo (MODO vacío): lo único imprescindible es un TTY. Con gum
+    # se elige con menú; sin gum se pregunta app por app (ver sección 7), igual
+    # que hace common.sh con confirm. Sin TTY no hay dónde preguntar: uso y 2.
+    if ! [[ -t 0 && -t 1 ]]; then
+      error "Sin TTY no se puede elegir; usá --all o --apps."
       usage >&2
       exit 2
     fi
+    command -v gum >/dev/null 2>&1 || info "gum no está disponible; se pregunta aplicación por aplicación."
     ;;
 esac
 
@@ -222,7 +225,7 @@ esta_instalada() {
 }
 
 # ---------------------------------------------------------------------------
-# 7) Selección interactiva (gum multi-selección, como en 05-install-fonts).
+# 7) Selección interactiva (gum multi-selección; sin gum, confirm por app).
 # ---------------------------------------------------------------------------
 if [[ -z "${MODO}" ]]; then
   etiquetas=()
@@ -234,31 +237,46 @@ if [[ -z "${MODO}" ]]; then
     fi
   done
 
-  seleccion="$(gum choose --no-limit --height 12 \
-    --header "Aplicaciones Flatpak a instalar (Espacio=seleccionar, Enter=continuar):" \
-    "${etiquetas[@]}")" || {
-    warn "Selección cancelada; no se instalará nada."
-    exit 0
-  }
-
-  elegidas=()
-  mapfile -t elegidas <<< "${seleccion}"
-  filtradas=()
-  for item in "${elegidas[@]}"; do
-    [[ -n "${item}" ]] && filtradas+=("${item}")
-  done
-
   elegidas_appids=()
-  for item in "${filtradas[@]}"; do
-    # Quitar el sufijo "(instalada)" que agrega el menú y mapear al appid:
-    # nunca se instala una etiqueta.
-    app="${item% (instalada)}"
-    if contiene "${app}" "${catalogo[@]}"; then
-      elegidas_appids+=("${app}")
-    else
-      warn "Selección no reconocida; se ignora: ${item}"
-    fi
-  done
+  if command -v gum >/dev/null 2>&1; then
+    seleccion="$(gum choose --no-limit --height 12 \
+      --header "Aplicaciones Flatpak a instalar (Espacio=seleccionar, Enter=continuar):" \
+      "${etiquetas[@]}")" || {
+      warn "Selección cancelada; no se instalará nada."
+      exit 0
+    }
+
+    elegidas=()
+    mapfile -t elegidas <<< "${seleccion}"
+    filtradas=()
+    for item in "${elegidas[@]}"; do
+      [[ -n "${item}" ]] && filtradas+=("${item}")
+    done
+
+    for item in "${filtradas[@]}"; do
+      # Quitar el sufijo "(instalada)" que agrega el menú y mapear al appid:
+      # nunca se instala una etiqueta.
+      app="${item% (instalada)}"
+      if contiene "${app}" "${catalogo[@]}"; then
+        elegidas_appids+=("${app}")
+      else
+        warn "Selección no reconocida; se ignora: ${item}"
+      fi
+    done
+  else
+    # Fallback sin gum: una pregunta por app, como en el resto del instalador
+    # (su selección de componentes sin gum también usa confirmaciones). Las ya
+    # instaladas ni se preguntan: reinstalarlas no aporta y confunde.
+    for app in "${catalogo[@]}"; do
+      if esta_instalada "${app}"; then
+        info "Ya instalada, se omite: ${app}"
+        continue
+      fi
+      if confirm "¿Instalar ${app}?"; then
+        elegidas_appids+=("${app}")
+      fi
+    done
+  fi
 
   if [[ ${#elegidas_appids[@]} -eq 0 ]]; then
     warn "No se seleccionó ninguna aplicación."

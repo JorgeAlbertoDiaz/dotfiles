@@ -95,7 +95,8 @@ Más detalles en [docs/index.md](docs/index.md).
   en `~/.config/nvim`. El script instala lazy.nvim y el set de plugins en
   `${XDG_DATA_HOME:-~/.local/share}/nvim`, sin sudo. Requiere `neovim` instalado
   (viene en "Dev Core", `packages/dev-core.txt`). La configuración declarativa
-  vive en `config/nvim/` y la despliega `scripts/04-setup-dotfiles.sh`.- **Aplicaciones Flatpak**: están en el menú principal del instalador
+  vive en `config/nvim/` y la despliega `scripts/04-setup-dotfiles.sh`.
+- **Aplicaciones Flatpak**: están en el menú principal del instalador
   (`Instalar aplicaciones Flatpak`) y como componente de la selección múltiple.
   El catálogo es `packages/flatpak-apps.txt` y las apps se eligen de a una; las
   ya instaladas se marcan `(instalada)` y no se reinstalan, y la "Instalación

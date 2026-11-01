@@ -6,7 +6,7 @@ Agregar al menú principal del instalador una entrada para instalar aplicaciones
 
 S1. El menú principal de `install.sh` muestra una entrada `Instalar aplicaciones Flatpak`, entre las opciones de utilidades y `Salir`, y elegirla ejecuta el paso Flatpak y vuelve al menú (no aborta la instalación).
 
-S2. El paso Flatpak permite **elegir qué apps instalar** del catálogo `packages/flatpak-apps.txt`. Sin argumentos abre una selección múltiple (gum `--no-limit`; sin gum, confirmación app por app).
+S2. El paso Flatpak permite **elegir qué apps instalar** del catálogo `packages/flatpak-apps.txt`. Sin argumentos abre una selección múltiple con gum (`--no-limit`); si gum no está pero hay TTY, pregunta app por app con `confirm` (las ya instaladas no se preguntan), igual que el resto del instalador. Es obligatorio que sin gum **no** aborte: la selección de componentes sin gum llama al paso con confirmaciones y un `exit 2` ahí terminaría la instalación entera.
 
 S3. Interfaz no interactiva del paso Flatpak:
 
@@ -24,7 +24,8 @@ S4. `--list` es de sólo lectura: no requiere que flatpak esté instalado ni toc
 S5. Errores explícitos, sin instalar nada:
 - appid pedido con `--apps` que no está en el catálogo → mensaje que lo nombra, exit 1;
 - catálogo ausente o vacío → mensaje, exit 1 (vacío: exit 0 con aviso, igual que hoy);
-- sin TTY/gum y sin `--all`/`--apps` → mensaje de uso, exit 2 (nunca "no hace nada" en silencio).
+- sin TTY y sin `--all`/`--apps` → mensaje de uso, exit 2 (nunca "no hace nada" en silencio);
+- catálogo vacío: `--list` imprime nada y sale 0 (es una lectura, no un error); los demás modos avisan y salen 0.
 
 S6. `flatpak` no instalado → aviso `flatpak no instalado — instalalo vía packages/base.txt primero`, exit 0, sin registrar flathub.
 
@@ -71,3 +72,9 @@ L4 (verificación propia):
 - `bash -n` limpio en `install.sh` y los dos specs. `shellcheck -S warning` limpio en lo nuevo de este feature y en `02b`; en `install.sh` queda el `SC2034` de `REPO_DIR`, preexistente en `main` (verificado: dos coincidencias idénticas en `git show main:install.sh`), no tocado por este cambio.
 - Probes reales que no instalan nada: `--list` imprime los cuatro appids (exit 0); `--apps com.getpostman.Postman` (ya instalada) omite y sale 0 sin registrar flathub; `--apps org.ejemplo.NoExiste` sale 1 nombrando el appid; sin TTY sale 2 con el uso.
 - Nota de entorno: el caso interactivo del spec usa `script` (util-linux) para simular TTY y se saltea con exit 2 si falta.
+
+L5 (verificador independiente, hallazgos atendidos):
+- **Bloqueante (conflicto en mi propio spec):** S2 pedía "sin gum, confirmación app por app" y S5 pedía "sin TTY/gum → exit 2". El script siguió S5, y eso rompía el instalador: su selección de componentes sin gum llama al paso sin argumentos, así que un `exit 2` bajo `set -e` abortaba la instalación completa. Resuelto implementando el fallback de `confirm` (S2 manda sobre gum; S5 queda sólo para "sin TTY") con dos casos nuevos en el spec (37 pasos, 0 fallos). Al escribirlos apareció un fixture frágil: el stub usaba `basename`, ausente en el PATH mínimo del caso; ahora usa `${0##*/}`.
+- Advisory: `--list` con catálogo vacío imprime nada y sale 0 sin aviso → se documenta en S5 (una lectura no es un error).
+- Advisory: `README.md` tenía el bullet de Flatpak pegado al anterior por falta de salto de línea → corregido.
+- Advisory preexistente (no tocado, fuera de alcance): la instalación completa ejecuta `Escritorio Sway` dos veces (`install.sh:383-386`, idéntico en `main`).
