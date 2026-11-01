@@ -95,4 +95,9 @@ Más detalles en [docs/index.md](docs/index.md).
   en `~/.config/nvim`. El script instala lazy.nvim y el set de plugins en
   `${XDG_DATA_HOME:-~/.local/share}/nvim`, sin sudo. Requiere `neovim` instalado
   (viene en "Dev Core", `packages/dev-core.txt`). La configuración declarativa
-  vive en `config/nvim/` y la despliega `scripts/04-setup-dotfiles.sh`.
+  vive en `config/nvim/` y la despliega `scripts/04-setup-dotfiles.sh`.- El escritorio tiene **tema claro y oscuro** y se cambia desde el botón del
+  centro de notificaciones o con `Super+Shift+t`. Cada app tiene un archivo
+  nativo por tema y el archivo que lee es un enlace simbólico al tema activo; el
+  estado vive en `~/.local/state/dotfiles/tema`. `04-setup-dotfiles.sh`
+  re-aplica el tema elegido al final de cada corrida. Detalle en
+  [docs/tema-claro-oscuro.md](docs/tema-claro-oscuro.md).
