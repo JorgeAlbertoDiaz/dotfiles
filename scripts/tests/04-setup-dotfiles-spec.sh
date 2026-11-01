@@ -312,5 +312,30 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Caso 11 — cualquier app de config/ se puede pedir por nombre (CLI).
+#
+# La lista de componentes del CLI no puede quedar desincronizada de config/:
+# un app nueva (swaync, wofi, swaylock, wob, ...) tiene que poder aplicarse
+# sola, igual que se elige en el menú interactivo.
+# ---------------------------------------------------------------------------
+crear_fixture
+if aplicar appconf >/dev/null 2>&1; then
+  pasa "aplicar <app> por nombre sale 0"
+else
+  falla "aplicar <app> por nombre sale 0 (el CLI no reconoce la app)"
+fi
+assert_contenido "${FAKE_HOME}/.config/appconf/conf.ini" "conf v1" \
+  "aplicar <app> despliega esa app"
+assert_enlace "${FAKE_HOME}/.config/appconf/style.css" "themes/dark.css" \
+  "aplicar <app> despliega sus enlaces de tema"
+assert_no_existe "${FAKE_HOME}/.bashrc" \
+  "aplicar <app> no aplica home ni otras apps"
+if grep -Fq 'home'$'\t' "${MANIFEST}" 2>/dev/null; then
+  falla "aplicar <app> no anota home en el inventario"
+else
+  pasa "aplicar <app> no anota home en el inventario"
+fi
+
 printf '\n%d pasos, %d fallos\n' "${pasos}" "${fallos}"
 [[ ${fallos} -eq 0 ]]

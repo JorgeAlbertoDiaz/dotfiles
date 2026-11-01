@@ -9,6 +9,9 @@
 #   ./scripts/04-setup-dotfiles.sh zsh         # aplica solo ~/.zshrc
 #   ./scripts/04-setup-dotfiles.sh git         # aplica solo ~/.gitconfig
 #
+# Cualquier subdirectorio de config/ se puede pedir por nombre (sway, waybar,
+# swaync, wofi, foot, swaylock, wob, nvim, ...).
+#
 # Despliegue y limpieza acotada
 # -----------------------------
 # El repo es la fuente de verdad: en cada corrida se recorre config/ y se
@@ -493,8 +496,18 @@ if [[ $# -gt 0 ]]; then
   for arg in "$@"; do
     case "${arg}" in
       todos|all) elegidos=("Todos") ;;
-      home|sway|waybar|foot|environment.d|zsh|git) elegidos+=("${arg}") ;;
-      *) warn "Componente desconocido, ignorado: ${arg}" ;;
+      # Acciones internas que no son apps de config/.
+      home|zsh|git) elegidos+=("${arg}") ;;
+      *)
+        # Cualquier app de config/ se acepta por nombre: la lista se calcula
+        # desde el repo, nunca se escribe a mano, así que agregar swaync, wofi,
+        # swaylock o wob no requiere tocar este case.
+        if [[ -d "${CONFIG_DIR}/${arg}" ]]; then
+          elegidos+=("${arg}")
+        else
+          warn "Componente desconocido, ignorado: ${arg}"
+        fi
+        ;;
     esac
   done
   [[ ${#elegidos[@]} -eq 0 ]] && { error "Sin componentes válidos."; exit 1; }
