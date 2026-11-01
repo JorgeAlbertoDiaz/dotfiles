@@ -1,0 +1,67 @@
+/* style.css — tema CLARO (rust-light) para wofi
+   Este archivo lo elige scripts/sway-theme.sh: ~/.config/wofi/style.css es un
+   enlace simbólico a themes/dark.css o themes/light.css. No edites el enlace:
+   cambiá acá (o corré `sway-theme.sh dark|light|toggle`). wofi lee el CSS al
+   abrirse, así que el cambio se ve en el próximo lanzamiento.
+
+   Paleta del tema rust (mdbook), modo claro: bg #e1e1db, fg #262625,
+   superficie #d9d9d3, superficie alterna #c1c1bb, acento #e69f67 (relleno),
+   azul #2b79a2, divisor #b4b4ac.
+   Detalle de roles en docs/tema-claro-oscuro.md. */
+
+* {
+	font-family: "JetBrainsMono Nerd Font", "FiraCode Nerd Font", sans-serif;
+	font-size: 14px;
+}
+
+window {
+	background-color: #e1e1db;
+	border: 2px solid #e69f67;
+	border-radius: 6px;
+}
+
+#input {
+	margin: 6px;
+	padding: 8px;
+	border: 1px solid #b4b4ac;
+	border-radius: 4px;
+	background-color: #d9d9d3;
+	color: #262625;
+	caret-color: #2b79a2;
+}
+
+#input:focus {
+	border: 1px solid #b38f6b;
+}
+
+#inner-box,
+#outer-box {
+	margin: 4px;
+}
+
+#scroll {
+	margin: 0;
+}
+
+#entry {
+	padding: 6px 8px;
+	border-radius: 4px;
+	color: #262625;
+}
+
+#entry:hover {
+	background-color: #c1c1bb;
+}
+
+#entry:selected {
+	background-color: #e69f67;
+	color: #262625;
+}
+
+#text:selected {
+	color: #262625;
+}
+
+#img {
+	margin-right: 8px;
+}
