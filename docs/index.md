@@ -113,6 +113,14 @@ waybar), qué fuente y tamaño aplicar; los cambios quedan en el repo y
 `04-setup-dotfiles.sh` los copia al aplicarlos. Si una fuente configurada
 falta, fontconfig usará un fallback (p. ej. DejaVu Sans Mono).
 
+> ⚠️ Waybar declara `JetBrainsMono Nerd Font` en `config/waybar/style.css`. Si
+> esa familia no está instalada, los glifos de íconos (`󰕿`, `󰂚`, `󰃰`, …) caen
+> en cualquier fuente que los tenga o directamente no se dibujan: se ven
+> cuadraditos, íconos cambiados o letras en lugar de símbolos. Verificar con
+> `fc-match "JetBrainsMono Nerd Font"` (debe devolver la Nerd Font, no Adwaita)
+> y con `fc-list :charset=f057f family` (glifo de volumen, sin cobertura ⇒
+> falta la fuente).
+
 > 💡 Si `gum` no pudiera instalarse (p. ej. sin red), `install.sh` usa un
 > flujo de confirmación simple con bash.
 
