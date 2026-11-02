@@ -376,7 +376,10 @@ Perfiles.
 
 Centro de control.
 
-- Temas
+- Temas — **entregado**: claro/oscuro con un archivo nativo por tema y enlaces
+  simbólicos al activo, toggle desde el menubar de swaync y `Super+Shift+t`. Ver
+  [tema-claro-oscuro.md](./tema-claro-oscuro.md). Sigue vivo el principio de la
+  Fase 0: no hay generadores, el tema es archivos reales.
 - Notificaciones
 - Widgets
 - Atajos

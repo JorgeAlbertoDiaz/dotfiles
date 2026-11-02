@@ -9,6 +9,9 @@
 #   ./scripts/04-setup-dotfiles.sh zsh         # aplica solo ~/.zshrc
 #   ./scripts/04-setup-dotfiles.sh git         # aplica solo ~/.gitconfig
 #
+# Cualquier subdirectorio de config/ se puede pedir por nombre (sway, waybar,
+# swaync, wofi, foot, swaylock, wob, nvim, ...).
+#
 # Despliegue y limpieza acotada
 # -----------------------------
 # El repo es la fuente de verdad: en cada corrida se recorre config/ y se
@@ -434,6 +437,39 @@ seleccionar_apps() {
 }
 
 # ---------------------------------------------------------------------------
+# Re-aplica el tema claro/oscuro persistido después de desplegar.
+#
+# Los enlaces de tema (style.css, sway/themes/current.conf, swaylock/config,
+# wob.ini) viven dentro de config/: el despliegue los copia apuntando al tema
+# por defecto (oscuro), así que sin este paso una corrida de dotfiles borraría
+# la elección del usuario. El script del tema es idempotente y no recarga nada
+# acá (--no-reload): la recarga se pregunta al final, como siempre.
+# ---------------------------------------------------------------------------
+aplicar_tema_persistido() {
+  local app lleva_tema=0
+  local tema_script="${HOME_DIR}/.config/sway/scripts/sway-theme.sh"
+
+  for app in "${apps_a_aplicar[@]}"; do
+    case "${app}" in
+      sway|waybar|swaync|wofi|foot|swaylock|wob) lleva_tema=1 ;;
+    esac
+  done
+  [[ ${lleva_tema} -eq 1 ]] || return 0
+
+  if [[ ! -x "${tema_script}" ]]; then
+    warn "No se aplicó el tema claro/oscuro: falta ${tema_script}"
+    return 0
+  fi
+
+  info "Re-aplicando el tema claro/oscuro persistido"
+  if "${tema_script}" apply --no-reload --quiet; then
+    ok "Tema aplicado: $("${tema_script}" status)"
+  else
+    warn "El tema claro/oscuro no se pudo re-aplicar; el escritorio queda con el tema por defecto."
+  fi
+}
+
+# ---------------------------------------------------------------------------
 # Recarga la config de sway si hay una sesión activa.
 # ---------------------------------------------------------------------------
 recargar_sway() {
@@ -460,8 +496,18 @@ if [[ $# -gt 0 ]]; then
   for arg in "$@"; do
     case "${arg}" in
       todos|all) elegidos=("Todos") ;;
-      home|sway|waybar|foot|environment.d|zsh|git) elegidos+=("${arg}") ;;
-      *) warn "Componente desconocido, ignorado: ${arg}" ;;
+      # Acciones internas que no son apps de config/.
+      home|zsh|git) elegidos+=("${arg}") ;;
+      *)
+        # Cualquier app de config/ se acepta por nombre: la lista se calcula
+        # desde el repo, nunca se escribe a mano, así que agregar swaync, wofi,
+        # swaylock o wob no requiere tocar este case.
+        if [[ -d "${CONFIG_DIR}/${arg}" ]]; then
+          elegidos+=("${arg}")
+        else
+          warn "Componente desconocido, ignorado: ${arg}"
+        fi
+        ;;
     esac
   done
   [[ ${#elegidos[@]} -eq 0 ]] && { error "Sin componentes válidos."; exit 1; }
@@ -538,6 +584,7 @@ fi
 
 podar_obsoletos
 escribir_inventario
+aplicar_tema_persistido
 
 for app in "${apps_a_aplicar[@]}"; do
   [[ "${app}" == "sway" ]] && recargar_sway

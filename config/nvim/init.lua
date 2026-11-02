@@ -59,7 +59,10 @@ if vim.uv.fs_stat(lazypath) then
     -- badwolf is lazy-loaded, so lazy needs a colorscheme to draw its own
     -- progress UI while installing. That is `install.colorscheme`, and it must
     -- be a builtin that needs no plugin: habamax ships with Neovim.
-    colorscheme = "badwolf",
+    --
+    -- The colorscheme of the finished session is applied by
+    -- config.theme.apply() below, because it follows the desktop theme
+    -- (badwolf in dark, dayfox in light).
     install = { colorscheme = { "habamax" } },
     ui = { border = "rounded" },
     -- Repaint on FocusGained/ShellCmdPost and re-stat on CursorHold, so
@@ -91,6 +94,14 @@ if vim.uv.fs_stat(lazypath) then
       { import = "plugins" },
     },
   })
+
+  -- El colorscheme se aplica acá, después del manager, y no con la opción
+  -- `colorscheme` de lazy.setup: esa opción la resuelve lazy por su cuenta y en
+  -- headless no llegaba a aplicarse. `config.theme.apply()` es exactamente lo
+  -- mismo que ejecuta el toggle del escritorio sobre una instancia abierta
+  -- (`nvim --server <socket> --remote-expr`), así que arranque y cambio en vivo
+  -- pasan por un único camino: badwolf en oscuro, dayfox en claro.
+  require("config.theme").apply()
 
   -- vim.lsp.config is a runtime API, not a plugin: registering the servers here
   -- means a language server starts on the first buffer of its filetype instead

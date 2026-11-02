@@ -1,0 +1,112 @@
+/* style.css — tema OSCURO (rust-dark)
+   Este archivo lo elige scripts/sway-theme.sh: ~/.config/waybar/style.css es un
+   enlace simbólico a themes/dark.css o themes/light.css. No edites el enlace:
+   cambiá acá (o corré `sway-theme.sh dark|light|toggle`).
+
+   Paleta del tema rust (mdbook): bg #2b2b27, fg #cecece, superficie #33322e,
+   superficie alterna #3b3b37, acento #e69f67, azul #4ea8d6, atenuado #8a8b99.
+   Detalle de roles en docs/tema-claro-oscuro.md. */
+
+* {
+	/* Cambia esto por tu Nerd Font favorita.
+	   El ORDEN importa: GTK usa la primera familia que exista en el sistema, y
+	   "Font Awesome 6 Free" es una fuente de ICONOS cuyos glifos de / : ° í están
+	   vacíos: si queda primera, esos caracteres desaparecen de la barra (la fecha
+	   se veía "01102026 0835"). Va primero la fuente de texto, como en wofi y
+	   swaync; los íconos Nerd Font los aporta la propia fuente de texto. */
+	font-family: "JetBrainsMono Nerd Font", "FiraCode Nerd Font", sans-serif;
+	font-size: 16px;
+	border: none;
+	border-radius: 0;
+}
+
+window#waybar {
+	background-color: #2b2b27;
+	color: #cecece;
+	transition-property: background-color;
+	transition-duration: .5s;
+}
+
+/* Espaciado y estilo general para los módulos */
+#workspaces, #mode, #clock, #custom-weather, #network, #cpu, #memory, #disk, #pulseaudio, #tray, #custom-notification, #custom-power {
+	padding: 0 10px;
+	margin: 4px 4px;
+	border-radius: 4px;
+	background-color: #33322e;
+}
+
+/* --- Workspaces --- */
+#workspaces button {
+	padding: 0 8px;
+	background-color: transparent;
+	color: #8a8b99; /* Atenuado: workspace inactivo */
+	box-shadow: inset 0 -2px transparent;
+	transition: all 0.2s ease;
+}
+
+#workspaces button:hover {
+	background: #3b3b37;
+	color: #cecece;
+}
+
+/* Resaltado del workspace activo (naranja del tema) */
+#workspaces button.focused {
+	color: #241c19;
+	background-color: #e69f67;
+	font-weight: bold;
+}
+
+#workspaces button.urgent {
+	background-color: #e06c3a;
+	color: #241c19;
+}
+
+/* --- Acentos específicos por módulo --- */
+#clock {
+	color: #e69f67;
+}
+
+#custom-weather {
+	color: #c2bdab;
+}
+
+#network {
+	color: #4ea8d6;
+}
+
+#pulseaudio {
+	color: #cecece;
+}
+
+#pulseaudio.muted {
+	color: #e06c3a;
+}
+
+/* Iconos del sistema (atenuados para no distraer) */
+#cpu, #memory, #disk {
+	color: #a2a3b9;
+	padding: 0 6px; /* Más pegados entre sí */
+}
+
+#custom-power {
+	color: #241c19;
+	background-color: #e06c3a;
+	border-radius: 4px;
+	margin-right: 8px;
+	padding: 0 12px;
+}
+
+/* Ocultar módulos cuando no hay info */
+#network.disconnected {
+	color: #8a8b99;
+}
+
+/* Tooltips */
+tooltip {
+	background: #2b2b27;
+	border: 1px solid #8c6a4a;
+}
+
+tooltip label {
+	color: #cecece;
+}

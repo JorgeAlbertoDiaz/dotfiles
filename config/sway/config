@@ -7,6 +7,8 @@
 # 55-openSUSE-windows.conf está integrado en estos módulos.
 #
 # Organización del árbol (rutas relativas a este archivo):
+#   themes/       — paleta del tema activo (dark.conf / light.conf, y el enlace
+#                   current.conf que apunta al elegido por scripts/sway-theme.sh)
 #   features/     — variables, monitores, entrada, apariencia, energía,
 #                   autostart, workspaces, ventanas, notificaciones,
 #                   capturas y portapapeles
@@ -24,6 +26,11 @@
 # ----------------------------------------------------------------------------
 # Features base (en orden de dependencia)
 # ----------------------------------------------------------------------------
+# El tema va PRIMERO: define la paleta ($color-*) que variables-colors.conf
+# consume para componer los colores de cliente. themes/current.conf es un
+# enlace simbólico a themes/dark.conf o themes/light.conf; el camino relativo
+# se resuelve contra el directorio de ESTE archivo (~/.config/sway).
+include themes/current.conf
 include features/variables-colors.conf
 include features/monitors.conf
 include features/inputs.conf

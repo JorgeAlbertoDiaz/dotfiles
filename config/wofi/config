@@ -1,7 +1,12 @@
-# ~/.config/wofi/config — badwolf (sjl/badwolf)
+# ~/.config/wofi/config
 #
 # Este archivo se despliega con los dotfiles y lo prefieren los scripts de sway
-# sobre /etc/wofi. Los colores viven en style.css.
+# sobre /etc/wofi. Los colores viven en style.css (enlace al tema activo,
+# themes/dark.css o themes/light.css; lo cambia scripts/sway-theme.sh).
+#
+# Sin `gtk_dark`: wofi sigue el tema GTK del sistema (gtk-theme + color-scheme
+# que también cambia sway-theme.sh), así que en claro deja de forzar widgets
+# oscuros.
 width = 40%
 height = 40%
 location = center
@@ -13,5 +18,4 @@ matching = fuzzy
 insensitive = true
 allow_images = true
 image_size = 24
-gtk_dark = true
 prompt = Buscar

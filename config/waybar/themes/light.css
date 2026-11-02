@@ -1,0 +1,117 @@
+/* style.css — tema CLARO (rust-light)
+   Este archivo lo elige scripts/sway-theme.sh: ~/.config/waybar/style.css es un
+   enlace simbólico a themes/dark.css o themes/light.css. No edites el enlace:
+   cambiá acá (o corré `sway-theme.sh dark|light|toggle`).
+
+   Paleta del tema rust (mdbook), modo claro: bg #e1e1db, fg #262625,
+   superficie #d9d9d3, superficie alterna #c1c1bb, acento #e69f67, azul #2b79a2,
+   atenuado #6e6b5e.
+
+   En claro el naranja se usa como RELLENO (workspace activo), no como texto:
+   sobre #e1e1db no tiene contraste. El texto destacado va en el marrón
+   #3b2e2a, igual que la sidebar del tema original.
+   Detalle de roles en docs/tema-claro-oscuro.md. */
+
+* {
+	/* Cambia esto por tu Nerd Font favorita.
+	   El ORDEN importa: GTK usa la primera familia que exista en el sistema, y
+	   "Font Awesome 6 Free" es una fuente de ICONOS cuyos glifos de / : ° í están
+	   vacíos: si queda primera, esos caracteres desaparecen de la barra (la fecha
+	   se veía "01102026 0835"). Va primero la fuente de texto, como en wofi y
+	   swaync; los íconos Nerd Font los aporta la propia fuente de texto. */
+	font-family: "JetBrainsMono Nerd Font", "FiraCode Nerd Font", sans-serif;
+	font-size: 16px;
+	border: none;
+	border-radius: 0;
+}
+
+window#waybar {
+	background-color: #e1e1db;
+	color: #262625;
+	transition-property: background-color;
+	transition-duration: .5s;
+}
+
+/* Espaciado y estilo general para los módulos */
+#workspaces, #mode, #clock, #custom-weather, #network, #cpu, #memory, #disk, #pulseaudio, #tray, #custom-notification, #custom-power {
+	padding: 0 10px;
+	margin: 4px 4px;
+	border-radius: 4px;
+	background-color: #d9d9d3;
+}
+
+/* --- Workspaces --- */
+#workspaces button {
+	padding: 0 8px;
+	background-color: transparent;
+	color: #6e6b5e; /* Atenuado: workspace inactivo */
+	box-shadow: inset 0 -2px transparent;
+	transition: all 0.2s ease;
+}
+
+#workspaces button:hover {
+	background: #c1c1bb;
+	color: #262625;
+}
+
+/* Resaltado del workspace activo (naranja del tema) */
+#workspaces button.focused {
+	color: #262625;
+	background-color: #e69f67;
+	font-weight: bold;
+}
+
+#workspaces button.urgent {
+	background-color: #b7410e;
+	color: #e1e1db;
+}
+
+/* --- Acentos específicos por módulo --- */
+#clock {
+	color: #3b2e2a;
+}
+
+#custom-weather {
+	color: #6e6b5e;
+}
+
+#network {
+	color: #2b79a2;
+}
+
+#pulseaudio {
+	color: #262625;
+}
+
+#pulseaudio.muted {
+	color: #b7410e;
+}
+
+/* Iconos del sistema (atenuados para no distraer) */
+#cpu, #memory, #disk {
+	color: #6e6b5e;
+	padding: 0 6px; /* Más pegados entre sí */
+}
+
+#custom-power {
+	color: #e1e1db;
+	background-color: #b7410e;
+	border-radius: 4px;
+	margin-right: 8px;
+	padding: 0 12px;
+}
+
+/* Ocultar módulos cuando no hay info */
+#network.disconnected {
+	color: #6e6b5e;
+}
+
+/* Tooltips */
+tooltip {
+	background: #e1e1db;
+	border: 1px solid #b38f6b;
+}
+
+tooltip label {
+	color: #262625;
+}

@@ -146,6 +146,17 @@ paquete i3. Detalle completo, ajustes versionados y verificación sin GUI en
 > 💡 Si `gum` no pudiera instalarse (p. ej. sin red), `install.sh` usa un
 > flujo de confirmación simple con bash.
 
+### Tema claro/oscuro
+
+El escritorio tiene dos temas completos (oscuro y claro) que se cambian desde el
+botón del centro de notificaciones, con `Super+Shift+t` o con
+`~/.config/sway/scripts/sway-theme.sh toggle`. Cada app tiene un archivo nativo
+por tema en su directorio `themes/`, y el archivo que la app lee es un enlace
+simbólico al tema activo; el estado es un archivo de texto en
+`~/.local/state/dotfiles/tema`. Cubre sway, waybar, swaync, wofi, foot,
+swaylock, wob, apps GTK y nvim. Paleta, mecanismo y límites en
+[tema-claro-oscuro.md](./tema-claro-oscuro.md).
+
 ## Diagramas
 
 Los diagramas se definen con **Mermaid** en archivos `/docs/assets/*.mmd`
