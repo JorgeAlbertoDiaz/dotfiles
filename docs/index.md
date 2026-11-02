@@ -35,6 +35,28 @@ Cada archivo de texto agrupa paquetes por componente, bajo un convenio doble:
   presencia de flatpak antes de tocar flathub y registra el remote `flathub`
   con `--if-not-exists`.
 
+### Aplicaciones Flatpak: elegir cuáles
+
+Flatpak está en el menú principal del instalador (`Instalar aplicaciones
+Flatpak`, sin instalar nada más) y como componente `Aplicaciones Flatpak` en la
+selección múltiple. En los dos casos se eligen las apps del catálogo de a una
+(gum `--no-limit`, `Espacio` para marcar, `Enter` para confirmar); las que ya
+están instaladas aparecen como `(instalada)` y no se reinstalan. En
+"Instalación completa (todo)" se instala el catálogo entero.
+
+El script también sirve solo:
+
+```bash
+./scripts/02b-install-flatpak.sh            # selección interactiva
+./scripts/02b-install-flatpak.sh --list     # qué hay en el catálogo
+./scripts/02b-install-flatpak.sh --apps org.mozilla.Thunderbird,com.getpostman.Postman
+./scripts/02b-install-flatpak.sh --all
+```
+
+Sin TTY o sin `gum` no adivina: pide `--all` o `--apps` y sale con error de uso.
+Todo se instala a nivel de usuario (`--user`), sin `sudo`, y agregar una app al
+catálogo es agregar una línea a `packages/flatpak-apps.txt`.
+
 | Archivo | Componente |
 |---|---|
 | `base.txt` | Herramientas base del sistema |
