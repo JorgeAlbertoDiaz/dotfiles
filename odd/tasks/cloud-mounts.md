@@ -120,3 +120,11 @@ hasta `## Log`.
   el refresh token guardado en `rclone.conf`; si se rota el secreto en
   `~/.credentials` sin reautorizar, el montaje falla con 401 al refrescar. El
   instalador tiene que advertirlo y `--check` debe distinguirlo.
+- **L3** (pausa, verbatim): «no, lo haremos en otra sesion el dia de mañana.
+  Dejalos anotados como pendientes para retomarlo».
+  Estado al pausar: T1-T3 hechas y commiteadas (`e41aafb`, `3ce4ac7`); T4-T10
+  pendientes y sin empezar; rama `feat/cloud-mounts` sin push ni merge.
+  **Retome: empezar por T4** (`scripts/13-setup-cloud-mounts.sh`) con RED
+  primero, y después T5-T6 para que el instalador sea usable de punta a punta.
+  No hay nada a medias ni roto: el repo queda con el despliegue de dotfiles
+  verificado en 48/0 y la plantilla validada por `systemd-analyze verify`.
