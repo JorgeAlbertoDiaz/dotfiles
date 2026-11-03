@@ -25,6 +25,10 @@ temps/
 # Archivos generados durante la ejecución, cachés locales y WIP sin commitear.
 temp/
 
+# Credenciales locales (client_secret OAuth y tokens). El repo sólo lleva
+# config/home/.credentials.example, con placeholders y sin secretos.
+.credentials
+
 # Python
 __pycache__/
 *.pyc

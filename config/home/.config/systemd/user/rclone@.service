@@ -1,0 +1,58 @@
+# rclone@.service — unidad plantilla: monta un remote de rclone en ~/Cloud/<remote>.
+#
+# Instancia por proveedor; el nombre de la instancia (%i) es a la vez el nombre
+# del remote en ~/.config/rclone/rclone.conf y el subdirectorio de ~/Cloud:
+#
+#   rclone@gdrive.service    → remote "gdrive"   en ~/Cloud/gdrive
+#   rclone@onedrive.service  → remote "onedrive" en ~/Cloud/onedrive
+#
+# Uso:
+#   systemctl --user enable --now rclone@gdrive.service
+#   systemctl --user enable --now rclone@onedrive.service
+#
+# Por qué no hay units de sistema: el montaje FUSE vive del proceso que lo
+# atiende y ese proceso necesita el token del usuario. Correrlo como root
+# obligaría a leer credenciales de otro usuario, a --allow-other y a habilitar
+# user_allow_other en /etc/fuse.conf, sin ganar aislamiento. Ver
+# docs/cloud-mounts.md.
+
+[Unit]
+Description=rclone mount %i en %h/Cloud/%i
+Documentation=https://rclone.org/commands/rclone_mount/
+# Sin After=network-online.target: en unidades de usuario ese target no espera
+# a NetworkManager, así que daría una falsa sensación de orden. La red se
+# resuelve con Restart= (abajo) y con la caché VFS.
+# Sin límite de reintentos: con red inestable, "start request repeated too
+# quickly" dejaba el montaje muerto hasta el próximo login.
+StartLimitIntervalSec=0
+
+[Service]
+# rclone avisa a systemd recién cuando el punto de montaje está operativo. Con
+# esto, cualquier unidad con After=rclone@%i.service encuentra archivos, no un
+# directorio vacío.
+Type=notify
+# client_id/client_secret de la aplicación OAuth, inyectados como variables de
+# entorno (rclone las lee como RCLONE_<BACKEND>_CLIENT_ID). El archivo es
+# obligatorio a propósito: si falta, la unidad falla en voz alta en lugar de
+# arrancar con el client_id compartido de rclone, retirado durante 2026.
+EnvironmentFile=%h/.credentials
+ExecStartPre=/usr/bin/mkdir -p %h/Cloud/%i %h/.cache/rclone
+ExecStart=/usr/bin/rclone mount %i: %h/Cloud/%i \
+    --config %h/.config/rclone/rclone.conf \
+    --cache-dir %h/.cache/rclone \
+    --vfs-cache-mode full \
+    --vfs-cache-max-size 10G \
+    --vfs-cache-max-age 168h \
+    --dir-cache-time 1h \
+    --umask 022 \
+    --log-level INFO
+# rclone desmonta solo al recibir SIGTERM. El prefijo "-" evita marcar la unidad
+# como fallida cuando fusermount3 no encuentra nada que desmontar; -z (lazy) es
+# la única salida cuando quedó I/O pendiente y un desmontaje normal se colgaría.
+ExecStop=-/usr/bin/fusermount3 -uz %h/Cloud/%i
+Restart=on-failure
+RestartSec=15
+TimeoutStopSec=30
+
+[Install]
+WantedBy=default.target
