@@ -110,8 +110,8 @@ hasta `## Log`.
 - [x] T7 — `docs/cloud-mounts.md` + `docs/diagramas/cloud-mounts.mmd` + `docs/index.md` + `README.md` (estructura y componentes), con la sección «varios usuarios en la misma PC» (S13) · S10,S13 · inline
 - [x] T8 — `scripts/tests/13-setup-cloud-mounts-spec.sh` con `HOME` temporal: `--help` sale 0, `--check` no muta nada, `CHANGEME` aborta con exit ≠ 0 y sin escribir unidades, `mkdir` idempotente, permisos `600` del archivo copiado, dos HOMEs independientes (S13) · S4,S8,S12,S13 · inline · `d1b7773`
 - [ ] T9 — Verificación end-to-end en la máquina real: `rclone about` de ambos remotes, `mount | grep fuse.rclone`, escritura y lectura, reboot, corte de red y despertar de suspensión · S1,S2,S5 · manual, requiere navegador para el OAuth
-- [x] T11 — Credenciales en `~/.credentials/` (directorio 700, `<remote>.env` 600), creación sin pisar, `EnvironmentFile=%h/.credentials/%i.env`, rechazo del layout viejo de archivo único · S4,S13 · inline
-- [x] T12 — Plantilla de credenciales en el script (heredoc) y `--google-json`: convierte el JSON de Google con `jq`, archiva `gdrive.json`, rechaza *Web application* y no pisa credenciales cargadas · S4 · inline
+- [x] T11 — Credenciales en `~/.credentials/` (directorio 700, `<remote>.env` 600), creación sin pisar, `EnvironmentFile=%h/.credentials/%i.env`, rechazo del layout viejo de archivo único · S4,S13 · inline · `50da87e`
+- [x] T12 — Plantilla de credenciales en el script (heredoc) y `--google-json`: convierte el JSON de Google con `jq`, archiva `gdrive.json`, rechaza *Web application* y no pisa credenciales cargadas · S4 · inline · `50da87e`
 - [ ] T10 — Cierre: `shellcheck` del script nuevo, estado del menú de `install.sh`, registro de evidencia en este documento · S8-S10 · inline
 
 ## Log
@@ -185,7 +185,8 @@ hasta `## Log`.
   - slice 1 — `7d83b57` paquetes (`packages/cloud.txt`), T5;
   - slice 2 — `d1b7773` instalador + spec (`scripts/13-*`, `scripts/tests/13-*`), T4 y T8;
   - slice 3 — componente del menú + documentación (`install.sh`, `docs/`, `README.md`), T6 y T7;
-  - slice 4 — verificación end-to-end y cierre (T9, T10), con la evidencia en este Log.
+  - slice 4 — `50da87e` credenciales en directorio + `--google-json` (`scripts/13-*`, spec, unidad, doc, .gitignore), T11 y T12;
+  - slice 5 — verificación end-to-end y cierre (T9, T10), con la evidencia en este Log.
   Push, PR y merge quedan para el usuario; la rama no se publica sola.
 - **L5** (requisito nuevo, verbatim): «Los paquetes que instala el comando
   `sudo zypper refresh && sudo zypper install -y rclone
