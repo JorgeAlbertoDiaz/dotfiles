@@ -1,0 +1,6 @@
+# rclone: montajes FUSE de Google Drive y OneDrive (scripts/13-setup-cloud-mounts.sh).
+# Las completions son paquetes aparte en openSUSE; sin ellos rclone funciona,
+# pero `rclone <TAB>` vuelve al completado de archivos.
+rclone
+rclone-bash-completion
+rclone-zsh-completion
