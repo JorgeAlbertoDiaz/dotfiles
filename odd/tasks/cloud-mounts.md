@@ -73,17 +73,27 @@ hasta `## Log`.
 - **S12 — Aislamiento de pruebas.** Toda prueba del instalador y de las
   unidades corre con `HOME` en un directorio temporal y una copia del repo:
   nunca sobre `/home/jorge` real ni habilitando servicios del sistema.
+- **S13 — Cada usuario monta su propia cuenta.** El montaje es por usuario, no
+  por máquina: cualquier usuario de la PC corre el instalador en su propia
+  sesión y obtiene sus propios `~/.credentials`, su propio
+  `~/.config/rclone/rclone.conf` (con su refresh token OAuth 2.0) y sus propias
+  unidades `--user`, sin root, sin estado compartido y sin tocar el HOME de
+  otro. El `client_id` de la aplicación OAuth (`Desktop app`) es el mismo para
+  todos y puede ser compartido, pero cada usuario autoriza con su propia cuenta
+  de Google en el navegador. Un usuario nuevo no hereda tokens: vuelve a hacer
+  el OAuth. Pedido: «Quiero en todo caso tener la posibilidad que cada usuario
+  pueda montar su propio drive (supongo que sera con OAuth 2)».
 
 ## Tasks
 
 - [x] T1 — Documento de feature con specs y TODO · S1-S12 · inline · este commit
 - [x] T2 — Plantilla `config/home/.config/systemd/user/rclone@.service` (Type=notify, VFS full, `EnvironmentFile=%h/.credentials`, `ExecStop=fusermount3 -uz`, `Restart`) · S2,S4,S5,S6,S7 · inline · `e41aafb`
 - [x] T3 — `config/home/.credentials.example` con placeholders `CHANGEME-` + `.gitignore` para `.credentials` · S4,S11 · inline · `e41aafb`
-- [ ] T4 — `scripts/13-setup-cloud-mounts.sh`: verificación de dependencias, `rclone config` asistido por proveedor, `mkdir` de `~/Cloud/<remote>`, copia de `.credentials.example` a `~/.credentials` con `chmod 600`, rechazo de `CHANGEME` pendientes, `systemctl --user daemon-reload`, `enable --now`, salida `--check` de sólo lectura · S3,S4,S5,S8 · inline con RED primero
-- [ ] T5 — `packages/cloud.txt` (o `base.txt`) con `rclone` y sus completions · S9 · inline
-- [ ] T6 — Componente "Nube (rclone)" en `install.sh`: ítem de menú, rama interactiva y rama no interactiva, sin romper el menú actual · S8 · inline
-- [ ] T7 — `docs/cloud-mounts.md` + `docs/diagramas/cloud-mounts.mmd` + `docs/index.md` + `README.md` (estructura y componentes) · S10 · inline
-- [ ] T8 — `scripts/tests/13-setup-cloud-mounts-spec.sh` con `HOME` temporal: `--help` sale 0, `--check` no muta nada, `CHANGEME` aborta con exit ≠ 0 y sin escribir unidades, `mkdir` idempotente, permisos `600` del archivo copiado · S4,S8,S12 · inline
+- [x] T4 — `scripts/13-setup-cloud-mounts.sh`: verificación de dependencias, `rclone config` asistido por proveedor, `mkdir` de `~/Cloud/<remote>`, copia de `.credentials.example` a `~/.credentials` con `chmod 600`, rechazo de `CHANGEME` pendientes, `systemctl --user daemon-reload`, `enable --now`, salida `--check` de sólo lectura, y todo bajo `$HOME` para que cada usuario corra su propia copia (S13) · S3,S4,S5,S8,S13 · inline con RED primero
+- [x] T5 — `packages/cloud.txt` con `rclone` y sus completions · S9 · inline · `7d83b57`
+- [x] T6 — Componente "Nube (rclone)" en `install.sh`: ítem de menú, rama interactiva y rama no interactiva, sin romper el menú actual · S8 · inline
+- [x] T7 — `docs/cloud-mounts.md` + `docs/diagramas/cloud-mounts.mmd` + `docs/index.md` + `README.md` (estructura y componentes), con la sección «varios usuarios en la misma PC» (S13) · S10,S13 · inline
+- [x] T8 — `scripts/tests/13-setup-cloud-mounts-spec.sh` con `HOME` temporal: `--help` sale 0, `--check` no muta nada, `CHANGEME` aborta con exit ≠ 0 y sin escribir unidades, `mkdir` idempotente, permisos `600` del archivo copiado, dos HOMEs independientes (S13) · S4,S8,S12,S13 · inline · `d1b7773`
 - [ ] T9 — Verificación end-to-end en la máquina real: `rclone about` de ambos remotes, `mount | grep fuse.rclone`, escritura y lectura, reboot, corte de red y despertar de suspensión · S1,S2,S5 · manual, requiere navegador para el OAuth
 - [ ] T10 — Cierre: `shellcheck` del script nuevo, estado del menú de `install.sh`, registro de evidencia en este documento · S8-S10 · inline
 
@@ -128,3 +138,35 @@ hasta `## Log`.
   primero, y después T5-T6 para que el instalador sea usable de punta a punta.
   No hay nada a medias ni roto: el repo queda con el despliegue de dotfiles
   verificado en 48/0 y la plantilla validada por `systemd-analyze verify`.
+- **L4** (requisito nuevo, verbatim): «Quiero en todo caso tener la posibilidad
+  que cada usuario pueda montar su propio drive (supongo que sera con OAuth 2)».
+  Efecto: se agrega S13. El diseño ya era por usuario (unidades `--user`,
+  `%h/.credentials`, `%h/.config/rclone/rclone.conf`, `~/Cloud/<remote>`), así
+  que no cambia la arquitectura: se refuerza con (a) verificación de
+  `Linger` por usuario en el instalador, (b) una prueba que corre dos HOMEs
+  independientes, y (c) la sección de varios usuarios en la documentación. El
+  `client_id` de la app OAuth es compartible; el refresh token no.
+- **E6** (evidencia, T4/T8): `scripts/tests/13-setup-cloud-mounts-spec.sh` en
+  RED primero (20 fallos, script ausente) y después 40/0 con HOME temporal,
+  dobles de `rclone`/`systemctl` y copia del repo. Cubre `--help`, `--check`
+  sin mutaciones ni llamadas a systemd, `CHANGEME` abortando sin habilitar
+  unidades, copia de credenciales con modo 600, idempotencia, orden
+  `daemon-reload` → `enable --now`, `--provider` inválido y dos HOMEs
+  independientes (S13).
+- **E7** (evidencia, T5/T6): `packages/cloud.txt` con los tres paquetes;
+  `install.sh` suma el componente `Nube (rclone)` (interactivo corre el
+  instalador, instalación completa corre `--check`, y con `EUID 0` sólo avisa
+  para no crear `/root/.credentials`). `install-flatpak-menu-spec.sh` sigue en
+  15/0 y `04-setup-dotfiles-spec.sh` en 48/0.
+- **E8** (evidencia, T7): `docs/cloud-mounts.md` (OAuth paso a paso, credenciales,
+  multi-usuario, verificación, trampas), `docs/diagramas/cloud-mounts.mmd`,
+  entrada en `docs/index.md` y en la estructura de `README.md`.
+- **E9** (shellcheck): `shellcheck -S warning` sin hallazgos en
+  `scripts/13-setup-cloud-mounts.sh` ni en su spec.
+- **E10** (delivery, slices): la rama `feat/cloud-mounts` ya pasa las ~400
+  líneas autoradas, así que la entrega va por slices con frontera explícita:
+  - slice 1 — `7d83b57` paquetes (`packages/cloud.txt`), T5;
+  - slice 2 — `d1b7773` instalador + spec (`scripts/13-*`, `scripts/tests/13-*`), T4 y T8;
+  - slice 3 — componente del menú + documentación (`install.sh`, `docs/`, `README.md`), T6 y T7;
+  - slice 4 — verificación end-to-end y cierre (T9, T10), con la evidencia en este Log.
+  Push, PR y merge quedan para el usuario; la rama no se publica sola.

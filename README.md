@@ -48,6 +48,8 @@ dev, drivers de hardware y dotfiles.
 │   ├── 05-install-fonts.sh  # Instala y configura Nerd Fonts por app
 │   ├── 08-setup-zsh.sh      # Instala los plugins de zsh (sin sudo)
 │   ├── 09-setup-nvim.sh     # Instala plugins y LSP de nvim (sin sudo)
+│   ├── 12-setup-handy.sh    # Dictado por voz: RPM pinneado + ajustes
+│   ├── 13-setup-cloud-mounts.sh  # Monta Drive/OneDrive con rclone (por usuario)
 │   └── drivers/              # Controladores por hardware (un script por placa)
 │       ├── drivers-menu.sh   # Submenú: lista y lanza cada driver-*.sh
 │       └── driver-nvidia-gtx1060.sh  # Repo NVIDIA + G06 + GRUB/modprobe

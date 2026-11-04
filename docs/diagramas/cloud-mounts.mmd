@@ -1,0 +1,29 @@
+flowchart TB
+    subgraph USUARIO["Por usuario (cada uno corre el script en su sesión)"]
+        CRED["~/.credentials<br/>(chmod 600, fuera de git)<br/>RCLONE_DRIVE_CLIENT_ID / _SECRET"]
+        CONF["~/.config/rclone/rclone.conf<br/>(chmod 600, fuera de git)<br/>refresh token OAuth 2.0 de su cuenta"]
+        UNIT["~/.config/systemd/user/rclone@.service<br/>plantilla: EnvironmentFile=%h/.credentials"]
+        MOUNT["~/Cloud/&lt;remote&gt;<br/>montaje FUSE (fuse.rclone)"]
+    end
+
+    subgraph INSTANCIA["Una instancia por proveedor"]
+        G["rclone@gdrive.service"]
+        O["rclone@onedrive.service"]
+    end
+
+    CONSOLE["Google Cloud Console<br/>proyecto + Drive API + app Desktop + In production"]
+    ONEDRIVE["OneDrive (Microsoft Graph)<br/>client_id embebido de rclone (opcional: app propia en Entra ID)"]
+    VFS["~/.cache/rclone<br/>caché VFS full (10G / 168h)"]
+
+    CONSOLE -- "client_id/secret una vez" --> CRED
+    ONEDRIVE -. "opcional" .-> CRED
+    CRED -- "EnvironmentFile" --> UNIT
+    UNIT -- "enable --now" --> G
+    UNIT -- "enable --now" --> O
+    CONF -- "--config" --> G
+    CONF -- "--config" --> O
+    G -- "rclone mount gdrive:" --> MOUNT
+    O -- "rclone mount onedrive:" --> MOUNT
+    G --- VFS
+    O --- VFS
+    G -. "Type=notify: avisa cuando el punto está operativo" .-> MOUNT

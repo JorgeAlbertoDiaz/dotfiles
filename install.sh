@@ -50,6 +50,7 @@ COMPONENTES=(
   "Dotfiles"
   "DroidCam"
   "Dictado por voz (Handy)"
+  "Nube (rclone)"
   "Aplicaciones Flatpak"
 )
 # ---------------------------------------------------------------------------
@@ -148,6 +149,26 @@ run_component() {
       "${SCRIPT_DIR}/scripts/02-install-packages.sh" handy.txt
       "${SCRIPT_DIR}/scripts/12-setup-handy.sh"
       info "Finalizado: dictado por voz (Handy)"
+      ;;
+    "Nube (rclone)")
+      # rclone y sus completions; después el montaje por usuario. El montaje
+      # NUNCA se corre como root: ~/.credentials, el refresh token OAuth y
+      # ~/Cloud/<remote> son del usuario, no de la máquina, así que cada
+      # usuario lo corre en su propia sesión.
+      "${SCRIPT_DIR}/scripts/02-install-packages.sh" cloud.txt
+      if [[ ${EUID} -eq 0 ]]; then
+        warn "El montaje de nube es por usuario: salí de root y corré"
+        warn "  ./scripts/13-setup-cloud-mounts.sh  con tu usuario"
+      elif [[ ${DOTFILES_TODOS} -eq 1 ]]; then
+        # Instalación completa: sin OAuth posible en medio del desatendido, se
+        # corre el chequeo de sólo lectura para dejar el estado a la vista.
+        "${SCRIPT_DIR}/scripts/13-setup-cloud-mounts.sh" --check || true
+      elif [[ -t 0 ]]; then
+        "${SCRIPT_DIR}/scripts/13-setup-cloud-mounts.sh"
+      else
+        warn "Sin terminal para el OAuth: corré después ./scripts/13-setup-cloud-mounts.sh"
+      fi
+      info "Finalizado: Nube (rclone)"
       ;;
     "Aplicaciones Flatpak")
       # En instalación completa se instala todo el catálogo; elegido a mano,
