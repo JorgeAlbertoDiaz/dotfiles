@@ -177,8 +177,8 @@ en cada inicio. No sincroniza: los archivos viven en la nube y la caché local
 es sólo una ventana temporal.
 
 Es **por usuario**: cada uno corre `scripts/13-setup-cloud-mounts.sh` en su
-sesión y autoriza con su propia cuenta (OAuth 2.0), con su `~/.credentials` y
-su `~/.config/rclone/rclone.conf`. El `client_id` de la app OAuth de Google se
+sesión y autoriza con su propia cuenta (OAuth 2.0), con su `~/.credentials/`
+(un `.env` por proveedor, directorio 700) y su `~/.config/rclone/rclone.conf`. El `client_id` de la app OAuth de Google se
 puede compartir; los tokens no. `--check` informa el estado sin mutar nada.
 
 Requisito de una sola vez: crear la app *Desktop* en Google Cloud Console y

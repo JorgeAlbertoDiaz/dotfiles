@@ -1,8 +1,8 @@
 flowchart TB
     subgraph USUARIO["Por usuario (cada uno corre el script en su sesión)"]
-        CRED["~/.credentials<br/>(chmod 600, fuera de git)<br/>RCLONE_DRIVE_CLIENT_ID / _SECRET"]
+        CRED["~/.credentials/<remote>.env<br/>(directorio 700, archivo 600)<br/>RCLONE_DRIVE_CLIENT_ID / _SECRET"]
         CONF["~/.config/rclone/rclone.conf<br/>(chmod 600, fuera de git)<br/>refresh token OAuth 2.0 de su cuenta"]
-        UNIT["~/.config/systemd/user/rclone@.service<br/>plantilla: EnvironmentFile=%h/.credentials"]
+        UNIT["~/.config/systemd/user/rclone@.service<br/>plantilla: EnvironmentFile=%h/.credentials/%i.env"]
         MOUNT["~/Cloud/&lt;remote&gt;<br/>montaje FUSE (fuse.rclone)"]
     end
 
@@ -15,7 +15,7 @@ flowchart TB
     ONEDRIVE["OneDrive (Microsoft Graph)<br/>client_id embebido de rclone (opcional: app propia en Entra ID)"]
     VFS["~/.cache/rclone<br/>caché VFS full (10G / 168h)"]
 
-    CONSOLE -- "client_id/secret una vez" --> CRED
+    CONSOLE -- "--google-json: convierte y archiva gdrive.json" --> CRED
     ONEDRIVE -. "opcional" .-> CRED
     CRED -- "EnvironmentFile" --> UNIT
     UNIT -- "enable --now" --> G

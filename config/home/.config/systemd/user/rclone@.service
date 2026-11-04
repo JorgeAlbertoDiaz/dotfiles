@@ -32,10 +32,13 @@ StartLimitIntervalSec=0
 # directorio vacío.
 Type=notify
 # client_id/client_secret de la aplicación OAuth, inyectados como variables de
-# entorno (rclone las lee como RCLONE_<BACKEND>_CLIENT_ID). El archivo es
-# obligatorio a propósito: si falta, la unidad falla en voz alta en lugar de
-# arrancar con el client_id compartido de rclone, retirado durante 2026.
-EnvironmentFile=%h/.credentials
+# entorno (rclone las lee como RCLONE_<BACKEND>_CLIENT_ID). Un archivo por
+# proveedor, con el nombre del remote: ~/.credentials/gdrive.env para
+# rclone@gdrive.service, ~/.credentials/onedrive.env para rclone@onedrive.service.
+# El archivo es obligatorio a propósito: si falta, la unidad falla en voz alta en
+# lugar de arrancar con el client_id compartido de rclone, retirado durante 2026.
+# Los crea scripts/13-setup-cloud-mounts.sh (directorio 700, archivo 600).
+EnvironmentFile=%h/.credentials/%i.env
 ExecStartPre=/usr/bin/mkdir -p %h/Cloud/%i %h/.cache/rclone
 ExecStart=/usr/bin/rclone mount %i: %h/Cloud/%i \
     --config %h/.config/rclone/rclone.conf \

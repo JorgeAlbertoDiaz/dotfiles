@@ -2,9 +2,10 @@
 # Spec del instalador de montajes de nube (scripts/13-setup-cloud-mounts.sh).
 #
 # Verifica con HOME temporal, copia del repo y dobles de rclone/systemctl:
-#   S4   copia .credentials.example a ~/.credentials con modo 600, no la
-#        sobrescribe en la segunda corrida y aborta en voz alta mientras queden
-#        valores CHANGEME (sin habilitar ninguna unidad).
+#   S4   ~/.credentials es un directorio 700 con <remote>.env (600), las
+#        plantillas se generan solas, nada se sobrescribe, --google-json
+#        convierte el JSON de Google y se niega a pisar credenciales cargadas,
+#        y con CHANGEME pendientes se aborta sin habilitar unidades.
 #   S8   --help sale 0, --check es de sólo lectura y, con el remote ya creado,
 #        no repite el OAuth: sólo recarga systemd y habilita las unidades.
 #   S9   sin rclone instalado falla con el comando exacto de zypper.
@@ -17,7 +18,7 @@ SPEC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_RAIZ="$(cd "${SPEC_DIR}/../.." && pwd)"
 
 WORK="$(mktemp -d)"
-trap 'rm -rf "${WORK}"' EXIT
+trap 'rm -rf "${WORK:?}"' EXIT
 
 pasos=0
 fallos=0
@@ -36,6 +37,10 @@ assert_exit_no_cero() {
 assert_contiene() {
   # $1 = texto buscado, $2 = texto completo, $3 = etiqueta
   if grep -Fq -- "$1" <<<"$2"; then pasa "$3"; else falla "$3 (salida sin '$1')"; fi
+}
+
+assert_no_contiene() {
+  if grep -Fq -- "$1" <<<"$2"; then falla "$3 (la salida filtra '$1')"; else pasa "$3"; fi
 }
 
 assert_existe() {
@@ -129,7 +134,7 @@ nuevo_entorno() {
   : > "${CALLS_LOG}"
   export CALLS_LOG
 
-  mkdir -p "${HOME_T}" "${BIN_T}" "${WORK}/binsin" "${WORK}/repo/scripts" "${WORK}/repo/config/home"
+  mkdir -p "${HOME_T}" "${BIN_T}" "${WORK}/binsin" "${WORK}/repo/scripts"
   crear_doble "${BIN_T}/rclone"
   crear_doble "${BIN_T}/systemctl"
   # PATH sin rclone para el caso "rclone no instalado": sólo las herramientas
@@ -140,13 +145,9 @@ nuevo_entorno() {
   done
   crear_doble "${WORK}/binsin/systemctl"
 
-  for f in common.sh 13-setup-cloud-mounts.sh; do
-    if [[ -f "${REPO_RAIZ}/scripts/${f}" ]]; then
-      cp "${REPO_RAIZ}/scripts/${f}" "${WORK}/repo/scripts/"
-    fi
-  done
-  if [[ -f "${REPO_RAIZ}/config/home/.credentials.example" ]]; then
-    cp "${REPO_RAIZ}/config/home/.credentials.example" "${WORK}/repo/config/home/"
+  if [[ -f "${REPO_RAIZ}/scripts/13-setup-cloud-mounts.sh" ]]; then
+    cp "${REPO_RAIZ}/scripts/common.sh" "${WORK}/repo/scripts/"
+    cp "${REPO_RAIZ}/scripts/13-setup-cloud-mounts.sh" "${WORK}/repo/scripts/"
   fi
 }
 
@@ -174,13 +175,26 @@ sembrar_remotes() {
   done
 }
 
-# Semilla: ~/.credentials ya completada (sin CHANGEME).
+# Semilla: ~/.credentials ya completo (directorio 700 + un env por proveedor).
 sembrar_credenciales() {
-  cat > "${HOME_T}/.credentials" <<'CRED'
+  mkdir -p "${HOME_T}/.credentials"
+  chmod 700 "${HOME_T}/.credentials"
+  cat > "${HOME_T}/.credentials/gdrive.env" <<'CRED'
+# credenciales de prueba
 RCLONE_DRIVE_CLIENT_ID=abc.apps.googleusercontent.com
 RCLONE_DRIVE_CLIENT_SECRET=GOCSPX-falso
 CRED
-  chmod 600 "${HOME_T}/.credentials"
+  chmod 600 "${HOME_T}/.credentials/gdrive.env"
+  printf '# OneDrive usa el client_id embebido de rclone.\n' > "${HOME_T}/.credentials/onedrive.env"
+  chmod 600 "${HOME_T}/.credentials/onedrive.env"
+}
+
+# Semilla: JSON tal como lo descarga Google Cloud Console.
+sembrar_json() {
+  # $1 = tipo de cliente ("installed" = Desktop app, "web" = Web application)
+  # $2 = ruta de salida
+  printf '{"%s": {"client_id": "1234567890-abc.apps.googleusercontent.com", "client_secret": "GOCSPX-desdejson", "redirect_uris": ["http://localhost"]}}\n' \
+    "$1" > "$2"
 }
 
 # ---------------------------------------------------------------------------
@@ -191,6 +205,7 @@ corre --help
 assert_exit "${RC}" 0 "--help sale 0"
 assert_contiene "--provider" "${OUT}" "--help documenta --provider"
 assert_contiene "--check" "${OUT}" "--check documentado en --help"
+assert_contiene "--google-json" "${OUT}" "--help documenta --google-json"
 
 # ---------------------------------------------------------------------------
 # 2) --check es de sólo lectura y reporta lo que falta
@@ -214,22 +229,113 @@ assert_contiene "zypper install" "${OUT}" "sin rclone indica el comando de zyppe
 assert_contiene "rclone-bash-completion" "${OUT}" "sin rclone menciona las completions"
 
 # ---------------------------------------------------------------------------
-# 4) Primera corrida con la plantilla: copia credenciales (600) y aborta en
-#    voz alta por los CHANGEME, sin habilitar unidades.
+# 4) Primera corrida: genera ~/.credentials/ (700) con un env por proveedor
+#    (600), aborta en voz alta por los CHANGEME y no habilita unidades.
 # ---------------------------------------------------------------------------
 nuevo_entorno
 sembrar_unidad
 corre --provider both
 assert_exit "${RC}" 1 "con CHANGEME pendientes sale 1"
-assert_existe "${HOME_T}/.credentials" "crea ~/.credentials desde la plantilla"
-assert_modo "${HOME_T}/.credentials" 600 "deja ~/.credentials en modo 600"
+assert_existe "${HOME_T}/.credentials" "crea el directorio ~/.credentials"
+assert_modo "${HOME_T}/.credentials" 700 "deja ~/.credentials en modo 700"
+assert_existe "${HOME_T}/.credentials/gdrive.env" "crea gdrive.env"
+assert_modo "${HOME_T}/.credentials/gdrive.env" 600 "deja gdrive.env en modo 600"
+assert_existe "${HOME_T}/.credentials/onedrive.env" "crea onedrive.env"
+assert_modo "${HOME_T}/.credentials/onedrive.env" 600 "deja onedrive.env en modo 600"
 assert_contiene "CHANGEME" "${OUT}" "el mensaje nombra los CHANGEME pendientes"
 assert_no_llamada "systemctl --user daemon-reload" "no recarga systemd si faltan secretos"
 assert_sin_llamadas '^systemctl --user enable' "no habilita unidades si faltan secretos"
 assert_sin_llamadas '^rclone config create' "no lanza el OAuth si faltan secretos"
+assert_no_existe "${HOME_T}/Cloud" "no crea puntos de montaje si faltan secretos"
+
+# Segunda corrida: no sobrescribe el env recién creado (idempotente).
+printf '# marca-propia\n' >> "${HOME_T}/.credentials/gdrive.env"
+corre --provider both
+assert_contiene "# marca-propia" "$(cat "${HOME_T}/.credentials/gdrive.env")" \
+  "no sobrescribe un gdrive.env existente"
+
+# 4b) Sólo falta un env: se crea el que falta y el existente queda intacto.
+nuevo_entorno
+sembrar_unidad
+sembrar_remotes gdrive onedrive
+mkdir -p "${HOME_T}/.credentials"
+chmod 700 "${HOME_T}/.credentials"
+printf 'RCLONE_DRIVE_CLIENT_ID=abc\nRCLONE_DRIVE_CLIENT_SECRET=def\n# marca-propia\n' \
+  > "${HOME_T}/.credentials/gdrive.env"
+chmod 600 "${HOME_T}/.credentials/gdrive.env"
+corre --provider both
+assert_exit "${RC}" 0 "con un env ya cargado y el otro faltante sale 0"
+assert_existe "${HOME_T}/.credentials/onedrive.env" "crea el env que faltaba"
+assert_modo "${HOME_T}/.credentials/onedrive.env" 600 "el env nuevo queda en modo 600"
+assert_contiene "# marca-propia" "$(cat "${HOME_T}/.credentials/gdrive.env")" \
+  "deja intacto el env que ya existía"
+
+# 4c) --provider gdrive sólo crea gdrive.env: no inventa archivos del otro.
+nuevo_entorno
+sembrar_unidad
+sembrar_remotes gdrive
+corre --provider gdrive --quiet
+assert_existe "${HOME_T}/.credentials/gdrive.env" "con --provider gdrive crea gdrive.env"
+assert_no_existe "${HOME_T}/.credentials/onedrive.env" "con --provider gdrive no crea onedrive.env"
 
 # ---------------------------------------------------------------------------
-# 5) Con credenciales y remotes ya creados: idempotente, no repite el OAuth,
+# 5) ~/.credentials como archivo (layout viejo): error de migración
+# ---------------------------------------------------------------------------
+nuevo_entorno
+sembrar_unidad
+printf 'RCLONE_DRIVE_CLIENT_ID=x\n' > "${HOME_T}/.credentials"
+corre --provider gdrive
+assert_exit "${RC}" 1 "con ~/.credentials como archivo sale 1"
+assert_contiene "directorio" "${OUT}" "explica que ahora es un directorio"
+
+# ---------------------------------------------------------------------------
+# 6) --google-json: convierte el JSON, archiva el original y no filtra el
+#    secreto por la salida
+# ---------------------------------------------------------------------------
+nuevo_entorno
+sembrar_unidad
+sembrar_remotes gdrive onedrive
+sembrar_json installed "${WORK}/client_secret_largo.apps.googleusercontent.com.json"
+corre --provider both --google-json "${WORK}/client_secret_largo.apps.googleusercontent.com.json"
+assert_exit "${RC}" 0 "con --google-json completo sale 0"
+assert_contiene "RCLONE_DRIVE_CLIENT_SECRET=GOCSPX-desdejson" "$(cat "${HOME_T}/.credentials/gdrive.env")" \
+  "escribe el client_secret del JSON en gdrive.env"
+assert_modo "${HOME_T}/.credentials/gdrive.env" 600 "deja gdrive.env en modo 600"
+assert_existe "${HOME_T}/.credentials/gdrive.json" "archiva el JSON con nombre corto"
+assert_modo "${HOME_T}/.credentials/gdrive.json" 600 "deja el JSON archivado en modo 600"
+assert_no_contiene "GOCSPX-desdejson" "${OUT}" "no imprime el client_secret en la salida"
+assert_llamada "systemctl --user enable --now rclone@gdrive.service" "habilita gdrive tras cargar el JSON"
+
+# ---------------------------------------------------------------------------
+# 7) --google-json se niega a pisar credenciales ya cargadas y rechaza un
+#    cliente *Web application*
+# ---------------------------------------------------------------------------
+nuevo_entorno
+sembrar_unidad
+sembrar_credenciales
+sembrar_json installed "${WORK}/installed.json"
+corre --provider gdrive --google-json "${WORK}/installed.json"
+assert_exit "${RC}" 1 "no pisa credenciales ya cargadas"
+assert_contiene "no las piso" "${OUT}" "explica que no sobrescribe"
+assert_contiene "GOCSPX-falso" "$(cat "${HOME_T}/.credentials/gdrive.env")" \
+  "conserva el secreto anterior"
+
+nuevo_entorno
+sembrar_unidad
+sembrar_json web "${WORK}/web.json"
+corre --provider gdrive --google-json "${WORK}/web.json"
+assert_exit "${RC}" 1 "rechaza un cliente Web application"
+assert_contiene "Desktop app" "${OUT}" "explica que hace falta Desktop app"
+
+# ---------------------------------------------------------------------------
+# 8) --check no se combina con --google-json
+# ---------------------------------------------------------------------------
+nuevo_entorno
+corre --check --provider gdrive --google-json "${WORK}/installed.json"
+assert_exit_no_cero "${RC}" "--check con --google-json sale distinto de 0"
+
+# ---------------------------------------------------------------------------
+# 9) Con credenciales y remotes ya creados: idempotente, no repite el OAuth,
 #    recarga systemd y habilita ambas unidades en orden.
 # ---------------------------------------------------------------------------
 nuevo_entorno
@@ -237,7 +343,7 @@ sembrar_unidad
 sembrar_credenciales
 sembrar_remotes gdrive onedrive
 corre --provider both
-assert_exit "${RC}" 0 "segunda corrida con todo listo sale 0"
+assert_exit "${RC}" 0 "corrida con todo listo sale 0"
 assert_sin_llamadas '^rclone config create' "no repite el OAuth si el remote existe"
 assert_llamada "systemctl --user daemon-reload" "recarga systemd"
 assert_llamada "systemctl --user enable --now rclone@gdrive.service" "habilita gdrive"
@@ -246,18 +352,18 @@ assert_antes "systemctl --user daemon-reload" "systemctl --user enable --now rcl
   "recarga systemd antes de habilitar"
 assert_existe "${HOME_T}/Cloud/gdrive" "crea el punto de montaje de gdrive"
 assert_existe "${HOME_T}/Cloud/onedrive" "crea el punto de montaje de onedrive"
-assert_contiene "RCLONE_DRIVE_CLIENT_SECRET=GOCSPX-falso" "$(cat "${HOME_T}/.credentials")" \
-  "no sobrescribe ~/.credentials existente"
+assert_contiene "RCLONE_DRIVE_CLIENT_SECRET=GOCSPX-falso" "$(cat "${HOME_T}/.credentials/gdrive.env")" \
+  "no sobrescribe gdrive.env existente"
 
 # Segunda corrida real: idempotente, mismo resultado.
 corre --provider both
 assert_exit "${RC}" 0 "repetir el script sale 0 (idempotente)"
 assert_existe "${HOME_T}/Cloud/gdrive" "el punto de montaje sigue existiendo"
-assert_contiene "RCLONE_DRIVE_CLIENT_SECRET=GOCSPX-falso" "$(cat "${HOME_T}/.credentials")" \
-  "la segunda corrida tampoco toca ~/.credentials"
+assert_contiene "RCLONE_DRIVE_CLIENT_SECRET=GOCSPX-falso" "$(cat "${HOME_T}/.credentials/gdrive.env")" \
+  "la segunda corrida tampoco toca gdrive.env"
 
 # ---------------------------------------------------------------------------
-# 6) --check con todo listo: sale 0 y no muta nada
+# 10) --check con todo listo: sale 0 y no muta nada
 # ---------------------------------------------------------------------------
 nuevo_entorno
 sembrar_unidad
@@ -275,7 +381,7 @@ fi
 assert_sin_llamadas '^systemctl --user (daemon-reload|enable)' "--check no habilita nada"
 
 # ---------------------------------------------------------------------------
-# 7) --provider inválido
+# 11) --provider inválido
 # ---------------------------------------------------------------------------
 nuevo_entorno
 corre --provider dropbox
@@ -283,7 +389,7 @@ assert_exit_no_cero "${RC}" "--provider inválido sale distinto de 0"
 assert_contiene "gdrive|onedrive|both" "${OUT}" "--provider inválido lista los valores válidos"
 
 # ---------------------------------------------------------------------------
-# 8) Multi-usuario (S13): dos HOMEs no se pisan entre sí
+# 12) Multi-usuario (S13): dos HOMEs no se pisan entre sí
 # ---------------------------------------------------------------------------
 nuevo_entorno
 HOME_A="${HOME_T}"
@@ -296,16 +402,16 @@ for h in "${HOME_A}" "${HOME_B}"; do
   sembrar_remotes gdrive onedrive
   HOME="${h}" CALLS_LOG="${CALLS_LOG}" PATH="${PATH_T}" \
     "${WORK}/repo/scripts/13-setup-cloud-mounts.sh" --provider gdrive --quiet >/dev/null 2>&1
-  printf '# marca-de-%s\n' "${h##*/}" >> "${h}/.credentials"
+  printf '# marca-de-%s\n' "${h##*/}" >> "${h}/.credentials/gdrive.env"
 done
 antes_a="$(find "${HOME_A}" -printf '%p %m %s\n' | sort)"
 HOME_T="${HOME_B}"
 corre --provider gdrive
 assert_exit "${RC}" 0 "segundo usuario corre el script sin errores"
-assert_existe "${HOME_A}/.credentials" "el usuario A conserva su ~/.credentials"
-assert_existe "${HOME_B}/.credentials" "el usuario B crea el suyo propio"
+assert_existe "${HOME_A}/.credentials/gdrive.env" "el usuario A conserva su gdrive.env"
+assert_existe "${HOME_B}/.credentials/gdrive.env" "el usuario B crea el suyo propio"
 assert_existe "${HOME_B}/Cloud/gdrive" "B tiene su propio punto de montaje"
-if grep -Fq '# marca-de-home-b' "${HOME_A}/.credentials"; then
+if grep -Fq '# marca-de-home-b' "${HOME_A}/.credentials/gdrive.env"; then
   falla "B no escribe en las credenciales de A"
 else
   pasa "B no escribe en las credenciales de A"
