@@ -51,6 +51,7 @@ COMPONENTES=(
   "DroidCam"
   "Dictado por voz (Handy)"
   "Nube (rclone)"
+  "Samba (share de Projects)"
   "Aplicaciones Flatpak"
 )
 # ---------------------------------------------------------------------------
@@ -169,6 +170,14 @@ run_component() {
         warn "Sin terminal para el OAuth: corré después ./scripts/13-setup-cloud-mounts.sh"
       fi
       info "Finalizado: Nube (rclone)"
+      ;;
+    "Samba (share de Projects)")
+      # samba + samba-client y, después, el share con un único usuario
+      # autorizado. La contraseña de Samba es un secreto del usuario: la pide
+      # smbpasswd y no se versiona.
+      "${SCRIPT_DIR}/scripts/02-install-packages.sh" samba.txt
+      "${SCRIPT_DIR}/scripts/14-setup-samba.sh"
+      info "Finalizado: Samba (share de Projects)"
       ;;
     "Aplicaciones Flatpak")
       # En instalación completa se instala todo el catálogo; elegido a mano,

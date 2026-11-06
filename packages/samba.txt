@@ -1,0 +1,5 @@
+# Samba: publica ~/Projects por SMB/CIFS para un único usuario
+# (scripts/14-setup-samba.sh). smbd, testparm, pdbedit y smbpasswd vienen en
+# `samba`; smbclient sólo se usa para probar el share desde el cliente.
+samba
+samba-client

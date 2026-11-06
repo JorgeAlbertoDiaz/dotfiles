@@ -70,6 +70,7 @@ catálogo es agregar una línea a `packages/flatpak-apps.txt`.
 | `dev-angular.txt` | Desarrollo Angular/Node |
 | `flatpak-apps.txt` | Aplicaciones Flatpak (appids de Flathub, 1 por línea) |
 | `cloud.txt` | `rclone` y sus completions (montajes de Drive y OneDrive) |
+| `samba.txt` | `samba` y `samba-client` (share de `Projects` por SMB/CIFS) |
 
 Los controladores de hardware **no** viven en `packages/`. Cada dispositivo
 tiene su propio entry-point autocontenido en `scripts/drivers/`, con nombre
@@ -185,6 +186,21 @@ Requisito de una sola vez: crear la app *Desktop* en Google Cloud Console y
 publicarla **In production** (en *Testing* Google expira el refresh token cada
 7 días). Procedimiento completo, verificación y trampas en
 [cloud-mounts.md](./cloud-mounts.md).
+
+### Componente `Samba (share de Projects)`
+
+Publica `~/Projects` por SMB/CIFS como una unidad de red, con lectura y
+escritura, **sólo** para el usuario que corre `scripts/14-setup-samba.sh`
+(en este equipo, `jorge`). No comparte el home ni abre shares de invitados:
+el `smb.conf` gestionado declara `valid users`, `map to guest = Never`
+y `guest ok = no`.
+
+Es **por máquina** (usa `sudo` para `/etc/samba/smb.conf`, el servicio `smb`
+y firewalld), pero la contraseña es del usuario y no se versiona: la define
+`sudo smbpasswd -a jorge` una sola vez. `--check` informa el estado sin mutar
+nada y sale 1 si falta algo; un `smb.conf` que no gestiona el repo no se pisa
+sin `--force` (que deja un respaldo). Procedimiento, verificación y trampas
+(AppArmor, SMB1, enlaces) en [samba.md](./samba.md).
 
 ### Tema claro/oscuro
 
