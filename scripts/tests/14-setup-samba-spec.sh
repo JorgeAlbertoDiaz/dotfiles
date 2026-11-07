@@ -75,6 +75,10 @@ crear_dobles() {
   cat > "${BIN_T}/sudo" <<'DOBLE'
 #!/usr/bin/env bash
 printf 'sudo %s\n' "$*" >> "${CALLS_LOG}"
+if [[ "${SUDO_FALLA:-0}" == "1" ]]; then
+  echo "sudo: a password is required" >&2
+  exit 1
+fi
 exec "$@"
 DOBLE
   cat > "${BIN_T}/smbd" <<'DOBLE'
@@ -91,6 +95,22 @@ if [[ "${TESTPARM_FALLA:-0}" == "1" ]]; then
   exit 1
 fi
 echo "Loaded services file OK."
+exit 0
+DOBLE
+  cat > "${BIN_T}/rpm" <<'DOBLE'
+#!/usr/bin/env bash
+printf 'rpm %s\n' "$*" >> "${CALLS_LOG}"
+case "${1:-}" in
+  -qf) [[ "${RPM_SIN_DUENO:-0}" == "1" ]] && exit 1
+       echo "samba-client-4.25.1.x86_64"; exit 0 ;;
+  -Vf) if [[ "${RPM_INTACTO:-0}" == "1" ]]; then
+         # el rpm real también reporta otros paths del paquete, no el smb.conf
+         echo ".M.......  g /var/samba"
+         exit 1
+       fi
+       echo "S.5....T.  c ${2:-/etc/samba/smb.conf}"
+       exit 1 ;;
+esac
 exit 0
 DOBLE
   cat > "${BIN_T}/pdbedit" <<'DOBLE'
@@ -144,6 +164,7 @@ sembrar_usuario_samba() {
 nuevo_entorno() {
   HOME_T="${WORK}/home-$1"
   BIN_T="${WORK}/bin-$1"
+  SBIN_T="${WORK}/sbin-$1"
   OUT_T="${WORK}/out-$1.txt"
   CALLS_LOG="${WORK}/calls-$1.log"
   PDB_FILE="${WORK}/pdb-$1.txt"
@@ -166,11 +187,15 @@ corre() {
   env HOME="${HOME_T}" \
       PATH="${BIN_T}:${PATH}" \
       SMB_CONF="${SMB_CONF}" \
+      SMB_SBIN_DIRS="${SBIN_T}" \
       CALLS_LOG="${CALLS_LOG}" \
       PDB_FILE="${PDB_FILE}" \
       SVC_FILE="${SVC_FILE}" \
       FW_FILE="${FW_FILE}" \
       TESTPARM_FALLA="${TESTPARM_FALLA:-0}" \
+      SUDO_FALLA="${SUDO_FALLA:-0}" \
+      RPM_INTACTO="${RPM_INTACTO:-0}" \
+      RPM_SIN_DUENO="${RPM_SIN_DUENO:-0}" \
       "${WORK}/repo-${CASO}/scripts/14-setup-samba.sh" "$@" > "${OUT_T}" 2>&1
 }
 
@@ -275,6 +300,29 @@ assert_no_contiene "${SMB_CONF}" "valid users = ${USUARIO_REAL}" \
   "S2: --user no deja además al usuario que corre el script"
 
 # ---------------------------------------------------------------------------
+# S3: el smb.conf por defecto del paquete no es del usuario: se reemplaza
+#     sin --force, y un archivo ajeno o sin dueño sí exige --force
+# ---------------------------------------------------------------------------
+CASO=paquete-intacto
+nuevo_entorno "${CASO}"
+printf '# smb.conf is the main Samba configuration file.\n[global]\n   workgroup = WORKGROUP\n' > "${SMB_CONF}"
+RPM_INTACTO=1 corre --user "${USUARIO_REAL}" --share "${SHARE_DIR}"
+assert_exit "$?" 0 "S3: el smb.conf por defecto del paquete se reemplaza sin --force"
+assert_contiene "${SMB_CONF}" "[projects]" "S3: el reemplazo deja la configuración gestionada"
+if find "$(dirname "${SMB_CONF}")" -maxdepth 1 -name 'smb.conf.bak.*' | grep -q .; then
+  falla "S3: el archivo por defecto del paquete no necesita respaldo"
+else
+  pasa "S3: el archivo por defecto del paquete no necesita respaldo"
+fi
+
+CASO=paquete-sin-dueno
+nuevo_entorno "${CASO}"
+printf '[global]\n   workgroup = AJENO\n' > "${SMB_CONF}"
+RPM_SIN_DUENO=1 RPM_INTACTO=1 corre --user "${USUARIO_REAL}" --share "${SHARE_DIR}"
+assert_exit "$?" 1 "S3: un smb.conf sin dueño de paquete exige --force"
+assert_contiene "${SMB_CONF}" "workgroup = AJENO" "S3: no pisa un archivo sin dueño de paquete"
+
+# ---------------------------------------------------------------------------
 # S3: testparm inválido aborta antes de instalar
 # ---------------------------------------------------------------------------
 CASO=testparm-falla
@@ -339,6 +387,45 @@ assert_exit "$?" 1 "S3: sin paquete samba sale 1"
 assert_contiene "${OUT_T}" "zypper in samba" "S3: indica el comando exacto de instalación"
 assert_contiene "${OUT_T}" "packages/samba.txt" "S3: nombra el paquete declarado en el repo"
 assert_no_existe "${SMB_CONF}" "S3: sin samba no escribe configuración"
+
+# ---------------------------------------------------------------------------
+# S3: smbd vive fuera del PATH (openSUSE lo deja en /usr/sbin): el script lo
+#     resuelve ahí en vez de decir que samba no está instalado
+# ---------------------------------------------------------------------------
+CASO=smbd-fuera-del-path
+nuevo_entorno "${CASO}"
+mkdir -p "${SBIN_T}"
+mv "${BIN_T}/smbd" "${SBIN_T}/smbd"
+corre --user "${USUARIO_REAL}" --share "${SHARE_DIR}"
+assert_exit "$?" 0 "S3: con smbd fuera del PATH no dice que falta samba"
+assert_no_contiene "${OUT_T}" "falta el paquete samba" \
+  "S3: no reporta el paquete samba como ausente"
+assert_existe "${SMB_CONF}" "S3: configura igual con smbd fuera del PATH"
+
+# ---------------------------------------------------------------------------
+# S3: sin credenciales de sudo el firewall no se toca y --check no miente
+# ---------------------------------------------------------------------------
+CASO=sudo-sin-credenciales
+nuevo_entorno "${CASO}"
+SUDO_FALLA=1 corre --user "${USUARIO_REAL}" --share "${SHARE_DIR}" --check
+assert_exit "$?" 1 "S3: --check sin credenciales de sudo sale 1"
+assert_contiene "${OUT_T}" "no pude consultar el estado" \
+  "S3: --check distingue «no pude consultar» de «no corre»"
+assert_no_llamada "S3: --check no abre el firewall sin poder consultarlo" "--add-service=samba"
+assert_contiene "${OUT_T}" "no pude consultarlo" \
+  "S3: no inventa que falta el usuario de Samba si no pudo consultarlo"
+
+: > "${CALLS_LOG}"
+SUDO_FALLA=1 corre --user "${USUARIO_REAL}" --share "${SHARE_DIR}"
+assert_exit "$?" 1 "S3: sin sudo la corrida falla con 1 en vez de fingir éxito"
+assert_contiene "${OUT_T}" "no pude crear" \
+  "S3: dice qué paso privilegiado falló"
+assert_contiene "${OUT_T}" "¿sudo sin credenciales?" \
+  "S3: explica la causa probable (sudo sin credenciales)"
+assert_no_contiene "${OUT_T}" "escrito:" \
+  "S3: no anuncia un smb.conf que no pudo escribir"
+assert_no_existe "${SMB_CONF}" "S3: sin sudo no queda un smb.conf a medias"
+assert_no_llamada "S3: sin sudo no intenta abrir el firewall" "--add-service=samba"
 
 # ---------------------------------------------------------------------------
 # S3: --help

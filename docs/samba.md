@@ -23,7 +23,10 @@ sudo smbpasswd -a jorge
 
 Esa contraseña **no se versiona** y no la escribe el script: es un secreto.
 Repetir `smbpasswd -a` sobre un usuario ya creado cambia su contraseña, así que
-sólo hace falta cuando querés cambiarla.
+sólo hace falta cuando querés cambiarla. La base de usuarios de Samba
+(`/var/lib/samba/private/passdb.tdb`) sólo la lee `root`: por eso el script
+consulta `pdbedit -L` con `sudo` y, sin credenciales, dice «no pude consultarlo»
+en vez de afirmar que el usuario no existe.
 
 ## 2. Uso
 
@@ -52,10 +55,18 @@ firewalld y crea el usuario de Samba.
 
 ## 3. Qué escribe
 
-Un solo archivo, `/etc/samba/smb.conf`, completo y con marca de origen: si el
-archivo no empieza con esa marca, el script se niega a tocarlo salvo `--force`
-(y entonces deja un `smb.conf.bak.<fecha>` al lado). Es idempotente: con el
-contenido ya al día no reescribe nada ni reinicia el servicio.
+Un solo archivo, `/etc/samba/smb.conf`, completo y con marca de origen en la
+primera línea. Es idempotente: con el contenido ya al día no reescribe nada ni
+reinicia el servicio. Qué hace si el archivo existe y no lo gestiona:
+
+| Situación | Qué hace |
+| --- | --- |
+| es el archivo por defecto del paquete, sin editar (`rpm -V`) | lo reemplaza, sin `--force` ni respaldo: es reproducible con `zypper` |
+| tiene cambios locales o no pertenece a ningún paquete | se niega; con `--force` respalda en `smb.conf.bak.<fecha>` y escribe |
+
+El default de openSUSE no es inocente: trae `[homes]` (los homes de todos),
+`[profiles]`, `[users]` y `map to guest = Bad User`. El gestionado publica sólo
+la carpeta pedida, con un único usuario y sin invitados.
 
 ```ini
 # gestionado por dotfiles (scripts/14-setup-samba.sh)
@@ -92,7 +103,9 @@ Unix de la carpeta no se tocan: la sesión corre como el usuario autenticado.
   por nombre es legado y la conexión va por 445.
 - firewalld recibe `firewall-cmd --permanent --add-service=samba` +
   `--reload`, que abre 139/445 sólo para el servicio `samba`. Si firewalld no
-  está corriendo, el script lo dice y no toca nada.
+  está corriendo, el script lo dice y no toca nada. La consulta del estado
+  necesita `sudo`: sin credenciales el script avisa «no pude consultar» en vez
+  de suponer que el firewall está cerrado o abierto.
 
 ## 5. Cómo se conecta un cliente
 
@@ -124,8 +137,11 @@ no deben verse por SMB.
 ## 7. Límites y trampas
 
 - **No instala paquetes**: los declara `packages/samba.txt` y verifica que
-  `smbd`, `testparm`, `pdbedit` y `smbpasswd` estén en `PATH`. Si faltan, dice
-  el comando exacto (`sudo zypper in samba`).
+  `smbd`, `testparm`, `pdbedit` y `smbpasswd` existan. Ojo con el PATH: openSUSE
+  deja `smbd` en `/usr/sbin`, que no está en el PATH de una sesión normal, así
+  que el script busca con `command -v` y después en `/usr/sbin`, `/sbin` y
+  `/usr/local/sbin` (por eso «samba instalado» y «en el PATH» no son lo mismo).
+  Si de verdad falta, dice el comando exacto (`sudo zypper in samba`).
 - **No versiona la contraseña** de Samba ni la escribe en ningún archivo.
 - **Sólo un usuario por share**: si querés otro share para otra persona, corré
   el script con otro `--name`, `--share` y `--user`; el archivo es uno solo y

@@ -33,6 +33,7 @@ declarada en el repo (paquete, script, docs y spec).
 - [x] T2 — `packages/samba.txt` + componente «Samba (share de Projects)» en `install.sh` · S3 · inline · slice de cableado
 - [x] T3 — `scripts/14-setup-samba.sh`: `smb.conf` gestionado, servicio `smb`, firewalld y usuario de Samba · S1,S2 · inline · `e8e6770`
 - [x] T4 — `docs/samba.md` + registro en `docs/index.md` y `README.md` · S3 · inline · slice de cableado
+- [x] T7 — bugfix reportado: `smbd` fuera del `PATH`, pasos privilegiados verificados y consultas con `sudo` · S1,S2,S3 · inline · `701b313`
 - [ ] T5 — aplicar en este servidor (requiere `sudo` interactivo y contraseña de Samba) · S1,S2 · manual
 - [ ] T6 — commits por slice y vuelta a `feat/cloud-mounts` · S4 · inline
 
@@ -70,4 +71,29 @@ declarada en el repo (paquete, script, docs y spec).
   spec volvió a 15/0 y el caso «instalación completa» ahora ejercita el
   componente. Confirmado contra `f272599` (copia con `git archive`): ahí
   pasaba, así que el fallo era de este cambio.
+- **L3** (reporte, verbatim): «ya instale samba, pero el script me dice que no
+  esta instalado»
+- **E6** (evidencia, bug real de T7): `rpm -q samba` confirma
+  `samba-4.25.1` instalado, pero `smbd` vive en `/usr/sbin`, que no está en el
+  PATH de una sesión normal: `command -v smbd` fallaba y el script concluía
+  «falta el paquete samba». Arreglado con `ruta_bin` (`command -v` y, si no,
+  `/usr/sbin`, `/sbin`, `/usr/local/sbin`) y rutas resueltas para invocar
+  `testparm`/`pdbedit`/`smbpasswd`. Caso nuevo en la spec verificado en RED
+  contra `e8e6770` (3 fallos) y en verde después.
+- **E7** (evidencia, bugs encontrados al reproducir L3): sin credenciales de
+  `sudo` el script anunciaba «smb.conf escrito» sin escribirlo (ahora cada paso
+  privilegiado se verifica y falla con «no pude …»); `pdbedit -L` sin root sale
+  0 con lista vacía y daba falso «falta el usuario» (ahora va con `sudo` y
+  distingue «no existe» de «no pude consultarlo»); y la consulta del firewall
+  sin credenciales se reportaba como «firewalld no corre» (ahora es
+  «desconocido» y no se toca). Spec 78/0.
+- **E8** (evidencia, entorno): al instalar el paquete apareció
+  `/etc/samba/smb.conf` por defecto (más `lmhosts`), y ese default de openSUSE
+  no es inocente: trae `[homes]`, `[profiles]`, `[users]` y
+  `map to guest = Bad User`. El script ahora distingue el default *intacto*
+  (`rpm -V`, sin `--force` ni respaldo, porque `zypper` lo reproduce) de un
+  archivo editado o sin dueño de paquete (exige `--force` y respalda). Caso
+  nuevo en la spec verificado en RED contra el commit anterior (2 fallos) y en
+  la máquina real: detecta el default, avisa y se detiene en el límite de
+  `sudo` sin mutar nada.
 

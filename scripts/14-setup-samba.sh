@@ -34,6 +34,16 @@ source "${SCRIPT_DIR}/common.sh"
 readonly SMB_CONF="${SMB_CONF:-/etc/samba/smb.conf}"
 readonly SMB_SERVICE="${SMB_SERVICE:-smb}"
 readonly MARCA="# gestionado por dotfiles (scripts/14-setup-samba.sh)"
+# Los binarios de samba no siempre están en el PATH del usuario: openSUSE deja
+# smbd en /usr/sbin, que no está en el PATH de una sesión normal. Se busca con
+# command -v y, si no aparece, en estos directorios (redefinible en la spec).
+readonly SMB_SBIN_DIRS="${SMB_SBIN_DIRS:-/usr/sbin /sbin /usr/local/sbin /usr/bin /usr/local/bin}"
+
+# Rutas resueltas de los binarios que se invocan (se llenan en
+# verificar_dependencias).
+SMB_BIN_TESTPARM=""
+SMB_BIN_PDBEDIT=""
+SMB_BIN_SMBPASSWD=""
 
 SHARE_DIR=""
 SHARE_NAME="${SMB_SHARE_NAME:-projects}"
@@ -63,10 +73,34 @@ usage() {
 # ---------------------------------------------------------------------------
 # Verificaciones previas
 # ---------------------------------------------------------------------------
+ruta_bin() {
+  local bin="$1" ruta dir
+  ruta="$(command -v "${bin}" 2>/dev/null || true)"
+  if [[ -n "${ruta}" ]]; then
+    printf '%s\n' "${ruta}"
+    return 0
+  fi
+  for dir in ${SMB_SBIN_DIRS}; do
+    if [[ -x "${dir}/${bin}" ]]; then
+      printf '%s\n' "${dir}/${bin}"
+      return 0
+    fi
+  done
+  return 1
+}
+
 verificar_dependencias() {
-  local faltan=() bin
+  local faltan=() bin ruta
   for bin in smbd testparm pdbedit smbpasswd; do
-    command -v "${bin}" >/dev/null 2>&1 || faltan+=("${bin}")
+    if ! ruta="$(ruta_bin "${bin}")"; then
+      faltan+=("${bin}")
+      continue
+    fi
+    case "${bin}" in
+      testparm)  SMB_BIN_TESTPARM="${ruta}" ;;
+      pdbedit)   SMB_BIN_PDBEDIT="${ruta}" ;;
+      smbpasswd) SMB_BIN_SMBPASSWD="${ruta}" ;;
+    esac
   done
   if [[ ${#faltan[@]} -gt 0 ]]; then
     error "falta el paquete samba (${faltan[*]})."
@@ -151,6 +185,18 @@ config_al_dia() {
   config_gestionada && [[ "$(cat "${SMB_CONF}")" == "$(generar_config)" ]]
 }
 
+# El archivo que deja el paquete samba (openSUSE: smb.conf + lmhosts) no es una
+# configuración propia: trae [homes], [profiles], [users] y
+# `map to guest = Bad User`. Si nadie lo editó, reemplazarlo es seguro y no
+# necesita --force; si tiene cambios locales, sí.
+config_paquete_intacta() {
+  local salida
+  command -v rpm >/dev/null 2>&1 || return 1
+  rpm -qf "${SMB_CONF}" >/dev/null 2>&1 || return 1
+  salida="$(rpm -Vf "${SMB_CONF}" 2>/dev/null || true)"
+  [[ "${salida}" != *"${SMB_CONF}"* ]]
+}
+
 # escribir_config -> 0 si escribió, 1 si ya estaba al día, 2 si abortó.
 escribir_config() {
   local deseado tmp respaldo
@@ -162,28 +208,55 @@ escribir_config() {
   fi
 
   if [[ -f "${SMB_CONF}" ]] && ! config_gestionada; then
-    if [[ ${FORCE} -ne 1 ]]; then
+    if config_paquete_intacta; then
+      warn "${SMB_CONF} es el archivo por defecto del paquete samba, sin cambios."
+      warn "Lo reemplazo: el de openSUSE comparte los homes ([homes]) y acepta"
+      warn "invitados; el gestionado publica sólo ${SHARE_DIR}."
+    elif [[ ${FORCE} -ne 1 ]]; then
       error "${SMB_CONF} existe y no lo gestiona este script: no lo toco."
       error "Revisalo a mano o corré de nuevo con --force (deja un respaldo)."
       return 2
+    else
+      respaldo="${SMB_CONF}.bak.$(date +%Y%m%d-%H%M%S)"
+      como_root "respaldar ${SMB_CONF}" cp -p "${SMB_CONF}" "${respaldo}" || return 2
+      warn "respaldo del smb.conf anterior en ${respaldo}"
     fi
-    respaldo="${SMB_CONF}.bak.$(date +%Y%m%d-%H%M%S)"
-    as_root cp -p "${SMB_CONF}" "${respaldo}"
-    warn "respaldo del smb.conf anterior en ${respaldo}"
   fi
 
   tmp="$(mktemp "${TMPDIR:-/tmp}/smb.conf.XXXXXX")"
   printf '%s\n' "${deseado}" > "${tmp}"
-  if ! testparm -s --suppress-prompt "${tmp}" >/dev/null 2>&1; then
+  if ! "${SMB_BIN_TESTPARM}" -s --suppress-prompt "${tmp}" >/dev/null 2>&1; then
     rm -f "${tmp}"
     error "testparm rechaza la configuración generada: no la instalo."
     return 2
   fi
-  as_root mkdir -p "$(dirname "${SMB_CONF}")"
-  as_root install -m 0644 "${tmp}" "${SMB_CONF}"
+  local destino_dir
+  destino_dir="$(dirname "${SMB_CONF}")"
+  if ! como_root "crear ${destino_dir}" mkdir -p "${destino_dir}"; then
+    rm -f "${tmp}"
+    return 2
+  fi
+  if ! como_root "escribir ${SMB_CONF}" install -m 0644 "${tmp}" "${SMB_CONF}"; then
+    rm -f "${tmp}"
+    return 2
+  fi
   rm -f "${tmp}"
   ok "${SMB_CONF} escrito: share «${SHARE_NAME}» de ${SHARE_DIR}, sólo ${SHARE_USER}"
   return 0
+}
+
+# Ejecuta un paso privilegiado y, si falla, dice qué se intentaba y por qué
+# puede haber fallado (sudo sin credenciales es el caso más común cuando el
+# script se corre sin terminal).
+como_root() {
+  local descripcion="$1"
+  shift
+  if as_root "$@"; then
+    return 0
+  fi
+  error "no pude ${descripcion}."
+  error "¿sudo sin credenciales? Corré el script en una terminal donde sudo ande."
+  return 1
 }
 
 # ---------------------------------------------------------------------------
@@ -196,24 +269,32 @@ servicio_habilitado() {
 aplicar_servicio() {
   local cambios="$1"
   if ! servicio_habilitado; then
-    as_root systemctl enable --now "${SMB_SERVICE}"
+    como_root "habilitar ${SMB_SERVICE}" systemctl enable --now "${SMB_SERVICE}" || return 1
     ok "servicio ${SMB_SERVICE} habilitado y arrancado"
   elif [[ ${cambios} -eq 0 ]]; then
-    as_root systemctl restart "${SMB_SERVICE}"
+    como_root "reiniciar ${SMB_SERVICE}" systemctl restart "${SMB_SERVICE}" || return 1
     ok "servicio ${SMB_SERVICE} reiniciado para aplicar la configuración"
   else
     ok "servicio ${SMB_SERVICE} ya habilitado"
   fi
 }
 
-# permitido | pendiente | omitido
+# permitido | pendiente | detenido | omitido | desconocido
 estado_firewall() {
   if [[ ${FIREWALL} -ne 1 ]] || ! command -v firewall-cmd >/dev/null 2>&1; then
     printf 'omitido\n'
     return 0
   fi
-  if [[ "$(as_root firewall-cmd --state 2>/dev/null || true)" != "running" ]]; then
-    printf 'omitido\n'
+  local estado
+  estado="$(as_root firewall-cmd --state 2>/dev/null || true)"
+  if [[ -z "${estado}" ]]; then
+    # Sin credenciales de sudo la consulta no responde: no es lo mismo que
+    # "firewalld no corre", y confundirlos esconde un share sin abrir.
+    printf 'desconocido\n'
+    return 0
+  fi
+  if [[ "${estado}" != "running" ]]; then
+    printf 'detenido\n'
     return 0
   fi
   if as_root firewall-cmd --permanent --query-service=samba >/dev/null 2>&1; then
@@ -229,15 +310,19 @@ aplicar_firewall() {
       ok "el firewall ya permite el servicio samba"
       ;;
     omitido)
-      if [[ ${FIREWALL} -ne 1 ]]; then
-        info "firewall: omitido (--no-firewall)"
-      else
-        warn "firewalld no está corriendo: no toco el firewall"
-      fi
+      info "firewall: omitido (--no-firewall o sin firewall-cmd)"
+      ;;
+    detenido)
+      warn "firewalld no está corriendo: no toco el firewall"
+      ;;
+    desconocido)
+      warn "no pude consultar el firewall (¿sudo sin credenciales?): no lo toco"
+      warn "Repetí el script en una terminal donde sudo no pida contraseña."
       ;;
     *)
-      as_root firewall-cmd --permanent --add-service=samba
-      as_root firewall-cmd --reload
+      como_root "abrir el servicio samba en el firewall" \
+        firewall-cmd --permanent --add-service=samba || return 1
+      como_root "recargar el firewall" firewall-cmd --reload || return 1
       ok "firewall: servicio samba habilitado (puertos 139/445)"
       ;;
   esac
@@ -246,28 +331,45 @@ aplicar_firewall() {
 # ---------------------------------------------------------------------------
 # Usuario de Samba
 # ---------------------------------------------------------------------------
-usuario_samba_existe() {
-  local lista
-  lista="$(pdbedit -L 2>/dev/null || true)"
-  printf '%s\n' "${lista}" \
+# 0 = existe, 1 = no existe, 2 = no se pudo consultar.
+# La base de passdb (/var/lib/samba/private/passdb.tdb) sólo la abre root: sin
+# sudo, `pdbedit -L` sale 0 con la lista vacía y daría un falso negativo.
+estado_usuario_samba() {
+  local salida rc
+  salida="$(as_root "${SMB_BIN_PDBEDIT}" -L 2>&1)"
+  rc=$?
+  [[ ${rc} -eq 0 ]] || return 2
+  case "${salida}" in
+    *[Ff]ailed*) return 2 ;;
+  esac
+  printf '%s\n' "${salida}" \
     | awk -F: -v u="${SHARE_USER}" '$1 == u { encontrado = 1 } END { exit encontrado ? 0 : 1 }'
 }
 
 asegurar_usuario_samba() {
-  if usuario_samba_existe; then
-    ok "usuario de Samba «${SHARE_USER}» ya existe"
-    return 0
-  fi
+  local estado
+  if estado_usuario_samba; then estado=0; else estado=$?; fi
+  case "${estado}" in
+    0)
+      ok "usuario de Samba «${SHARE_USER}» ya existe"
+      return 0
+      ;;
+    2)
+      warn "no pude verificar el usuario de Samba (¿sudo sin credenciales?)"
+      warn "Comprobalo con: sudo pdbedit -L"
+      return 0
+      ;;
+  esac
   if [[ ! -t 0 || ! -t 1 ]]; then
     warn "falta el usuario de Samba «${SHARE_USER}»."
     warn "Creálo una sola vez con: sudo smbpasswd -a ${SHARE_USER}"
     return 0
   fi
   info "creando el usuario de Samba «${SHARE_USER}» (te pide la contraseña)"
-  if as_root smbpasswd -a "${SHARE_USER}"; then
+  if como_root "crear el usuario de Samba «${SHARE_USER}»" \
+      "${SMB_BIN_SMBPASSWD}" -a "${SHARE_USER}"; then
     ok "usuario de Samba «${SHARE_USER}» creado"
   else
-    warn "no se pudo crear el usuario de Samba «${SHARE_USER}»."
     warn "Repetilo a mano: sudo smbpasswd -a ${SHARE_USER}"
   fi
 }
@@ -297,19 +399,31 @@ revisar() {
 
   case "$(estado_firewall)" in
     permitido) ok "firewall: el servicio samba está permitido" ;;
-    omitido)   info "firewall: no aplica (firewalld no corre o --no-firewall)" ;;
+    omitido)   info "firewall: no aplica (--no-firewall o sin firewall-cmd)" ;;
+    detenido)  info "firewall: firewalld no corre, no aplica" ;;
+    desconocido)
+      warn "firewall: no pude consultar el estado (¿sudo sin credenciales?)"
+      pendientes=$((pendientes + 1))
+      ;;
     *)
       warn "firewall: el servicio samba no está permitido"
       pendientes=$((pendientes + 1))
       ;;
   esac
 
-  if usuario_samba_existe; then
-    ok "usuario de Samba: «${SHARE_USER}» existe"
-  else
-    warn "usuario de Samba: falta «${SHARE_USER}» (sudo smbpasswd -a ${SHARE_USER})"
-    pendientes=$((pendientes + 1))
-  fi
+  local estado_usuario
+  if estado_usuario_samba; then estado_usuario=0; else estado_usuario=$?; fi
+  case "${estado_usuario}" in
+    0) ok "usuario de Samba: «${SHARE_USER}» existe" ;;
+    2)
+      warn "usuario de Samba: no pude consultarlo (¿sudo sin credenciales?)"
+      pendientes=$((pendientes + 1))
+      ;;
+    *)
+      warn "usuario de Samba: falta «${SHARE_USER}» (sudo smbpasswd -a ${SHARE_USER})"
+      pendientes=$((pendientes + 1))
+      ;;
+  esac
 
   if [[ ${pendientes} -eq 0 ]]; then
     ok "Todo listo."
