@@ -34,8 +34,8 @@ declarada en el repo (paquete, script, docs y spec).
 - [x] T3 — `scripts/14-setup-samba.sh`: `smb.conf` gestionado, servicio `smb`, firewalld y usuario de Samba · S1,S2 · inline · `e8e6770`
 - [x] T4 — `docs/samba.md` + registro en `docs/index.md` y `README.md` · S3 · inline · slice de cableado
 - [x] T7 — bugfix reportado: `smbd` fuera del `PATH`, pasos privilegiados verificados y consultas con `sudo` · S1,S2,S3 · inline · `701b313`
-- [ ] T5 — aplicar en este servidor (requiere `sudo` interactivo y contraseña de Samba) · S1,S2 · manual
-- [ ] T6 — commits por slice y vuelta a `feat/cloud-mounts` · S4 · inline
+- [x] T5 — aplicar en este servidor (lo corrió el humano con `sudo` y `smbpasswd`) · S1,S2 · manual
+- [x] T6 — commits por slice y vuelta a `feat/cloud-mounts` · S4 · inline
 
 ## Log
 
@@ -96,4 +96,14 @@ declarada en el repo (paquete, script, docs y spec).
   nuevo en la spec verificado en RED contra el commit anterior (2 fallos) y en
   la máquina real: detecta el default, avisa y se detiene en el límite de
   `sudo` sin mutar nada.
+- **L4** (pedido, verbatim): «Este cambio ya esta aprobado y funcionando,
+  integremos esto con la rama de la que vino y borremos esta feature branch»
+- **E9** (evidencia, cierre): `feat/samba-share` integrada en
+  `feat/cloud-mounts` con fast-forward (sin commits nuevos, sin conflictos) y
+  la rama de feature eliminada (`git branch -d`, era `45c40a2`). Estado real
+  verificado: `smb` `enabled`+`active`, escuchando en 139/445, y el
+  `/etc/samba/smb.conf` instalado es el gestionado
+  (`valid users = jorge`, `map to guest = Never`, `guest ok = no`,
+  `path = /home/jorge/Projects`). Specs en verde tras la integración: 83/0 y
+  15/0.
 
