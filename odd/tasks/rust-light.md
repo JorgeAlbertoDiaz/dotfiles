@@ -134,16 +134,21 @@ Roles estables (mismo hex en todos los componentes):
 
 ## Tasks
 
-- [ ] **T1** — S1-S2: paleta y colores de cliente en `config/sway/themes/light.conf` · commit `feat(sway): tema claro con paleta rust-light`
-- [ ] **T2** — S4-S6: barra oscura y chips en `config/waybar/themes/light.css` · commit `feat(waybar): barra con sidebar-bg y chips rust-light`
-- [ ] **T3** — S4-S5: centro de notificaciones oscuro en `config/swaync/themes/light.css` · commit `feat(swaync): panel de notificaciones con sidebar-bg`
-- [ ] **T4** — S4-S7: launcher y OSD en `config/wofi/themes/light.css` y `config/wob/themes/light.ini` · commit `feat(wofi): launcher oscuro con la paleta rust-light`
+- [x] **T1** — S1-S2: paleta y colores de cliente en `config/sway/themes/light.conf` · commit `feat(sway): tema claro con paleta rust-light`
+- [x] **T2** — S4-S6: barra oscura y chips en `config/waybar/themes/light.css` · commit `feat(waybar): barra con sidebar-bg y chips rust-light`
+- [x] **T3** — S4-S5: centro de notificaciones oscuro en `config/swaync/themes/light.css` · commit `feat(swaync): panel de notificaciones con sidebar-bg`
+- [x] **T4** — S4-S7: launcher y OSD en `config/wofi/themes/light.css` y `config/wob/themes/light.ini` · commit `feat(wofi): launcher oscuro con la paleta rust-light`
 - [ ] **T5** — S1, S6-S7: lock, terminal y nvim en `config/swaylock/themes/light.conf`, `config/foot/foot.ini`, `config/nvim/lua/config/theme.lua` · commit `feat(foot): documento claro y lock con paleta rust-light`
 - [ ] **T6** — S3-S6, S10-S11: herdr versionado (`config/herdr/`) y hook en `config/sway/scripts/sway-theme.sh` · commit `feat(herdr): tema rust-light versionado y sidebar legible`
 - [ ] **T7** — S6-S7, S10: tmux versionado (`config/tmux/`) y hook en `sway-theme.sh` · commit `feat(tmux): barra de estado con la paleta rust-light`
 - [ ] **T8** — S3-S7: spec de contraste + docs (`docs/tema-claro-oscuro.md`, `docs/organizacion-sway.md`) · commit `docs(tema): documenta la paleta rust-light y su verificación`
 
 ## Log
+
+- **L5** — Corte de rebanada: los commits de T1-T4 (sway, waybar, swaync, wofi+wob) suman
+  ~460 líneas autoradas. La feature entera es un solo cambio de paleta sobre la misma rama
+  `feat/rust-light`; la rebanada siguiente (foot/nvim, herdr, tmux, docs+spec) sigue en la
+  misma rama porque comparte la tabla de roles y se revisa mejor con el contexto completo.
 
 - **L1** — «Quiero que modifiques el theme lignt, ahora esta demasiado blanco, herdr tiene partes que no se leen en el menu lateral derecho, me gustaria que usaras la configuracion de css de rust para las variables
 
