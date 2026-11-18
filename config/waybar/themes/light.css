@@ -3,13 +3,17 @@
    enlace simbólico a themes/dark.css o themes/light.css. No edites el enlace:
    cambiá acá (o corré `sway-theme.sh dark|light|toggle`).
 
-   Paleta del tema rust (mdbook), modo claro: bg #e1e1db, fg #262625,
-   superficie #d9d9d3, superficie alterna #c1c1bb, acento #e69f67, azul #2b79a2,
-   atenuado #6e6b5e.
+   Paleta del tema rust (mdbook), modo claro. La barra es "chrome": usa
+   --sidebar-bg #3B2E2A de fondo y --sidebar-fg #C8C9DB de texto, con
+   --sidebar-spacer #45373A en los chips de módulo y --sidebar-non-existant
+   #505254 en hover. El acento --sidebar-active #E69F67 rellena el workspace
+   activo y su texto va en --fg #262625.
 
-   En claro el naranja se usa como RELLENO (workspace activo), no como texto:
-   sobre #e1e1db no tiene contraste. El texto destacado va en el marrón
-   #3b2e2a, igual que la sidebar del tema original.
+   Sobre el chrome oscuro NO se usan --links #2B79A2 ni
+   --blockquote-caution-color #AA1721 como texto: su contraste con #3B2E2A es
+   2.71 y 1.77. El azul y el rojo van sólo como relleno con texto claro;
+   para "atenuado" y avisos sobre chrome se usa --table-header-bg #B3A497
+   (5.39) y --warning-border #FF8E00 (5.66).
    Detalle de roles en docs/tema-claro-oscuro.md. */
 
 * {
@@ -26,32 +30,33 @@
 }
 
 window#waybar {
-	background-color: #e1e1db;
-	color: #262625;
+	background-color: #3b2e2a;
+	color: #c8c9db;
 	transition-property: background-color;
 	transition-duration: .5s;
 }
 
-/* Espaciado y estilo general para los módulos */
+/* Espaciado y estilo general para los módulos: chips un escalón más claros que
+   la barra para separar módulos sin volver al blanco del documento. */
 #workspaces, #mode, #clock, #custom-weather, #network, #cpu, #memory, #disk, #pulseaudio, #tray, #custom-notification, #custom-power {
 	padding: 0 10px;
 	margin: 4px 4px;
 	border-radius: 4px;
-	background-color: #d9d9d3;
+	background-color: #45373a;
 }
 
 /* --- Workspaces --- */
 #workspaces button {
 	padding: 0 8px;
 	background-color: transparent;
-	color: #6e6b5e; /* Atenuado: workspace inactivo */
+	color: #b3a497; /* Atenuado sobre chrome: 5.39 contra #3b2e2a */
 	box-shadow: inset 0 -2px transparent;
 	transition: all 0.2s ease;
 }
 
 #workspaces button:hover {
-	background: #c1c1bb;
-	color: #262625;
+	background: #505254;
+	color: #c8c9db;
 }
 
 /* Resaltado del workspace activo (naranja del tema) */
@@ -62,40 +67,40 @@ window#waybar {
 }
 
 #workspaces button.urgent {
-	background-color: #b7410e;
+	background-color: #aa1721;
 	color: #e1e1db;
 }
 
 /* --- Acentos específicos por módulo --- */
 #clock {
-	color: #3b2e2a;
+	color: #e69f67;
 }
 
 #custom-weather {
-	color: #6e6b5e;
+	color: #b3a497;
 }
 
 #network {
-	color: #2b79a2;
+	color: #c8c9db;
 }
 
 #pulseaudio {
-	color: #262625;
+	color: #c8c9db;
 }
 
 #pulseaudio.muted {
-	color: #b7410e;
+	color: #ff8e00;
 }
 
 /* Iconos del sistema (atenuados para no distraer) */
 #cpu, #memory, #disk {
-	color: #6e6b5e;
+	color: #c8c9db;
 	padding: 0 6px; /* Más pegados entre sí */
 }
 
 #custom-power {
 	color: #e1e1db;
-	background-color: #b7410e;
+	background-color: #aa1721;
 	border-radius: 4px;
 	margin-right: 8px;
 	padding: 0 12px;
@@ -103,15 +108,15 @@ window#waybar {
 
 /* Ocultar módulos cuando no hay info */
 #network.disconnected {
-	color: #6e6b5e;
+	color: #ff8e00;
 }
 
-/* Tooltips */
+/* Tooltips: popup del tema, también sobre chrome oscuro */
 tooltip {
-	background: #e1e1db;
+	background: #3b2e2a;
 	border: 1px solid #b38f6b;
 }
 
 tooltip label {
-	color: #262625;
+	color: #c8c9db;
 }
