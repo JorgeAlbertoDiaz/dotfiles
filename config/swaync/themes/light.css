@@ -9,26 +9,31 @@
    variables (y los @define-color de compatibilidad) en vez de competir por
    especificidad; las reglas del final afinan detalles puntuales.
 
-   Paleta del tema rust (mdbook), modo claro: bg #e1e1db, fg #262625,
-   superficie #d9d9d3, superficie alterna #c1c1bb, acento #e69f67, azul #2b79a2,
-   atenuado #6e6b5e. El acento se usa como RELLENO con texto oscuro: sobre
-   #e1e1db el naranja no tiene contraste como texto.
-   Transparencia: 90% opaco (0.9) en el panel y las notificaciones.
+   Paleta del tema rust (mdbook), modo claro. El centro de notificaciones es
+   chrome: --sidebar-bg #3B2E2A de fondo, --sidebar-fg #C8C9DB de texto, las
+   tarjetas en --sidebar-spacer #45373A y el hover en --sidebar-non-existant
+   #505254. El borde del panel usa --theme-popup-border #B38F6B (el borde de
+   popup del tema rust) y el acento #E69F67 queda para los estados activos.
+
+   Sobre chrome oscuro no se usan --links #2B79A2 ni --blockquote-caution-color
+   #AA1721 como texto (2.71 y 1.77 contra #3B2E2A): las críticas se marcan con
+   --warning-border #FF8E00 (5.66).
+   Transparencia: 96% opaco en el panel y las tarjetas.
    Detalle de roles en docs/tema-claro-oscuro.md. */
 
 :root {
-	--cc-bg: rgba(225, 225, 219, 0.9);
-	--noti-border-color: #b4b4ac;
-	--noti-bg: 217, 217, 211; /* rgb de #d9d9d3 (el sistema lo usa como rgba())*/
-	--noti-bg-alpha: 0.9;
-	--noti-bg-darker: rgba(225, 225, 219, 0.9);
-	--noti-bg-hover: rgba(193, 193, 187, 0.95);
-	--noti-bg-focus: rgba(193, 193, 187, 0.9);
-	--noti-close-bg: rgba(193, 193, 187, 0.9);
-	--noti-close-bg-hover: rgba(180, 180, 172, 0.95);
-	--text-color: #262625;
-	--text-color-disabled: #6e6b5e;
-	--bg-selected: #e69f67;
+	--cc-bg: rgba(59, 46, 42, 0.96);
+	--noti-border-color: #505254;
+	--noti-bg: 69, 55, 58; /* rgb de #45373a (el sistema lo usa como rgba())*/
+	--noti-bg-alpha: 0.96;
+	--noti-bg-darker: rgba(59, 46, 42, 0.9);
+	--noti-bg-hover: rgba(80, 82, 84, 0.95);
+	--noti-bg-focus: rgba(80, 82, 84, 0.9);
+	--noti-close-bg: rgba(80, 82, 84, 0.9);
+	--noti-close-bg-hover: rgba(179, 164, 151, 0.95);
+	--text-color: #c8c9db;
+	--text-color-disabled: #b3a497;
+	--bg-selected: #505254;
 	--border: 1px solid var(--noti-border-color);
 	--border-radius: 8px;
 	--notification-icon-size: 56px;
@@ -37,19 +42,19 @@
 }
 
 /* Compatibilidad con versiones/ramas que usan @define-color */
-@define-color cc-bg rgba(225, 225, 219, 0.9);
-@define-color noti-border-color #b4b4ac;
-@define-color noti-bg rgba(217, 217, 211, 0.9);
-@define-color noti-bg-opaque #d9d9d3;
-@define-color noti-bg-darker rgba(225, 225, 219, 0.9);
-@define-color noti-bg-hover rgba(193, 193, 187, 0.95);
-@define-color noti-bg-hover-opaque #c1c1bb;
-@define-color noti-bg-focus rgba(193, 193, 187, 0.9);
-@define-color noti-close-bg rgba(193, 193, 187, 0.9);
-@define-color noti-close-bg-hover rgba(180, 180, 172, 0.95);
-@define-color text-color #262625;
-@define-color text-color-disabled #6e6b5e;
-@define-color bg-selected #e69f67;
+@define-color cc-bg rgba(59, 46, 42, 0.96);
+@define-color noti-border-color #505254;
+@define-color noti-bg rgba(69, 55, 58, 0.96);
+@define-color noti-bg-opaque #45373a;
+@define-color noti-bg-darker rgba(59, 46, 42, 0.9);
+@define-color noti-bg-hover rgba(80, 82, 84, 0.95);
+@define-color noti-bg-hover-opaque #505254;
+@define-color noti-bg-focus rgba(80, 82, 84, 0.9);
+@define-color noti-close-bg rgba(80, 82, 84, 0.9);
+@define-color noti-close-bg-hover rgba(179, 164, 151, 0.95);
+@define-color text-color #c8c9db;
+@define-color text-color-disabled #b3a497;
+@define-color bg-selected #505254;
 
 /* Fuente en toda la app */
 * {
@@ -57,19 +62,18 @@
 	background-clip: padding-box;
 }
 
-/* Panel principal: borde naranja, igual que el workspace activo de waybar y el
-   borde de la ventana enfocada en sway. */
+/* Panel principal: mismo borde que el popup del tema rust. */
 .control-center {
-	border: 2px solid #e69f67;
+	border: 2px solid #b38f6b;
 }
 
 /* Menubar: toggles fijos y menú desplegable (energía) */
 .widget-menubar > box > button {
-	background: #d9d9d3;
-	border: 1px solid #b4b4ac;
+	background: #45373a;
+	border: 1px solid #505254;
 	border-radius: 4px;
 	margin: 2px;
-	color: #262625;
+	color: #c8c9db;
 }
 
 .widget-menubar > box > button:hover {
@@ -78,8 +82,8 @@
 }
 
 .widget-menubar menuitem {
-	background: #d9d9d3;
-	color: #262625;
+	background: #45373a;
+	color: #c8c9db;
 }
 
 .widget-menubar menuitem:hover {
@@ -87,12 +91,13 @@
 	color: #262625;
 }
 
-/* Barra de progreso de mpris/volumen en azul del tema */
+/* Barra de progreso de mpris/volumen con el acento del tema */
 progressbar progress {
-	background-color: #2b79a2;
+	background-color: #e69f67;
 }
 
-/* Notificaciones críticas en el rojo óxido del tema */
+/* Notificaciones críticas: el rojo del tema no se lee sobre chrome, se marca
+   con el naranja de aviso. */
 .notification.critical {
-	border: 1px solid #b7410e;
+	border: 1px solid #ff8e00;
 }

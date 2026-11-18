@@ -1,0 +1,14 @@
+# Herdr — tema OSCURO (rust-dark).
+#
+# scripts/sway-theme.sh hace que ~/.config/herdr/config.toml sea un enlace
+# simbólico a este archivo (o a themes/light.toml). No edites el enlace: cambiá
+# acá y corré `sway-theme.sh dark`.
+#
+# El tema oscuro de herdr queda como estaba (nord). Sólo el claro cambió de
+# paleta con la feature rust-light; este archivo existe para que el enlace de
+# sway-theme.sh tenga un destino por tema.
+onboarding = false
+
+[theme]
+name = "nord"
+auto_switch = false

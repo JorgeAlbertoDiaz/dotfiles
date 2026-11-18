@@ -1,7 +1,7 @@
 # Tema claro/oscuro del escritorio
 
 Un solo interruptor cambia el escritorio wayland entre un tema **oscuro** y uno
-**claro**: sway, waybar, swaync, wofi, foot, swaylock, wob, las apps
+**claro**: sway, waybar, swaync, wofi, foot, swaylock, wob, herdr, tmux, las apps
 GTK/libadwaita y nvim. La paleta sale del tema *rust* de mdbook (los colores que
 usa la documentación de Rust), adaptada a roles de escritorio.
 
@@ -54,8 +54,14 @@ repuntar el enlace; no hay plantillas ni archivos intermedios.
 | foot | `~/.config/foot/foot.ini` | *dos paletas en el mismo archivo* | `SIGUSR1`/`SIGUSR2` (en vivo) |
 | swaylock | `~/.config/swaylock/config` | → `themes/dark.conf`/`light.conf` | al bloquear |
 | wob | `~/.config/wob/wob.ini` | → `themes/dark.ini`/`light.ini` | con el reload de sway (reinicia el OSD) |
+| herdr | `~/.config/herdr/config.toml` | → `themes/light.toml`/`dark.toml` | `herdr server reload-config` |
+| tmux | `~/.config/tmux/tmux.conf` | → `themes/light.conf`/`dark.conf` | `tmux source-file` |
 | apps GTK | `gsettings` | — | inmediato (GTK escucha el cambio) |
 | nvim | `~/.config/nvim/lua/config/theme.lua` | lee el archivo de estado | `--remote-expr` sobre cada socket abierto |
+
+Como swaylock, herdr no tiene configuración aparte del tema: `config.toml` es un
+enlace simbólico y su configuración propia vive dentro de `themes/light.toml` o
+`themes/dark.toml`.
 
 Dos excepciones a propósito:
 
@@ -83,33 +89,71 @@ mismo naranja en los dos modos; lo que cambia es sobre qué fondo se usa.
 
 | Rol | Oscuro | Claro |
 |---|---|---|
-| fondo de app/barra | `#2b2b27` | `#e1e1db` |
-| texto | `#cecece` | `#262625` |
-| superficie (módulos, inputs) | `#33322e` | `#d9d9d3` |
-| superficie alterna (hover) | `#3b3b37` | `#c1c1bb` |
-| borde destacado | `#8c6a4a` | `#b38f6b` |
-| divisor | `#5e5e56` | `#b4b4ac` |
-| acento (relleno) | `#e69f67` | `#e69f67` |
+| fondo documento | `#2b2b27` | `#E1E1DB` |
+| texto documento | `#cecece` | `#262625` |
+| chrome (barra, notificaciones, launcher, OSD, lock, herdr, tmux) | — | `#3B2E2A` |
+| texto sobre chrome | — | `#C8C9DB` |
+| chrome elevado (chips, tarjetas, input) | `#33322e` | `#45373A` |
+| chrome hover | `#3b3b37` | `#505254` |
+| panel atenuado del documento | — | `#C2C2BC` |
+| borde de documento | `#5e5e56` | `#B6B6AF` |
+| borde de popup | `#8c6a4a` | `#B38F6B` |
+| cabecera atenuada | — | `#B3A497` |
+| superficie alterna | — | `#DADAD3` |
+| borde de tabla | — | `#D5D5CD` |
+| acento (relleno) | `#e69f67` | `#E69F67` |
 | texto sobre acento | `#241c19` | `#262625` |
-| azul (enlace, progreso, red) | `#4ea8d6` | `#2b79a2` |
-| texto atenuado | `#8a8b99` | `#6e6b5e` |
-| urgente/crítico | `#e06c3a` | `#b7410e` |
+| azul (enlace/info) | `#4ea8d6` | `#2B79A2` |
+| texto atenuado | `#8a8b99` | `#6E6B5E` |
+| marca de búsqueda | — | `#DEC2A2` |
+| realce | — | `#D3A17A` |
+| urgente/crítico | `#e06c3a` | `#AA1721` con texto `#E1E1DB` |
+| aviso | — | `#FF8E00` |
+| borde de cabecera de sidebar | — | `#8C391F` |
 
-Dos reglas que explican las decisiones raras:
+Los `hsl()` del CSS de mdbook se materializan en hex, porque sway/CSS/toml/wob y
+swaylock sólo aceptan hex: `--bg` `hsl(60,9%,87%)` = `#E1E1DB`,
+`--quote-bg` `hsl(60,5%,75%)` = `#C2C2BC`, `--quote-border` `hsl(60,5%,70%)` =
+`#B6B6AF`, `--table-border-color` `hsl(60,9%,82%)` = `#D5D5CD` y
+`--table-alternate-bg` `hsl(60,9%,84%)` = `#DADAD3`.
+
+Tres reglas que explican las decisiones raras:
 
 1. **En claro el naranja es relleno, no texto.** Sobre `#e1e1db` el naranja no
-   tiene contraste; por eso el texto destacado en modo claro va en el marrón
-   `#3b2e2a` (el `--sidebar-bg` del tema original) y los enlaces en el azul.
+   tiene contraste; por eso el acento va siempre como relleno con texto oscuro
+   `#262625`, el texto sobre el chrome `#3b2e2a` (el `--sidebar-bg` del tema
+   original) va en `#c8c9db` y los enlaces en el azul `#2b79a2`.
 2. **Los ANSI de foot se derivan, no se copian.** El CSS de mdbook define 5
    colores, no 16. En oscuro se eligen tonos cálidos que se lean sobre
    `#2b2b27`; en claro, `bright white` es el texto más oscuro (`#262625`),
    porque el fondo es claro.
+3. **Sobre el chrome oscuro el azul y el rojo son relleno, no texto.** Contra
+   `#3b2e2a` el azul `#2b79a2` da 2.71:1 y el rojo `#aa1721` 1.77:1, por debajo
+   de WCAG AA; se usan sólo como relleno con texto claro. Los avisos van en
+   `#ff8e00` (5.66:1) y el texto atenuado sobre chrome en `#b3a497` (5.39:1).
+
+### herdr
+
+El tema claro de herdr usa `name = "terminal"`: el área de paneles (el
+documento) toma el fondo ANSI de foot —la paleta rust, `#e1e1db` con texto
+`#262625`— y el chrome queda en la paleta oscura del escritorio.
+
+El sidebar de spaces/agents, que no se leía, es chrome: `sidebar_bg` y
+`panel_bg` en `#3b2e2a` (el `--sidebar-bg`), fila activa en `#45373a`
+(`--sidebar-spacer`), cursor de Navegar en `#505254` y tabs inactivas en
+`#45373a`. Los tokens de texto de herdr son **globales** (no hay un "sidebar fg"
+aparte): por eso, con el chrome oscuro, `text` va en `#c8c9db` (7.97:1) y
+`subtext0`/`overlay0` en `#b3a497` (5.39:1). Los paneles no usan `text`, así que
+el documento sigue claro sin conflicto. El tema oscuro queda en nord, sin
+cambios.
 
 ## Agregar otro tema
 
-1. Crear los archivos completos: `config/<app>/themes/<nombre>.{css,conf,ini}`
-   para waybar, swaync, wofi, sway, swaylock y wob (copiar el `dark.*` y cambiar
-   la paleta; los CSS no tienen variables, así que el archivo es completo).
+1. Crear los archivos completos: `config/<app>/themes/<nombre>.{css,conf,ini,toml}`
+   para waybar, swaync, wofi, sway, swaylock, wob, herdr y tmux (copiar el
+   `dark.*` y cambiar la paleta; los CSS no tienen variables, así que el archivo
+   es completo). En tmux el archivo que la app lee (`tmux.conf`) es un enlace a
+   `themes/<tema>.conf`, igual que herdr y swaylock.
 2. Agregar la paleta a `config/foot/foot.ini` como `[colors-<nombre>]` si se
    quiere que foot lo soporte.
 3. Extender `sway-theme.sh`: el nombre del tema en la validación de acciones y
@@ -123,10 +167,15 @@ Dos reglas que explican las decisiones raras:
 # Unitario: corre el script real sobre un HOME y un XDG de prueba
 ./scripts/tests/sway-theme-spec.sh
 
+# Paleta: verifica que cada color del tema claro es una variable del tema rust
+# y que cada par texto/fondo alcanza WCAG AA
+./scripts/tests/tema-paleta-spec.sh
+
 # En la sesión: el tema activo y a dónde apuntan los enlaces
 ~/.config/sway/scripts/sway-theme.sh status
 readlink ~/.config/waybar/style.css ~/.config/swaync/style.css ~/.config/wofi/style.css
 readlink ~/.config/sway/themes/current.conf ~/.config/swaylock/config ~/.config/wob/wob.ini
+readlink ~/.config/herdr/config.toml ~/.config/tmux/tmux.conf
 grep '^initial-color-theme=' ~/.config/foot/foot.ini
 gsettings get org.gnome.desktop.interface color-scheme
 
