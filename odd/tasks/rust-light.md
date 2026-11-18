@@ -246,3 +246,11 @@ Los paneles, tiene un bg mas oscuro (si puedes hacer que tambien herdr lo tenga 
     relee la paleta del terminal al redibujar por `SIGWINCH`; `sway-theme.sh`
     ahora manda la señal después de `herdr server reload-config`. Sin ella el
     sidebar quedaba con el fondo viejo hasta el próximo resize.
+
+- **L7** — Revisión nativa (RDD): lineage `review-1da7409c4aea93d8`, tier high,
+  900 líneas, 4 lentes, **aprobada y reconocida** (`authority: burned`). Todos los
+  hallazgos quedaron advisory/no bloqueantes; el único BLOCKER
+  (`R4-tmux-silent-failure`) fue refutado. Pendientes sugeridos, para trabajo
+  posterior y no para re-revisar este candidato: reload de tmux con `-L` por
+  servidor, orden/robustez del SIGWINCH de herdr, y `falla()`/`assert_en_paleta`
+  del spec de paleta (el segundo parámetro documentado no se usa).
