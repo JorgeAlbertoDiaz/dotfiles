@@ -109,10 +109,11 @@ hasta `## Log`.
 - [x] T6 — Componente "Nube (rclone)" en `install.sh`: ítem de menú, rama interactiva y rama no interactiva, sin romper el menú actual · S8 · inline
 - [x] T7 — `docs/cloud-mounts.md` + `docs/diagramas/cloud-mounts.mmd` + `docs/index.md` + `README.md` (estructura y componentes), con la sección «varios usuarios en la misma PC» (S13) · S10,S13 · inline
 - [x] T8 — `scripts/tests/13-setup-cloud-mounts-spec.sh` con `HOME` temporal: `--help` sale 0, `--check` no muta nada, `CHANGEME` aborta con exit ≠ 0 y sin escribir unidades, `mkdir` idempotente, permisos `600` del archivo copiado, dos HOMEs independientes (S13) · S4,S8,S12,S13 · inline · `d1b7773`
-- [ ] T9 — Verificación end-to-end en la máquina real: `rclone about` de ambos remotes, `mount | grep fuse.rclone`, escritura y lectura, reboot, corte de red y despertar de suspensión · S1,S2,S5 · manual, requiere navegador para el OAuth
+- [x] T9 — Verificación end-to-end en la máquina real, con el OAuth hecho por el humano: `--check --provider gdrive` 8/8 («Todo listo»), `rclone about gdrive:` (400 GiB, 9.383 GiB usados), `findmnt ~/Cloud/gdrive` (`fuse.rclone`, `rw,nosuid,nodev`), lectura del árbol real del Drive, escritura y borrado de un archivo de prueba, unidad `enabled` + `active` · S1,S2,S5 · manual · ver E13
+- [ ] T13 — Seguimiento, no bloquea el merge por decisión del humano: los chequeos físicos que faltan de T9 (reboot con montaje automático, corte de red con reconexión, suspender/despertar) y el montaje de OneDrive cuando se configure · S5 · manual
 - [x] T11 — Credenciales en `~/.credentials/` (directorio 700, `<remote>.env` 600), creación sin pisar, `EnvironmentFile=%h/.credentials/%i.env`, rechazo del layout viejo de archivo único · S4,S13 · inline · `50da87e`
 - [x] T12 — Plantilla de credenciales en el script (heredoc) y `--google-json`: convierte el JSON de Google con `jq`, archiva `gdrive.json`, rechaza *Web application* y no pisa credenciales cargadas · S4 · inline · `50da87e`
-- [ ] T10 — Cierre: `shellcheck` del script nuevo, estado del menú de `install.sh`, registro de evidencia en este documento · S8-S10 · inline
+- [x] T10 — Cierre: `shellcheck` del script nuevo, estado del menú de `install.sh`, registro de evidencia en este documento · S8-S10 · inline · ver E13, E14
 
 ## Log
 
@@ -215,3 +216,28 @@ hasta `## Log`.
   vivir en el repo bajo una ruta con `.credentials` (el guard de escritura del
   harness la bloquea), así que pasó al propio script como heredoc, por decisión
   del usuario. El `.gitignore` sigue ignorando `.credentials`.
+
+- **L7** (cierre, verbatim): «Excelente, no hacia falta pasar a produccion esta
+  app solo bastaba con agregar el usuario (yo mismo) como usuario autorizado,
+  cierra los cambios y vamos a mergear con main asi ya puedo hacer el push».
+  Decisiones: el cierre se hace con el OAuth ya hecho por el humano (basta con
+  ser *test user*, sin publicar la app); el merge a `main` lo hace el agente y
+  el `push` queda para el humano.
+- **E13** (evidencia, T9/T10, máquina real): `--check --provider gdrive` 8/8
+  «Todo listo» (rclone 1.75.2, plantilla de unidad presente, directorio de
+  credenciales 700, el `.env` de gdrive 600, remote configurado, punto de
+  montaje, unidad habilitada, montado); `rclone about gdrive:` = 400 GiB
+  totales / 9.383 GiB usados / 363 GiB libres; `findmnt` = `gdrive{...}:` sobre
+  `fuse.rclone` con `rw,nosuid,nodev,user_id=1000`; `ls` del árbol real del
+  Drive; escritura y borrado de `prueba-verificacion-rust-light` con la cola de
+  subida y la limpieza del VFS en el journal; unidad `enabled` + `active`;
+  `rclone.conf` en 600 y sin `client_id`, porque el montaje toma el propio por
+  `EnvironmentFile=%h/.credentials/%i.env`. El spec del componente sigue en
+  68/0.
+- **E14** (docs, las trampas que costaron tiempo): `docs/cloud-mounts.md` ahora
+  dice que publicar la app es opcional (alcanza con agregarte en *Test users*)
+  y suma tres trampas: el `403 access_denied` de *Testing* sin test user; el
+  OAuth cancelado que deja el remote con token vacío y la unidad en bucle de
+  `Restart=on-failure` (salida: `disable --now` + `rclone config delete`); y
+  que los comandos `rclone` sueltos usan el `client_id` compartido de rclone
+  salvo que cargues el entorno del remote a mano.

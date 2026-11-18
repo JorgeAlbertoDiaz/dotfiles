@@ -50,12 +50,17 @@ En <https://console.cloud.google.com/>:
    - *Scopes*: no hace falta agregar nada a mano; rclone pide `.../auth/drive`
      en el momento de autorizar.
    - *Test users*: sólo hacen falta mientras la app esté en *Testing*.
-4. **Publicar la app.** *OAuth consent screen* → *Publish app* → **In
-   production**. Esto es lo que evita el problema caro de abajo: en *Testing*
-   Google **expira el refresh token a los 7 días** y el montaje empieza a
-   fallar con `invalid_grant` sin explicación. Publicada y sin verificar, la
-   app sirve para uso personal con hasta 100 usuarios y muestra una pantalla de
-   advertencia que se acepta con *Advanced → Go to &lt;app&gt; (unsafe)*.
+4. **Autorizarte a vos mismo (publicar es opcional).** Con la app en
+   *Testing* alcanza con agregar tu cuenta en *Audience* → *Test users* →
+   *+ Add users*: sin ese paso el OAuth termina en **403 `access_denied`** («la
+   app se está probando y sólo acceden los testers aprobados por el
+   desarrollador»). Publicar (*OAuth consent screen* → *Publish app* → **In
+   production**, sin verificar) no hace falta para autorizar, pero sí evita el
+   problema caro de abajo: en *Testing* Google **expira el refresh token a los
+   7 días** y el montaje empieza a fallar con `invalid_grant` sin explicación.
+   Publicada y sin verificar, la app sirve para uso personal y muestra una
+   pantalla de advertencia que se acepta con *Advanced → Go to &lt;app&gt;
+   (unsafe)*.
 5. **Crear la credencial.** *APIs & Services* → *Credentials* → *Create
    credentials* → **OAuth client ID** → *Application type*: **Desktop app** →
    nombre → *Create*. Google muestra el **Client ID** y el **Client secret**;
@@ -171,6 +176,21 @@ Pruebas que valen la pena después del primer montaje: reiniciar la máquina
 
 - **App en *Testing* ⇒ `invalid_grant` cada 7 días.** Publicarla *In
   production* (sin verificar) es lo que evita reautorizar todas las semanas.
+- **403 `access_denied` en la pantalla de Google**: la app está en *Testing* y
+  tu cuenta no figura en *Audience → Test users*. Agregala y reintentá; el
+  cambio tarda un minuto en propagarse.
+- **Un OAuth cancelado no borra el remote: lo deja con token vacío.** El
+  montaje falla con `empty token found - please run "rclone config reconnect
+  gdrive:"` y, como la unidad es `Restart=on-failure`, se queda reintentando
+  cada pocos segundos. Y como `remote_configurado()` sólo mira el nombre, la
+  corrida siguiente del script dice «el remote gdrive ya existe» y saltea el
+  OAuth. Salida: `systemctl --user disable --now rclone@gdrive.service` y
+  `rclone config delete gdrive`, después reintentar la corrida real.
+- **Comandos `rclone` sueltos usan el `client_id` compartido de rclone** (el
+  que Google retira durante 2026) salvo que cargues el env del remote antes: el
+  montaje no se afecta porque la unidad lleva `EnvironmentFile=`, pero para
+  `rclone about`, `rclone copy`, etc. a mano, cargá el `.env` de
+  `~/.credentials/` con `set -a; . <archivo>; set +a` primero.
 - **Cambiar el `client_id`/`client_secret` en `~/.credentials/gdrive.env` no
   basta**: el refresh token guardado en `rclone.conf` fue emitido por el
   client_id anterior y el montaje falla con `401`. Después de rotarlo hay que
