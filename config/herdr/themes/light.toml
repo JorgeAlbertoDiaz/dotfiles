@@ -1,0 +1,40 @@
+# Herdr — tema CLARO (rust-light).
+#
+# scripts/sway-theme.sh hace que ~/.config/herdr/config.toml sea un enlace
+# simbólico a este archivo (o a themes/dark.toml). No edites el enlace: cambiá
+# acá y corré `sway-theme.sh light`.
+#
+# Por qué `name = "terminal"` y no un tema claro con nombre propio: así el panel
+# de herdr toma el fondo ANSI de foot (que es la paleta rust: #E1E1DB / #262625)
+# y el chrome de herdr queda igual que el resto del escritorio. Los tokens de
+# `[theme.custom]` son los que el tema rust sí puede fijar acá:
+#
+#   sidebar_bg   --quote-bg #C2C2BC (panel más oscuro que el documento)
+#   active_row_bg --table-header-bg #B3A497 (fila activa, contraste 6.26)
+#   selection_bg  --theme-popup-border #B38F6B (cursor de Navegar, 5.09)
+#   panel_bg      --quote-bg #C2C2BC
+#   text          --fg #262625 (8.47 sobre el panel: el sidebar se lee)
+#   subtext0      --sidebar-bg #3B2E2A (texto secundario, 7.29)
+#   overlay0/1    --inline-code-color #6E6B5E y --sidebar-spacer #45373A
+#
+# `accent`, `red`, `green`, `yellow`, `blue`, `teal`, `mauve` y `peach` NO se
+# pisan: en el tema rust el naranja es relleno, no texto (1.23 contra el panel),
+# y los estados de agente necesitan colores legibles que ya aporta el ANSI.
+onboarding = false
+
+[theme]
+name = "terminal"
+auto_switch = false
+
+[theme.custom]
+sidebar_bg = "#c2c2bc"
+active_row_bg = "#b3a497"
+selection_bg = "#b38f6b"
+panel_bg = "#c2c2bc"
+surface0 = "#d5d5cd"
+surface1 = "#c2c2bc"
+surface_dim = "#b6b6af"
+overlay0 = "#6e6b5e"
+overlay1 = "#45373a"
+text = "#262625"
+subtext0 = "#3b2e2a"

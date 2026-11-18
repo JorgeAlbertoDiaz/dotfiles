@@ -13,6 +13,10 @@
 #   S11  un único estado de texto + enlaces simbólicos a archivos nativos.
 #   S13  los CSS no dependen de colores hardcodeados fuera de themes/.
 #
+# Extensión rust-light (odd/tasks/rust-light.md): S6, S7 y S10 piden que herdr y
+# tmux entren en el mismo toggle, con las mismas garantías (enlace al tema
+# activo, aviso si falta el payload, recarga de las apps vivas).
+#
 # Corre el script REAL sobre un árbol aislado (config/ copiado, HOME/XDG/estado
 # y sockets falsos, stubs en PATH) sin tocar el sistema.
 set -uo pipefail
@@ -82,7 +86,7 @@ crear_fixture() {
   # Stubs: registran su invocación (nombre + argumentos) y salen 0. Los de
   # recarga van a reload.log; gsettings a su propio log para poder afirmar
   # "log de recarga vacío" y "gsettings exacto" por separado.
-  for cmd in swaymsg swaync-client pkill pgrep notify-send nvim; do
+  for cmd in swaymsg swaync-client pkill pgrep notify-send nvim herdr tmux; do
     cat > "${STUBS}/${cmd}" <<EOF
 #!/usr/bin/env bash
 printf '%s %s\n' "\$(basename "\$0")" "\$*" >> "${RELOAD_LOG}"
@@ -172,6 +176,12 @@ assert_resuelve "${CONFIG}/swaylock/config" "el enlace de swaylock resuelve"
 assert_enlace "${CONFIG}/wob/wob.ini" "themes/light.ini" \
   "wob apunta a themes/light.ini"
 assert_resuelve "${CONFIG}/wob/wob.ini" "el enlace de wob resuelve"
+assert_enlace "${CONFIG}/herdr/config.toml" "themes/light.toml" \
+  "herdr apunta a themes/light.toml"
+assert_resuelve "${CONFIG}/herdr/config.toml" "el enlace de herdr resuelve"
+assert_enlace "${CONFIG}/tmux/tmux.conf" "themes/light.conf" \
+  "tmux apunta a themes/light.conf"
+assert_resuelve "${CONFIG}/tmux/tmux.conf" "el enlace de tmux resuelve"
 assert_linea "${CONFIG}/foot/foot.ini" "initial-color-theme=light" \
   "foot.ini lleva initial-color-theme=light"
 assert_linea "${CONFIG}/foot/foot.ini" "font=JetBrainsMono Nerd Font:size=12" \
@@ -208,6 +218,10 @@ assert_enlace "${CONFIG}/swaylock/config" "themes/dark.conf" \
   "swaylock apunta a themes/dark.conf"
 assert_enlace "${CONFIG}/wob/wob.ini" "themes/dark.ini" \
   "wob apunta a themes/dark.ini"
+assert_enlace "${CONFIG}/herdr/config.toml" "themes/dark.toml" \
+  "herdr apunta a themes/dark.toml"
+assert_enlace "${CONFIG}/tmux/tmux.conf" "themes/dark.conf" \
+  "tmux apunta a themes/dark.conf"
 assert_linea "${CONFIG}/foot/foot.ini" "initial-color-theme=dark" \
   "foot.ini lleva initial-color-theme=dark"
 assert_linea "${GSETTINGS_LOG}" "gsettings set org.gnome.desktop.interface gtk-theme Adwaita-dark" \
@@ -295,6 +309,10 @@ assert_contiene "${RELOAD_LOG}" "pgrep -x tail" \
   "la recarga busca los tail huérfanos del FIFO de wob"
 assert_contiene "${RELOAD_LOG}" "swaymsg reload" \
   "recarga sway con swaymsg reload"
+assert_contiene "${RELOAD_LOG}" "herdr server reload-config" \
+  "recarga herdr con server reload-config"
+assert_contiene "${RELOAD_LOG}" "tmux source-file ${CONFIG}/tmux/tmux.conf" \
+  "recarga tmux con source-file del tema activo"
 assert_contiene "${RELOAD_LOG}" "notify-send Tema Modo claro" \
   "notifica 'Modo claro'"
 assert_contiene "${RELOAD_LOG}" "nvim --server ${RUN}/nvim.999.0" \

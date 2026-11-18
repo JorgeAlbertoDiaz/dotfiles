@@ -2,7 +2,7 @@
 # sway-theme.sh — cambia el tema claro/oscuro de todo el escritorio sway.
 #
 # Un solo comando mueve TODO el escritorio (sway, waybar, swaync, wofi, foot,
-# swaylock, wob, GTK/libadwaita y nvim) entre "dark" y "light".
+# swaylock, wob, herdr, tmux, GTK/libadwaita y nvim) entre "dark" y "light".
 #
 # Uso:
 #   sway-theme.sh [toggle|dark|light|apply|status] [--no-reload] [--quiet]
@@ -35,7 +35,7 @@ Acciones:
   status        imprime el tema activo (dark|light)
 
 Opciones:
-  --no-reload   no recarga las apps abiertas (foot, sway, swaync, nvim)
+  --no-reload   no recarga las apps abiertas (foot, sway, swaync, herdr, tmux, nvim)
   --quiet       suprime avisos y la notificación
   -h, --help    muestra esta ayuda
 EOF
@@ -78,7 +78,9 @@ enlaces_de_tema() {
     "wofi|wofi/style.css|wofi/themes/${tema}.css" \
     "sway|sway/themes/current.conf|sway/themes/${tema}.conf" \
     "swaylock|swaylock/config|swaylock/themes/${tema}.conf" \
-    "wob|wob/wob.ini|wob/themes/${tema}.ini"
+    "wob|wob/wob.ini|wob/themes/${tema}.ini" \
+    "herdr|herdr/config.toml|herdr/themes/${tema}.toml" \
+    "tmux|tmux/tmux.conf|tmux/themes/${tema}.conf"
 }
 
 # Una app está desplegada cuando existe su directorio en $CONFIG_HOME. Las que
@@ -112,7 +114,7 @@ escribir_estado() {
 # apuntan al archivo de tema del repo sin duplicar contenido. `-n` evita que
 # ln siga un enlace existente hacia un directorio. El target se calcula
 # quitando el prefijo del directorio del enlace (waybar/style.css ->
-# themes/dark.css), para no repetir a mano las seis rutas.
+# themes/dark.css), para no repetir a mano las ocho rutas.
 aplicar_enlaces() {
   local tema="$1" app="" enlace="" payload="" dir="" target=""
   while IFS='|' read -r app enlace payload; do
@@ -224,6 +226,16 @@ recargar() {
   # swaync recarga su CSS sin cerrar el panel (solo si está corriendo).
   if command -v swaync-client >/dev/null 2>&1 && pgrep -x swaync >/dev/null 2>&1; then
     swaync-client -rs >/dev/null 2>&1 || true
+  fi
+
+  # herdr relee config.toml (y con ella el tema) en el servidor que ya corre.
+  if command -v herdr >/dev/null 2>&1 && pgrep -x herdr >/dev/null 2>&1; then
+    herdr server reload-config >/dev/null 2>&1 || true
+  fi
+
+  # tmux: el enlace ya apunta al tema nuevo; cada servidor vivo relee el archivo.
+  if command -v tmux >/dev/null 2>&1 && [[ -f "${CONFIG_HOME}/tmux/tmux.conf" ]]; then
+    tmux source-file "${CONFIG_HOME}/tmux/tmux.conf" >/dev/null 2>&1 || true
   fi
 
   # sway relee client.* con reload, solo si hay sesión.

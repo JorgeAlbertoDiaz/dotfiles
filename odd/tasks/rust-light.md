@@ -138,9 +138,9 @@ Roles estables (mismo hex en todos los componentes):
 - [x] **T2** — S4-S6: barra oscura y chips en `config/waybar/themes/light.css` · commit `feat(waybar): barra con sidebar-bg y chips rust-light`
 - [x] **T3** — S4-S5: centro de notificaciones oscuro en `config/swaync/themes/light.css` · commit `feat(swaync): panel de notificaciones con sidebar-bg`
 - [x] **T4** — S4-S7: launcher y OSD en `config/wofi/themes/light.css` y `config/wob/themes/light.ini` · commit `feat(wofi): launcher oscuro con la paleta rust-light`
-- [ ] **T5** — S1, S6-S7: lock, terminal y nvim en `config/swaylock/themes/light.conf`, `config/foot/foot.ini`, `config/nvim/lua/config/theme.lua` · commit `feat(foot): documento claro y lock con paleta rust-light`
-- [ ] **T6** — S3-S6, S10-S11: herdr versionado (`config/herdr/`) y hook en `config/sway/scripts/sway-theme.sh` · commit `feat(herdr): tema rust-light versionado y sidebar legible`
-- [ ] **T7** — S6-S7, S10: tmux versionado (`config/tmux/`) y hook en `sway-theme.sh` · commit `feat(tmux): barra de estado con la paleta rust-light`
+- [x] **T5** — S1, S6-S7: lock, terminal y nvim en `config/swaylock/themes/light.conf`, `config/foot/foot.ini`, `config/nvim/lua/config/theme.lua` · commit `feat(foot): documento claro y lock con paleta rust-light`
+- [x] **T6** — S3-S6, S10-S11: herdr versionado (`config/herdr/`) y hook en `config/sway/scripts/sway-theme.sh` · commit `feat(herdr): tema rust-light versionado y sidebar legible`
+- [x] **T7** — S6-S7, S10: tmux versionado (`config/tmux/`) y hook en `sway-theme.sh` · commit `feat(tmux): barra de estado con la paleta rust-light`
 - [ ] **T8** — S3-S7: spec de contraste + docs (`docs/tema-claro-oscuro.md`, `docs/organizacion-sway.md`) · commit `docs(tema): documenta la paleta rust-light y su verificación`
 
 ## Log
