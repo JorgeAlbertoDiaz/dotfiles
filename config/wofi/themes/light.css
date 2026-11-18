@@ -4,9 +4,11 @@
    cambiá acá (o corré `sway-theme.sh dark|light|toggle`). wofi lee el CSS al
    abrirse, así que el cambio se ve en el próximo lanzamiento.
 
-   Paleta del tema rust (mdbook), modo claro: bg #e1e1db, fg #262625,
-   superficie #d9d9d3, superficie alterna #c1c1bb, acento #e69f67 (relleno),
-   azul #2b79a2, divisor #b4b4ac.
+   Paleta del tema rust (mdbook), modo claro. El launcher es chrome: fondo
+   --sidebar-bg #3B2E2A, texto --sidebar-fg #C8C9DB, input en --sidebar-spacer
+   #45373A y hover en --sidebar-non-existant #505254. El borde de la ventana es
+   --theme-popup-border #B38F6B y la entrada seleccionada se rellena con el
+   acento #E69F67 con texto --fg #262625.
    Detalle de roles en docs/tema-claro-oscuro.md. */
 
 * {
@@ -15,23 +17,24 @@
 }
 
 window {
-	background-color: #e1e1db;
-	border: 2px solid #e69f67;
+	background-color: #3b2e2a;
+	color: #c8c9db;
+	border: 2px solid #b38f6b;
 	border-radius: 6px;
 }
 
 #input {
 	margin: 6px;
 	padding: 8px;
-	border: 1px solid #b4b4ac;
+	border: 1px solid #505254;
 	border-radius: 4px;
-	background-color: #d9d9d3;
-	color: #262625;
-	caret-color: #2b79a2;
+	background-color: #45373a;
+	color: #c8c9db;
+	caret-color: #e69f67;
 }
 
 #input:focus {
-	border: 1px solid #b38f6b;
+	border: 1px solid #e69f67;
 }
 
 #inner-box,
@@ -46,11 +49,11 @@ window {
 #entry {
 	padding: 6px 8px;
 	border-radius: 4px;
-	color: #262625;
+	color: #c8c9db;
 }
 
 #entry:hover {
-	background-color: #c1c1bb;
+	background-color: #505254;
 }
 
 #entry:selected {

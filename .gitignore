@@ -25,6 +25,12 @@ temps/
 # Archivos generados durante la ejecución, cachés locales y WIP sin commitear.
 temp/
 
+# Credenciales locales (client_secret OAuth y tokens). El repo no versiona
+# ninguna: las plantillas con placeholders las genera
+# scripts/13-setup-cloud-mounts.sh en ~/.credentials/<remote>.env, y el JSON de
+# Google se archiva ahí como <remote>.json. Ambos fuera del repo.
+.credentials
+
 # Python
 __pycache__/
 *.pyc

@@ -48,6 +48,9 @@ dev, drivers de hardware y dotfiles.
 │   ├── 05-install-fonts.sh  # Instala y configura Nerd Fonts por app
 │   ├── 08-setup-zsh.sh      # Instala los plugins de zsh (sin sudo)
 │   ├── 09-setup-nvim.sh     # Instala plugins y LSP de nvim (sin sudo)
+│   ├── 12-setup-handy.sh    # Dictado por voz: RPM pinneado + ajustes
+│   ├── 13-setup-cloud-mounts.sh  # Monta Drive/OneDrive con rclone (por usuario)
+│   ├── 14-setup-samba.sh    # Publica ~/Projects por SMB/CIFS a un solo usuario
 │   └── drivers/              # Controladores por hardware (un script por placa)
 │       ├── drivers-menu.sh   # Submenú: lista y lanza cada driver-*.sh
 │       └── driver-nvidia-gtx1060.sh  # Repo NVIDIA + G06 + GRUB/modprobe
@@ -80,6 +83,15 @@ Más detalles en [docs/index.md](docs/index.md).
   repositorio oficial de NVIDIA.
 - Las Nerd Fonts se descargan por familia desde `ryanoasis/nerd-fonts`
   (GitHub Releases) y se instalan en `~/.local/share/fonts` sin sudo.
+- El componente «Samba (share de Projects)» instala `samba` y
+  `samba-client`, y `scripts/14-setup-samba.sh` escribe un `smb.conf`
+  gestionado que publica `~/Projects` con lectura y escritura **sólo** al
+  usuario que lo corre (`valid users`, `map to guest = Never`), habilita el
+  servicio `smb` y abre el servicio `samba` en firewalld. La contraseña de
+  Samba es un secreto del usuario y no se versiona: la define
+  `sudo smbpasswd -a <usuario>` una sola vez. Un `smb.conf` ajeno no se pisa
+  sin `--force`; `--check` es de sólo lectura. Detalle en
+  [docs/samba.md](docs/samba.md).
 - La shell por defecto se cambia a zsh (opcional durante la instalación).
 - `config/home/.zshrc` también se **copia** a `$HOME`, no se enlaza: los cambios
   editados directamente en `~/.zshrc` se sobrescriben la próxima vez que se

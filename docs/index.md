@@ -69,6 +69,8 @@ catálogo es agregar una línea a `packages/flatpak-apps.txt`.
 | `dev-python.txt` | Desarrollo Python |
 | `dev-angular.txt` | Desarrollo Angular/Node |
 | `flatpak-apps.txt` | Aplicaciones Flatpak (appids de Flathub, 1 por línea) |
+| `cloud.txt` | `rclone` y sus completions (montajes de Drive y OneDrive) |
+| `samba.txt` | `samba` y `samba-client` (share de `Projects` por SMB/CIFS) |
 
 Los controladores de hardware **no** viven en `packages/`. Cada dispositivo
 tiene su propio entry-point autocontenido en `scripts/drivers/`, con nombre
@@ -168,6 +170,38 @@ paquete i3. Detalle completo, ajustes versionados y verificación sin GUI en
 > 💡 Si `gum` no pudiera instalarse (p. ej. sin red), `install.sh` usa un
 > flujo de confirmación simple con bash.
 
+### Componente `Nube (rclone)`
+
+Monta Google Drive y OneDrive como sistemas de archivos FUSE en
+`~/Cloud/<remote>`, con unidades de **systemd de usuario** que los automontan
+en cada inicio. No sincroniza: los archivos viven en la nube y la caché local
+es sólo una ventana temporal.
+
+Es **por usuario**: cada uno corre `scripts/13-setup-cloud-mounts.sh` en su
+sesión y autoriza con su propia cuenta (OAuth 2.0), con su `~/.credentials/`
+(un `.env` por proveedor, directorio 700) y su `~/.config/rclone/rclone.conf`. El `client_id` de la app OAuth de Google se
+puede compartir; los tokens no. `--check` informa el estado sin mutar nada.
+
+Requisito de una sola vez: crear la app *Desktop* en Google Cloud Console y
+publicarla **In production** (en *Testing* Google expira el refresh token cada
+7 días). Procedimiento completo, verificación y trampas en
+[cloud-mounts.md](./cloud-mounts.md).
+
+### Componente `Samba (share de Projects)`
+
+Publica `~/Projects` por SMB/CIFS como una unidad de red, con lectura y
+escritura, **sólo** para el usuario que corre `scripts/14-setup-samba.sh`
+(en este equipo, `jorge`). No comparte el home ni abre shares de invitados:
+el `smb.conf` gestionado declara `valid users`, `map to guest = Never`
+y `guest ok = no`.
+
+Es **por máquina** (usa `sudo` para `/etc/samba/smb.conf`, el servicio `smb`
+y firewalld), pero la contraseña es del usuario y no se versiona: la define
+`sudo smbpasswd -a jorge` una sola vez. `--check` informa el estado sin mutar
+nada y sale 1 si falta algo; un `smb.conf` que no gestiona el repo no se pisa
+sin `--force` (que deja un respaldo). Procedimiento, verificación y trampas
+(AppArmor, SMB1, enlaces) en [samba.md](./samba.md).
+
 ### Tema claro/oscuro
 
 El escritorio tiene dos temas completos (oscuro y claro) que se cambian desde el
@@ -187,6 +221,7 @@ Los diagramas se definen con **Mermaid** en archivos `/docs/assets/*.mmd`
 | Diagrama | Descripción |
 |---|---|
 | [Flujo de instalación](./assets/flow.mmd) | Secuencia completa de `install.sh` |
+| [Montajes de nube](./diagramas/cloud-mounts.mmd) | Credenciales, unidad `rclone@.service` y `~/Cloud/<remote>` por usuario |
 
 Para visualizarlos localmente: abrir el `.mmd` en Obsidian, VS Code (con la
 extensión habitual de Mermaid) o Typora.
