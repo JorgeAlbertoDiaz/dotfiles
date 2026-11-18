@@ -11,6 +11,7 @@
 #   S6  el texto de las superficies oscuras es --sidebar-fg, nunca blanco.
 #   S7  cada componente que entra en el toggle tiene los dos temas completos, y
 #       no quedan colores de la paleta anterior.
+#   S12 el sidebar de herdr (spaces/agents) usa --sidebar-bg, no un gris claro.
 #
 # No toca el sistema: lee los archivos del repo y hace la matemática de
 # luminancia relativa WCAG 2.1 con awk. Sale 1 si algún paso falla.
@@ -191,8 +192,10 @@ fi
 
 # Los hsl() del CSS de referencia se materializan en estos hex (no son un
 # requisito nuevo: es el mismo color escrito de otra forma).
+# Sólo los hsl() que el escritorio usa: --table-border-color hsl(60,9%,82%) =
+# #D5D5CD no tiene consumidor (queda disponible en la paleta, no obligatorio).
 for par in "60,9%,87%:E1E1DB" "60,5%,75%:C2C2BC" "60,5%,70%:B6B6AF" \
-	"60,9%,82%:D5D5CD" "60,9%,84%:DADAD3"; do
+	"60,9%,84%:DADAD3"; do
 	hsl="${par%%:*}" hex="${par##*:}"
 	encontrado=0
 	for f in "${SWAY_LC}" "${WAYBAR}" "${SWAYNC}" "${WOFI}" "${WOB}" "${SWAYLOCK}" "${HEDR_LC}" "${TMUX_LC}"; do
@@ -279,6 +282,8 @@ if [[ -n "${herdr_sidebar}" ]]; then
 else
 	falla "herdr no fija sidebar_bg: el sidebar hereda el fondo del terminal"
 fi
+assert_igual "${herdr_sidebar,,}" "#3b2e2a" \
+	"el sidebar de herdr usa --sidebar-bg como la barra y las notificaciones"
 
 # ---------------------------------------------------------------------------
 # S3 — todo texto se lee (>= 4.5:1) sobre el fondo en el que se dibuja, y los

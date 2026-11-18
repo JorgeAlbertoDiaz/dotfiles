@@ -91,7 +91,7 @@ mismo naranja en los dos modos; lo que cambia es sobre qué fondo se usa.
 |---|---|---|
 | fondo documento | `#2b2b27` | `#E1E1DB` |
 | texto documento | `#cecece` | `#262625` |
-| chrome (barra, notificaciones, launcher, OSD, lock, tmux) | — | `#3B2E2A` |
+| chrome (barra, notificaciones, launcher, OSD, lock, herdr, tmux) | — | `#3B2E2A` |
 | texto sobre chrome | — | `#C8C9DB` |
 | chrome elevado (chips, tarjetas, input) | `#33322e` | `#45373A` |
 | chrome hover | `#3b3b37` | `#505254` |
@@ -134,13 +134,18 @@ Tres reglas que explican las decisiones raras:
 
 ### herdr
 
-El tema claro de herdr usa `name = "terminal"`: así el panel toma el fondo ANSI
-de foot (la paleta rust, documento `#e1e1db` con texto `#262625`) y herdr queda
-en la misma paleta que el resto del escritorio. El sidebar derecho, que no se
-leía, se arregló clavando en `[theme.custom]` el `sidebar_bg` y el `panel_bg` en
-`#c2c2bc` (el `--quote-bg` del tema rust), con `text` en `#262625` y `subtext0`
-en `#3b2e2a`: antes el sidebar heredaba el fondo del terminal pero con el texto
-claro del tema oscuro. El tema oscuro queda en nord, sin cambios.
+El tema claro de herdr usa `name = "terminal"`: el área de paneles (el
+documento) toma el fondo ANSI de foot —la paleta rust, `#e1e1db` con texto
+`#262625`— y el chrome queda en la paleta oscura del escritorio.
+
+El sidebar de spaces/agents, que no se leía, es chrome: `sidebar_bg` y
+`panel_bg` en `#3b2e2a` (el `--sidebar-bg`), fila activa en `#45373a`
+(`--sidebar-spacer`), cursor de Navegar en `#505254` y tabs inactivas en
+`#45373a`. Los tokens de texto de herdr son **globales** (no hay un "sidebar fg"
+aparte): por eso, con el chrome oscuro, `text` va en `#c8c9db` (7.97:1) y
+`subtext0`/`overlay0` en `#b3a497` (5.39:1). Los paneles no usan `text`, así que
+el documento sigue claro sin conflicto. El tema oscuro queda en nord, sin
+cambios.
 
 ## Agregar otro tema
 

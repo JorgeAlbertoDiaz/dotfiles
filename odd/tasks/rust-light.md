@@ -96,6 +96,8 @@ Fuente única de color: las variables CSS del tema `rust` de mdBook citadas en S
   «Versionar y aplicar ahora» — se agregan `config/herdr/` y `config/tmux/` al repo, se
   enganchan en `sway-theme.sh` y se aplican a `~/.config` en esta sesión.
 
+- **S12** — «La de herdr tiene un color un poco claro, quiero que tenga ese color marron oscuro el panel izqueirda donde se ven los "spaces" y los "agents", es lo unico que queda corregir, el resto se ve mucho mejor con este nuevo esquema de colores».
+
 - **S11** — Decisión del humano sobre superficies oscuras: «También launcher y popups» —
   wofi, popups/menús de waybar, OSD de wob y título de ventana de sway en oscuro.
 
@@ -141,6 +143,7 @@ Roles estables (mismo hex en todos los componentes):
 - [x] **T5** — S1, S6-S7: lock, terminal y nvim en `config/swaylock/themes/light.conf`, `config/foot/foot.ini`, `config/nvim/lua/config/theme.lua` · commit `feat(foot): documento claro y lock con paleta rust-light`
 - [x] **T6** — S3-S6, S10-S11: herdr versionado (`config/herdr/`) y hook en `config/sway/scripts/sway-theme.sh` · commit `feat(herdr): tema rust-light versionado y sidebar legible`
 - [x] **T7** — S6-S7, S10: tmux versionado (`config/tmux/`) y hook en `sway-theme.sh` · commit `feat(tmux): barra de estado con la paleta rust-light`
+- [x] **T10** — S12: sidebar de herdr con `--sidebar-bg` (chrome oscuro + texto claro) · commit `fix(herdr): sidebar de spaces/agents con sidebar-bg`
 - [x] **T8** — S3-S7: spec de contraste + docs (`docs/tema-claro-oscuro.md`, `docs/organizacion-sway.md`) · commit `docs(tema): documenta la paleta rust-light y su verificación`
 
 ## Log
@@ -254,3 +257,13 @@ Los paneles, tiene un bg mas oscuro (si puedes hacer que tambien herdr lo tenga 
   posterior y no para re-revisar este candidato: reload de tmux con `-L` por
   servidor, orden/robustez del SIGWINCH de herdr, y `falla()`/`assert_en_paleta`
   del spec de paleta (el segundo parámetro documentado no se usa).
+
+- **L8** — Corrección pedida por el humano tras ver el tema aplicado: el sidebar de
+  herdr (spaces/agents) quedó demasiado claro en `#C2C2BC`. Se pasó a chrome
+  oscuro `#3B2E2A` (sidebar y paneles), fila activa `#45373A`, cursor `#505254` y
+  tabs inactivas `#45373A`. Como los tokens de texto de herdr son globales, con el
+  chrome oscuro `text` pasa a `#C8C9DB` (7.97:1) y `subtext0`/`overlay0` a
+  `#B3A497` (5.39:1); el documento sigue claro porque los paneles usan el ANSI de
+  foot, no `text`. Verificado con `grim` + muestreo de píxeles: sidebar `#3B2E2A`,
+  tab activa `#2B79A2` (ANSI azul), tabs inactivas `#45373A`, y el spec de paleta
+  ahora afirma que el sidebar es `#3B2E2A` (S12).
