@@ -141,7 +141,7 @@ Roles estables (mismo hex en todos los componentes):
 - [x] **T5** — S1, S6-S7: lock, terminal y nvim en `config/swaylock/themes/light.conf`, `config/foot/foot.ini`, `config/nvim/lua/config/theme.lua` · commit `feat(foot): documento claro y lock con paleta rust-light`
 - [x] **T6** — S3-S6, S10-S11: herdr versionado (`config/herdr/`) y hook en `config/sway/scripts/sway-theme.sh` · commit `feat(herdr): tema rust-light versionado y sidebar legible`
 - [x] **T7** — S6-S7, S10: tmux versionado (`config/tmux/`) y hook en `sway-theme.sh` · commit `feat(tmux): barra de estado con la paleta rust-light`
-- [ ] **T8** — S3-S7: spec de contraste + docs (`docs/tema-claro-oscuro.md`, `docs/organizacion-sway.md`) · commit `docs(tema): documenta la paleta rust-light y su verificación`
+- [x] **T8** — S3-S7: spec de contraste + docs (`docs/tema-claro-oscuro.md`, `docs/organizacion-sway.md`) · commit `docs(tema): documenta la paleta rust-light y su verificación`
 
 ## Log
 
@@ -227,3 +227,22 @@ Los paneles, tiene un bg mas oscuro (si puedes hacer que tambien herdr lo tenga 
   teal peach`; base clara disponible `catppuccin-latte`. tmux 3.8 lee `~/.config/tmux/tmux.conf`.
   `scripts/04-setup-dotfiles.sh` descubre apps por directorio de `config/`: agregar
   `config/herdr/` y `config/tmux/` los versiona sin tocar el instalador.
+
+- **L6** — Evidencia de cierre (verificación aplicada en vivo el 2026-11-18):
+  - `scripts/tests/tema-paleta-spec.sh`: 49 pasos, 0 fallos con el tema nuevo.
+    RED honesto: sobre `main` (paleta anterior + los dos componentes nuevos)
+    falla 16 pasos — paleta vieja, barra clara, notificaciones con texto oscuro
+    sobre chrome (1.16:1) y OSD con barra naranja sobre fondo claro (1.68:1).
+  - `scripts/tests/sway-theme-spec.sh`: 101 pasos, 0 fallos (enlaces herdr/tmux,
+    `server reload-config`, SIGWINCH y `tmux source-file`).
+  - `scripts/tests/04-setup-dotfiles-spec.sh`: 48 pasos, 0 fallos (las apps
+    nuevas se descubren solas por directorio).
+  - `sway --validate`, `foot -C`, `herdr config check` y `tmux -f … start-server`
+    aceptan los archivos nuevos.
+  - Verificación visual con `grim` + muestreo de píxeles: barra `#3B2E2A`,
+    chips `#45373A`, sidebar de herdr `#C2C2BC` en claro y `#2B2B27` en oscuro
+    (el oscuro no cambió: nord con el fondo del terminal).
+  - Hallazgo aplicado: con el tema base `terminal`, el cliente de herdr sólo
+    relee la paleta del terminal al redibujar por `SIGWINCH`; `sway-theme.sh`
+    ahora manda la señal después de `herdr server reload-config`. Sin ella el
+    sidebar quedaba con el fondo viejo hasta el próximo resize.

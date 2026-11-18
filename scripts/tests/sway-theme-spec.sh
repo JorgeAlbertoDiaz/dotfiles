@@ -311,6 +311,11 @@ assert_contiene "${RELOAD_LOG}" "swaymsg reload" \
   "recarga sway con swaymsg reload"
 assert_contiene "${RELOAD_LOG}" "herdr server reload-config" \
   "recarga herdr con server reload-config"
+# kill es un builtin de bash: no se puede doblar con un stub en PATH, así que
+# esta parte se verifica en el código (la ruta se ejecuta en la vida real con
+# cualquier herdr abierto: el sidebar sólo se actualiza con esa señal).
+assert_contiene "${SCRIPT}" "kill -WINCH" \
+  "herdr recibe SIGWINCH para releer la paleta del terminal"
 assert_contiene "${RELOAD_LOG}" "tmux source-file ${CONFIG}/tmux/tmux.conf" \
   "recarga tmux con source-file del tema activo"
 assert_contiene "${RELOAD_LOG}" "notify-send Tema Modo claro" \

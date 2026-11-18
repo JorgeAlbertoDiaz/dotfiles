@@ -229,8 +229,15 @@ recargar() {
   fi
 
   # herdr relee config.toml (y con ella el tema) en el servidor que ya corre.
+  # Además, con el tema base "terminal" (el claro) el cliente relee la paleta
+  # del terminal anfitrión al redibujar por SIGWINCH: sin esa señal el sidebar
+  # queda con los colores viejos hasta el próximo resize (documentado por herdr
+  # para los switchers que cambian la paleta del terminal).
   if command -v herdr >/dev/null 2>&1 && pgrep -x herdr >/dev/null 2>&1; then
     herdr server reload-config >/dev/null 2>&1 || true
+    for _pid in $(pgrep -x herdr 2>/dev/null || true); do
+      kill -WINCH "${_pid}" 2>/dev/null || true
+    done
   fi
 
   # tmux: el enlace ya apunta al tema nuevo; cada servidor vivo relee el archivo.
