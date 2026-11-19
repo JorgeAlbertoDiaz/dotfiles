@@ -41,12 +41,17 @@ S5. El componente se instala desde `install.sh` como el resto y queda documentad
 
 | ID | Specs | Ruta | Commit |
 | --- | --- | --- | --- |
-| T1 | S1-S5 | Rama `feat/login-rust` + esta ficha | `docs(odd)`: ficha del greeter |
-| T2 | S1 | `scripts/lightdm/greeter/{dark,light}.css` | `feat(lightdm)`: tema rust-login |
-| T3 | S2, S3 | `scripts/lightdm/bin/lightdm-greeter-setup`, `scripts/lightdm/lightdm-gtk-greeter.conf`, `background.png` | `feat(lightdm)`: helper por hora + conf |
-| T4 | S4 | `scripts/15-setup-lightdm.sh` | `feat(lightdm)`: instalador idempotente |
-| T5 | S1-S4 | `scripts/tests/15-setup-lightdm-spec.sh`, `scripts/tests/tema-paleta-spec.sh` | `test(lightdm)`: specs del greeter |
-| T6 | S5 | `install.sh`, `docs/lightdm.md`, `docs/index.md`, `README.md` | `docs(lightdm)`: componente + docs |
+| T1 | S1-S5 | Rama `feat/login-rust` + esta ficha | c5ae51b |
+| T2 | S1 | `scripts/lightdm/greeter/{dark,light}.css` | 1868af0 |
+| T3 | S2, S3 | `scripts/lightdm/bin/lightdm-greeter-setup`, `scripts/lightdm/lightdm-gtk-greeter.conf`, `background.png` | 1868af0 |
+| T4 | S4 | `scripts/15-setup-lightdm.sh` | afe8ae1 |
+| T5 | S1-S4 | `scripts/tests/15-setup-lightdm-spec.sh`, `scripts/tests/tema-paleta-spec.sh`, `install-flatpak-menu-spec.sh` | afe8ae1 |
+| T6 | S5 | `install.sh`, `docs/lightdm.md`, `docs/index.md`, `README.md` | 7de860c |
+
+Corte de revisión: 1371 líneas autoradas en 4 commits (`c5ae51b` ficha,
+`1868af0` payload, `afe8ae1` instalador + specs, `7de860c` registro + docs).
+Supera la rebanada de ~400 líneas, así que la entrega se parte por commit y no
+en un solo diff.
 
 ## Log
 
@@ -68,3 +73,21 @@ L4 (interpretación de S2): los minutos del mensaje (19:57 light, 20:00 dark) se
 resuelven como horas completas porque el helper compara horas enteras: claro
 08:00-19:59, oscuro 20:00-07:59. Si el humano quiere el minuto exacto, se cambia
 `date +%H` por `date +%H%M` y los límites en un solo lugar (T3).
+
+L5 (evidencia de implementación):
+- `scripts/tests/15-setup-lightdm-spec.sh` → 56 pasos, 0 fallos (hora→variante,
+  fondo obligatorio, idempotencia, `--check` sin escrituras, sin lightdm no
+  rompe nada).
+- `scripts/tests/tema-paleta-spec.sh` → 54 pasos, 0 fallos, ahora incluye el
+  `light.css` del greeter en la paleta cerrada y compara documento/chrome/acento
+  contra el tema claro del escritorio.
+- Resto de los specs del repo en verde, incluido `install-flatpak-menu-spec.sh`
+  (se agregó el stub del componente nuevo a su fixture).
+- `--check` contra el sistema real: sólo lectura, sale 1 y nombra exactamente lo
+  que falta.
+- `shellcheck -x` limpio en el instalador, el helper y el spec nuevo.
+
+L6 (defectos que encontró el spec, ya corregidos): el conf del greeter tenía
+`/etc/lightdm/background.png` hardcodeado (ahora `@FONDO@` lo sustituye el
+instalador), y las aserciones que esperaban avisos por stderr fallaban porque
+`warn()` de `common.sh` escribe en stdout.
