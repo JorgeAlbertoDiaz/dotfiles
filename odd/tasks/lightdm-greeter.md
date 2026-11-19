@@ -91,3 +91,12 @@ L6 (defectos que encontró el spec, ya corregidos): el conf del greeter tenía
 `/etc/lightdm/background.png` hardcodeado (ahora `@FONDO@` lo sustituye el
 instalador), y las aserciones que esperaban avisos por stderr fallaban porque
 `warn()` de `common.sh` escribe en stdout.
+
+L7 (disposición del humano): la revisión nativa de este candidato
+(`sha256:621df527…`, 6 commits desde `6cb69df`) queda **sin ejecutar por decisión
+explícita**: el host resolvió el consentimiento como `declined_this_candidate`
+tres veces, sin sobre `consent/v3` sin resolver y sin crear linaje. La
+verificación se apoya en los specs (8/8 suites, 62 pasos del greeter) y en la
+verificación independiente. RDD sigue activo para el próximo trabajo; este
+candidato no se reintenta.
+
