@@ -213,6 +213,18 @@ simbólico al tema activo; el estado es un archivo de texto en
 swaylock, wob, apps GTK y nvim. Paleta, mecanismo y límites en
 [tema-claro-oscuro.md](./tema-claro-oscuro.md).
 
+### Componente `Login (LightDM)`
+
+El login lo da **LightDM** con `lightdm-gtk-greeter` (no hay SDDM ni GDM en el
+sistema: `rpm -q sddm` no devuelve nada). `scripts/15-setup-lightdm.sh` instala
+el tema `rust-login` con la paleta del escritorio, apunta el hook del greeter a
+un helper que elige variante **por hora** (oscuro 20:00-07:59, claro
+08:00-19:59) y toma el fondo de `scripts/lightdm/background.png`, que se puede
+reemplazar sin tocar scripts. Es **por máquina** (escribe en `/etc` y
+`/usr/share` con `sudo`) e idempotente, respalda los dos `conf` que toca y
+`--check` informa el estado sin mutar nada. Rutas, verificación y trampas en
+[lightdm.md](./lightdm.md).
+
 ## Diagramas
 
 Los diagramas se definen con **Mermaid** en archivos `/docs/assets/*.mmd`
