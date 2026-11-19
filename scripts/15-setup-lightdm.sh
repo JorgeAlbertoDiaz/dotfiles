@@ -54,6 +54,15 @@ como_root() {
   as_root "$@"
 }
 
+# hook_en_seat <archivo> -> imprime "si" si el hook está dentro de [Seat:*],
+# que es la única sección que lightdm lee para el arranque del greeter.
+hook_en_seat() {
+  awk -v helper="${HELPER}" '
+    /^[[:space:]]*\[/ { en_seat = ($0 ~ /^[[:space:]]*\[Seat:\*\]/) ? 1 : 0 }
+    en_seat && $0 == "greeter-setup-script=" helper { print "si"; exit }
+  ' "$1" 2>/dev/null
+}
+
 # gestionado <archivo> -> 0 si lo escribió este script (marca en la 1ª línea).
 gestionado() {
   [[ -f "$1" ]] && [[ "$(head -n 1 "$1" 2>/dev/null)" == "${MARCA}"* ]]
@@ -156,25 +165,29 @@ instalar_fuente() {
 escribir_lightdm_conf() {
   local temporal
   temporal="$(mktemp "${TMPDIR:-/tmp}/lightdm.conf.XXXXXX")" || return 1
-  # Una sola pasada: reemplaza la clave si existe, o la agrega al final de
-  # [Seat:*] (creando la sección si el archivo no la tenía).
+  # Se descarta cualquier greeter-setup-script y se escribe el del repo justo
+  # debajo de [Seat:*] (creando la sección si falta). Así no importa dónde
+  # estaba la clave antes: lightdm sólo lee la de [Seat:*] y una clave en otra
+  # sección quedaría muerta con un --check que la daría por buena.
   awk -v helper="${HELPER}" '
-    BEGIN { visto = 0; en_seat = 0 }
-    /^[[:space:]]*\[/ {
-      if (en_seat && !visto) { print "greeter-setup-script=" helper; visto = 1 }
-      en_seat = ($0 ~ /^[[:space:]]*\[Seat:\*\]/) ? 1 : 0
-      print
-      next
+    {
+      if ($0 ~ /^[[:space:]]*greeter-setup-script[[:space:]]*=/) next
+      n++
+      lineas[n] = $0
+      if (!seat && $0 ~ /^[[:space:]]*\[Seat:\*\]/) seat = n
     }
-    /^[[:space:]]*greeter-setup-script[[:space:]]*=/ {
-      if (!visto) { print "greeter-setup-script=" helper; visto = 1 }
-      next
-    }
-    { print }
     END {
-      if (visto) exit
-      if (en_seat) { print "greeter-setup-script=" helper }
-      else { print ""; print "[Seat:*]"; print "greeter-setup-script=" helper }
+      if (seat) {
+        for (i = 1; i <= n; i++) {
+          print lineas[i]
+          if (i == seat) print "greeter-setup-script=" helper
+        }
+      } else {
+        for (i = 1; i <= n; i++) print lineas[i]
+        print ""
+        print "[Seat:*]"
+        print "greeter-setup-script=" helper
+      }
     }' "${CONF_LIGHTDM}" >"${temporal}" || {
     rm -f "${temporal}"
     return 1
@@ -189,6 +202,11 @@ escribir_lightdm_conf() {
   fi
   if grep -q '^user-session=' "${CONF_LIGHTDM}" && ! grep -q '^user-session=' "${temporal}"; then
     error "el lightdm.conf nuevo perdería user-session: no lo instalo"
+    rm -f "${temporal}"
+    return 1
+  fi
+  if [[ "$(hook_en_seat "${temporal}")" != "si" ]]; then
+    error "el greeter-setup-script nuevo no quedó dentro de [Seat:*]: no lo instalo"
     rm -f "${temporal}"
     return 1
   fi
@@ -265,7 +283,7 @@ revisar() {
     warn "${CONF_GREETER}: no lo gestiona este script o no usa rust-login"
     desvio=1
   fi
-  if grep -qx "greeter-setup-script=${HELPER}" "${CONF_LIGHTDM}" 2>/dev/null; then
+  if [[ "$(hook_en_seat "${CONF_LIGHTDM}")" == "si" ]]; then
     ok "${CONF_LIGHTDM}: hook -> ${HELPER}"
   else
     warn "${CONF_LIGHTDM}: el hook no apunta a ${HELPER}"

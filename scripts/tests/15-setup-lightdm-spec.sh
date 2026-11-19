@@ -63,6 +63,15 @@ assert_igual() {
   if [[ "$1" == "$2" ]]; then pasa "$3"; else falla "$3 (real: '$1', esperado: '$2')"; fi
 }
 
+# hook_en_seat <conf> <helper>: imprime "si" si el hook está dentro de [Seat:*],
+# que es la única sección que lightdm lee para arrancar el greeter.
+hook_en_seat() {
+  awk -v helper="$2" '
+    /^[[:space:]]*\[/ { en = ($0 ~ /^[[:space:]]*\[Seat:\*\]/) ? 1 : 0 }
+    en && $0 == "greeter-setup-script=" helper { print "si"; exit }
+  ' "$1" 2>/dev/null
+}
+
 assert_enlace_a() {
   local real=""
   [[ -L "$1" ]] && real="$(readlink "$1")"
@@ -313,6 +322,34 @@ if [[ "${SALIDA}" == *"variante activa"* ]]; then
 else
   falla "S4: --check no informa la variante activa"
 fi
+
+# El hook sólo vale dentro de [Seat:*]: si estaba en otra sección, se mueve.
+crear_fixture
+cat >"${CONF_LIGHTDM}" <<'ARCHIVO'
+[Greeter]
+greeter-setup-script=/usr/bin/numlockx default
+[Seat:*]
+user-session=sway
+ARCHIVO
+correr
+assert_exit "${CODIGO}" 0 "S4: instala sobre un conf con el hook en otra sección"
+assert_igual "$(hook_en_seat "${CONF_LIGHTDM}" "${SBIN}/lightdm-greeter-setup")" "si" \
+  "S4: mueve el hook a [Seat:*] cuando estaba en [Greeter]"
+assert_no_contiene "${CONF_LIGHTDM}" "greeter-setup-script=/usr/bin/numlockx default" \
+  "S4: la clave muerta de la otra sección no queda"
+assert_contiene "${CONF_LIGHTDM}" "user-session=sway" "S4: conserva la sesión al mover el hook"
+assert_una_vez "${CONF_LIGHTDM}" "greeter-setup-script=" "S4: un solo hook después de moverlo de sección"
+
+# --check no da por bueno un hook que lightdm no leería.
+crear_fixture
+correr
+awk -v h="${SBIN}/lightdm-greeter-setup" '
+  $0 == "greeter-setup-script=" h { next }
+  /^[[:space:]]*\[Seat:\*\]/ { print; print "[Greeter]"; print "greeter-setup-script=" h; next }
+  { print }' "${CONF_LIGHTDM}" >"${CONF_LIGHTDM}.tmp"
+mv "${CONF_LIGHTDM}.tmp" "${CONF_LIGHTDM}"
+correr "" --check
+assert_exit "${CODIGO}" 1 "S4: --check sale 1 si el hook quedó fuera de [Seat:*]"
 
 # --check detecta lo que falta.
 crear_fixture
