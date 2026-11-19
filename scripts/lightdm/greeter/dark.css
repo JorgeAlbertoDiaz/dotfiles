@@ -1,0 +1,194 @@
+/* rust-login · variante OSCURA del greeter de LightDM
+ * ---------------------------------------------------------------------------
+ * Paleta tomada de config/sway/themes/dark.conf (tema rust oscuro):
+ *   fondo #2b2b27 · superficie #33322e · hover #3b3b37 · borde #5e5e56
+ *   acento #e69f67 · texto sobre acento #241c19 · texto #cecece
+ *   secundario #8a8b99 · azul #4ea8d6 · urgente #e06c3a
+ *
+ * Instalación: scripts/15-setup-lightdm.sh copia este archivo (y light.css) a
+ * /usr/share/themes/rust-login/gtk-3.0/ y deja gtk.css como enlace al activo.
+ * Quién elige la variante: /usr/local/sbin/lightdm-greeter-setup según la hora.
+ *
+ * Se apoya en Adwaita como base para no redefinir cada widget de GTK3: arriba
+ * queda el tema completo y abajo sólo se pinta el greeter con la paleta rust.
+ */
+
+@import url("resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained-dark.css");
+
+@define-color rust_bg #2b2b27;
+@define-color rust_surface #33322e;
+@define-color rust_hover #3b3b37;
+@define-color rust_border #5e5e56;
+@define-color rust_accent #e69f67;
+@define-color rust_on_accent #241c19;
+@define-color rust_fg #cecece;
+@define-color rust_muted #8a8b99;
+@define-color rust_blue #4ea8d6;
+@define-color rust_urgent #e06c3a;
+
+/* --- Barra superior (host, reloj, sesión, apagado) ------------------------ */
+.lightdm-gtk-greeter #panel_window {
+  background-color: alpha(@rust_bg, 0.92);
+  color: @rust_muted;
+  box-shadow: inset 0 -1px @rust_border;
+}
+
+.lightdm-gtk-greeter #panel_window menubar {
+  background-color: transparent;
+  color: @rust_muted;
+  text-shadow: none;
+}
+
+.lightdm-gtk-greeter #panel_window menubar > menuitem {
+  color: @rust_muted;
+  padding: 3px 9px;
+  text-shadow: none;
+}
+
+.lightdm-gtk-greeter #panel_window menubar > menuitem:hover {
+  color: @rust_accent;
+  background-color: transparent;
+}
+
+.lightdm-gtk-greeter #panel_window menubar separator {
+  background: transparent;
+}
+
+/* --- Ventana de login y diálogos ---------------------------------------- */
+.lightdm-gtk-greeter #login_window,
+.lightdm-gtk-greeter #shutdown_dialog,
+.lightdm-gtk-greeter #restart_dialog {
+  background-color: alpha(@rust_surface, 0.97);
+  border: 1px solid @rust_border;
+  border-radius: 6px;
+  color: @rust_fg;
+  box-shadow: none;
+  text-shadow: none;
+}
+
+/* --- Campo de contraseña ------------------------------------------------- */
+.lightdm-gtk-greeter entry {
+  background-color: @rust_bg;
+  border: 1px solid @rust_border;
+  border-radius: 4px;
+  color: @rust_fg;
+  caret-color: @rust_accent;
+  padding: 6px 9px;
+  box-shadow: none;
+}
+
+.lightdm-gtk-greeter entry:focus {
+  border-color: @rust_accent;
+  outline-color: alpha(@rust_accent, 0.5);
+}
+
+.lightdm-gtk-greeter entry selection {
+  background-color: @rust_accent;
+  color: @rust_on_accent;
+}
+
+/* --- Botones ------------------------------------------------------------- */
+.lightdm-gtk-greeter #login_window button,
+.lightdm-gtk-greeter #shutdown_dialog button,
+.lightdm-gtk-greeter #restart_dialog button {
+  background-image: none;
+  background-color: @rust_hover;
+  border: 1px solid @rust_border;
+  border-radius: 4px;
+  color: @rust_fg;
+  padding: 4px 16px;
+  text-shadow: none;
+  box-shadow: none;
+}
+
+.lightdm-gtk-greeter #login_window button:hover,
+.lightdm-gtk-greeter #shutdown_dialog button:hover,
+.lightdm-gtk-greeter #restart_dialog button:hover {
+  background-color: @rust_border;
+  border-color: @rust_border;
+}
+
+/* Entrar: el único elemento con el acento del escritorio. */
+.lightdm-gtk-greeter #login_window button#login_button,
+.lightdm-gtk-greeter #shutdown_dialog button#login_button,
+.lightdm-gtk-greeter #restart_dialog button#login_button {
+  background-color: @rust_accent;
+  border-color: @rust_accent;
+  color: @rust_on_accent;
+  font-weight: bold;
+}
+
+.lightdm-gtk-greeter #login_window button#login_button:hover,
+.lightdm-gtk-greeter #shutdown_dialog button#login_button:hover,
+.lightdm-gtk-greeter #restart_dialog button#login_button:hover {
+  background-color: @rust_accent;
+  border-color: @rust_on_accent;
+}
+
+/* Apagar: mismo color urgente que las ventanas urgentes de sway. */
+.lightdm-gtk-greeter #login_window button#shutdown_button,
+.lightdm-gtk-greeter #shutdown_dialog button#shutdown_button,
+.lightdm-gtk-greeter #restart_dialog button#shutdown_button {
+  background-color: transparent;
+  border-color: @rust_urgent;
+  color: @rust_urgent;
+}
+
+.lightdm-gtk-greeter #login_window button#shutdown_button:hover,
+.lightdm-gtk-greeter #shutdown_dialog button#shutdown_button:hover,
+.lightdm-gtk-greeter #restart_dialog button#shutdown_button:hover {
+  background-color: @rust_urgent;
+  border-color: @rust_urgent;
+  color: @rust_bg;
+}
+
+/* --- Selector de usuario / sesión --------------------------------------- */
+.lightdm-gtk-greeter #login_window #user_combobox {
+  color: @rust_fg;
+  font-size: 16px;
+}
+
+.lightdm-gtk-greeter #login_window combobox button.combo {
+  background: none;
+  background-image: none;
+  border-style: none;
+  box-shadow: none;
+  color: @rust_muted;
+  padding: 0;
+}
+
+.lightdm-gtk-greeter #login_window #user_image {
+  border: 1px solid @rust_border;
+  border-radius: 24px;
+  padding: 2px;
+  box-shadow: none;
+}
+
+.lightdm-gtk-greeter #login_window #user_image_border {
+  border-radius: 24px;
+  background-image: none;
+  background-color: transparent;
+  box-shadow: none;
+}
+
+/* --- Menús desplegables -------------------------------------------------- */
+.lightdm-gtk-greeter menu {
+  background-color: @rust_surface;
+  border: 1px solid @rust_border;
+  border-radius: 4px;
+  color: @rust_fg;
+}
+
+.lightdm-gtk-greeter menu menuitem {
+  color: @rust_fg;
+  text-shadow: none;
+}
+
+.lightdm-gtk-greeter menu menuitem:hover {
+  background-color: @rust_hover;
+  color: @rust_accent;
+}
+
+.lightdm-gtk-greeter menu separator {
+  background-color: @rust_border;
+}
