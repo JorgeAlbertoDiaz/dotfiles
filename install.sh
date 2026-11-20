@@ -37,6 +37,7 @@ REPO_DIR="${SCRIPT_DIR}"
 COMPONENTES=(
   "Escritorio Sway"
   "Nerd Fonts"
+  "Login (LightDM)"
   "Drivers"
   "Dev Core"
   "Dev PHP"
@@ -90,6 +91,12 @@ run_component() {
     "Nerd Fonts")
       "${SCRIPT_DIR}/scripts/05-install-fonts.sh" --install-only
       info "Finalizado: instalación de fuentes"
+      ;;
+    "Login (LightDM)")
+      # El greeter necesita la Nerd Font instalada a nivel sistema: va después
+      # de "Nerd Fonts" en COMPONENTES para que el orden del menú la respete.
+      "${SCRIPT_DIR}/scripts/15-setup-lightdm.sh"
+      info "Finalizado: greeter de login con el tema del escritorio"
       ;;
     "Dev Core")
       "${SCRIPT_DIR}/scripts/02-install-packages.sh" dev-core.txt

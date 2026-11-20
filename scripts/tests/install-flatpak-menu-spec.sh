@@ -136,6 +136,7 @@ crear_fixture() {
   crear_stub "11-setup-droidcam.sh"   "scripts/11-setup-droidcam.sh"
   crear_stub "12-setup-handy.sh"      "scripts/12-setup-handy.sh"
   crear_stub "14-setup-samba.sh"      "scripts/14-setup-samba.sh"
+  crear_stub "15-setup-lightdm.sh"    "scripts/15-setup-lightdm.sh"
   crear_stub "drivers-menu.sh"        "scripts/drivers/drivers-menu.sh"
   crear_gum
 }

@@ -1,0 +1,52 @@
+#!/bin/sh
+# lightdm-greeter-setup — prepara el greeter de LightDM antes de mostrarlo.
+#
+# LightDM ejecuta este script como root cada vez que va a mostrar el login
+# (greeter-setup-script=/usr/local/sbin/lightdm-greeter-setup). Hace dos cosas:
+#
+#   1. elige la variante del tema rust-login por hora local:
+#        oscuro  20:00 - 07:59
+#        claro   08:00 - 19:59
+#      y apunta /usr/share/themes/rust-login/gtk-3.0/gtk.css al CSS elegido.
+#   2. mantiene el numlock encendido, que antes hacía este mismo hook con
+#      `/usr/bin/numlockx default` (ver /etc/lightdm/lightdm.conf).
+#
+# Nunca sale con error: si algo falla, el login tiene que aparecer igual con el
+# tema que ya estaba. Los avisos van a stderr (los dos al log de lightdm).
+#
+# LIGHTDM_GREETER_THEME_DIR existe sólo para que los specs apunten a un árbol
+# temporal; lightdm no define la variable.
+
+set -u
+
+TEMA_DIR="${LIGHTDM_GREETER_THEME_DIR:-/usr/share/themes/rust-login/gtk-3.0}"
+
+# Hora local con ceros a la izquierda recortados ("07" -> 7) y sin sorpresas si
+# `date` no existe: en ese caso se asume la variante oscura, que es la de la
+# noche y la que menos encandila en un arranque.
+hora="$(date +%H 2>/dev/null || echo 0)"
+hora="${hora#0}"
+case "${hora}" in
+  '' | *[!0-9]*) hora=0 ;;
+esac
+
+if [ "${hora}" -ge 20 ] || [ "${hora}" -lt 8 ]; then
+  variante=dark
+else
+  variante=light
+fi
+
+if [ -f "${TEMA_DIR}/${variante}.css" ]; then
+  ln -sfn "${variante}.css" "${TEMA_DIR}/gtk.css" 2>/dev/null ||
+    printf 'lightdm-greeter-setup: no pude enlazar %s/gtk.css\n' "${TEMA_DIR}" >&2
+else
+  printf 'lightdm-greeter-setup: falta %s/%s.css; dejo el tema como estaba\n' \
+    "${TEMA_DIR}" "${variante}" >&2
+fi
+
+# numlockx necesita el DISPLAY del greeter; si no hay sesión X no hay nada que hacer.
+if [ -n "${DISPLAY:-}" ] && [ -x /usr/bin/numlockx ]; then
+  /usr/bin/numlockx default >/dev/null 2>&1 || true
+fi
+
+exit 0

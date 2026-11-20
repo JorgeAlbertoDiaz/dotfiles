@@ -51,6 +51,8 @@ dev, drivers de hardware y dotfiles.
 │   ├── 12-setup-handy.sh    # Dictado por voz: RPM pinneado + ajustes
 │   ├── 13-setup-cloud-mounts.sh  # Monta Drive/OneDrive con rclone (por usuario)
 │   ├── 14-setup-samba.sh    # Publica ~/Projects por SMB/CIFS a un solo usuario
+│   ├── 15-setup-lightdm.sh   # Greeter de login con la paleta del escritorio
+│   ├── lightdm/              # Payload del greeter: CSS, conf, helper y fondo
 │   └── drivers/              # Controladores por hardware (un script por placa)
 │       ├── drivers-menu.sh   # Submenú: lista y lanza cada driver-*.sh
 │       └── driver-nvidia-gtx1060.sh  # Repo NVIDIA + G06 + GRUB/modprobe
@@ -83,6 +85,10 @@ Más detalles en [docs/index.md](docs/index.md).
   repositorio oficial de NVIDIA.
 - Las Nerd Fonts se descargan por familia desde `ryanoasis/nerd-fonts`
   (GitHub Releases) y se instalan en `~/.local/share/fonts` sin sudo.
+- El componente «Login (LightDM)» pinta el greeter con la paleta del escritorio:
+  el tema `rust-login` elige variante por hora (oscuro 20:00-07:59, claro
+  08:00-19:59) y el fondo sale de `scripts/lightdm/background.png`, que podés
+  reemplazar cuando quieras. Detalle en [docs/lightdm.md](docs/lightdm.md).
 - El componente «Samba (share de Projects)» instala `samba` y
   `samba-client`, y `scripts/14-setup-samba.sh` escribe un `smb.conf`
   gestionado que publica `~/Projects` con lectura y escritura **sólo** al

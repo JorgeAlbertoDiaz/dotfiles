@@ -12,6 +12,8 @@
 #   S7  cada componente que entra en el toggle tiene los dos temas completos, y
 #       no quedan colores de la paleta anterior.
 #   S12 el sidebar de herdr (spaces/agents) usa --sidebar-bg, no un gris claro.
+#   S1  (greeter de LightDM) el login usa las mismas superficies que el
+#       escritorio: documento #E1E1DB, chrome #3B2E2A y acento #E69F67.
 #
 # No toca el sistema: lee los archivos del repo y hace la matemática de
 # luminancia relativa WCAG 2.1 con awk. Sale 1 si algún paso falla.
@@ -161,9 +163,11 @@ SWAYLOCK="${REPO_ROOT}/config/swaylock/themes/light.conf"
 FOOT="${REPO_ROOT}/config/foot/foot.ini"
 HEDR_LC="${REPO_ROOT}/config/herdr/themes/light.toml"
 TMUX_LC="${REPO_ROOT}/config/tmux/themes/light.conf"
+# Greeter de LightDM (scripts/lightdm): el login también entra en la paleta.
+GREETER_LC="${REPO_ROOT}/scripts/lightdm/greeter/light.css"
 
 for f in "${SWAY_LC}" "${WAYBAR}" "${SWAYNC}" "${WOFI}" "${WOB}" "${SWAYLOCK}" \
-	"${FOOT}" "${HEDR_LC}" "${TMUX_LC}"; do
+	"${FOOT}" "${HEDR_LC}" "${TMUX_LC}" "${GREETER_LC}"; do
 	if [[ ! -f "${f}" ]]; then
 		echo "ERROR: falta ${f}" >&2
 		exit 2
@@ -176,7 +180,8 @@ done
 # foot queda afuera: su bloque ANSI son 16 colores derivados (el CSS de mdBook
 # define 5), y el spec los valida abajo contra --bg/--fg y el contraste.
 # ---------------------------------------------------------------------------
-for f in "${SWAY_LC}" "${WAYBAR}" "${SWAYNC}" "${WOFI}" "${SWAYLOCK}" "${HEDR_LC}" "${TMUX_LC}"; do
+for f in "${SWAY_LC}" "${WAYBAR}" "${SWAYNC}" "${WOFI}" "${SWAYLOCK}" "${HEDR_LC}" "${TMUX_LC}" \
+	"${GREETER_LC}"; do
 	assert_en_paleta "${f}"
 done
 
@@ -213,7 +218,7 @@ done
 # ---------------------------------------------------------------------------
 sobras=""
 for v in ${VIEJOS}; do
-	for f in "${SWAY_LC}" "${WAYBAR}" "${SWAYNC}" "${WOFI}" "${WOB}" "${SWAYLOCK}" "${FOOT}" "${HEDR_LC}" "${TMUX_LC}"; do
+	for f in "${SWAY_LC}" "${WAYBAR}" "${SWAYNC}" "${WOFI}" "${WOB}" "${SWAYLOCK}" "${FOOT}" "${HEDR_LC}" "${TMUX_LC}" "${GREETER_LC}"; do
 		if grep -qiF "#${v,,}" "${f}" 2>/dev/null || grep -qiE "\b${v,,}" "${f}" 2>/dev/null; then
 			sobras="${sobras} ${v}@$(basename "${f}")"
 		fi
@@ -245,6 +250,23 @@ else
 fi
 nc_fg="$(css_campo "${SWAYNC}" ":root" "--text-color")"
 assert_igual "${nc_fg,,}" "#c8c9db" "el texto de notificaciones usa --sidebar-fg"
+
+# ---------------------------------------------------------------------------
+# S1 (greeter de LightDM) — el login usa las mismas superficies que el
+# escritorio: documento, chrome de la barra y acento, no colores propios.
+# ---------------------------------------------------------------------------
+def_color() {
+	awk -v v="$2" '$1 == "@define-color" && $2 == v { sub(/;$/, "", $3); print $3; exit }' "$1" 2>/dev/null
+}
+
+assert_igual "$(def_color "${GREETER_LC}" rust_doc)" "#E1E1DB" \
+	"el login claro usa el documento del escritorio (--bg #E1E1DB)"
+assert_igual "$(def_color "${GREETER_LC}" rust_chrome)" "#3B2E2A" \
+	"la barra del login claro usa --sidebar-bg (#3B2E2A)"
+assert_igual "$(def_color "${GREETER_LC}" rust_chrome_fg)" "#C8C9DB" \
+	"el texto de la barra del login usa --sidebar-fg (#C8C9DB)"
+assert_igual "$(def_color "${GREETER_LC}" rust_accent)" "#E69F67" \
+	"el acento del login es el del escritorio (--sidebar-active #E69F67)"
 
 # ---------------------------------------------------------------------------
 # S6 — nada de blanco puro: el texto de las superficies oscuras es --sidebar-fg
